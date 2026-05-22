@@ -43,61 +43,100 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
     };
   }, []);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!proofFile) {
       alert("Please upload payment proof first.");
       return;
     }
     setStatus('loading');
 
-    setTimeout(() => {
-        const existingUsersStr = localStorage.getItem('chix9ja_users');
-        const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
-        const currentUser: User = existingUsers[userEmail.toLowerCase()];
-        
-        const canUseVMode = currentUser && currentUser.isVMode && !currentUser.vModeSubscriptionUsed;
+    try {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(proofFile);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (e) => reject(e);
+      });
 
-        if (canUseVMode) {
-            let durationDays = 30; 
-            if (plan.id === 'weekly') durationDays = 7;
-            if (plan.id === 'yearly') durationDays = 365;
-            
-            const expiryTimestamp = Date.now() + (durationDays * 24 * 60 * 60 * 1000);
+      setTimeout(() => {
+          const existingUsersStr = localStorage.getItem('chix9ja_users');
+          const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+          const currentUser: User = existingUsers[userEmail.toLowerCase()];
+          
+          const canUseVMode = currentUser && currentUser.isVMode && !currentUser.vModeSubscriptionUsed;
 
-            currentUser.isSubscribed = true;
-            currentUser.subscriptionPlan = plan.name;
-            currentUser.subscriptionExpiryDate = expiryTimestamp;
-            currentUser.vModeSubscriptionUsed = true;
-            
-            if (currentUser.vModeVipUsed) {
-                currentUser.isVMode = false;
-            }
-            
-            existingUsers[userEmail.toLowerCase()] = currentUser;
-            localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
-            
-            syncUserFromLocalToFirestore(userEmail).then(() => {
-                setStatus('success');
-                setTimeout(() => {
-                    alert(`Activation Successful! Your ${plan.name} is now active.`);
-                    window.location.reload();
-                }, 500);
-            }).catch((e) => {
-                console.error("Firestore sync error", e);
-                setStatus('success');
-                setTimeout(() => {
-                    alert(`Activation Successful! Your ${plan.name} is now active.`);
-                    window.location.reload();
-                }, 500);
-            });
-        } else {
-            setStatus('failed');
-            // Suggest contacting support
-            setTimeout(() => {
-                alert("Server Synchronization Pending. Please contact our support team on Telegram with your payment receipt for manual activation.");
-            }, 500);
-        }
-    }, 3500);
+          if (canUseVMode) {
+              let durationDays = 30; 
+              if (plan.id === 'weekly') durationDays = 7;
+              if (plan.id === 'yearly') durationDays = 365;
+              
+              const expiryTimestamp = Date.now() + (durationDays * 24 * 60 * 60 * 1000);
+
+              currentUser.isSubscribed = true;
+              currentUser.subscriptionPlan = plan.name;
+              currentUser.subscriptionExpiryDate = expiryTimestamp;
+              currentUser.vModeSubscriptionUsed = true;
+              
+              if (currentUser.vModeVipUsed) {
+                  currentUser.isVMode = false;
+              }
+              
+              // Clear any pending state
+              currentUser.pendingActivation = null;
+              currentUser.pendingPaymentProof = undefined;
+              currentUser.pendingPaymentAmount = undefined;
+              currentUser.pendingPaymentDate = undefined;
+
+              existingUsers[userEmail.toLowerCase()] = currentUser;
+              localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+              
+              syncUserFromLocalToFirestore(userEmail).then(() => {
+                  setStatus('success');
+                  setTimeout(() => {
+                      alert(`Activation Successful! Your ${plan.name} is now active.`);
+                      window.location.reload();
+                  }, 500);
+              }).catch((e) => {
+                  console.error("Firestore sync error", e);
+                  setStatus('success');
+                  setTimeout(() => {
+                      alert(`Activation Successful! Your ${plan.name} is now active.`);
+                      window.location.reload();
+                  }, 500);
+              });
+          } else {
+              if (currentUser) {
+                  let amountNum = 15000;
+                  if (plan.id === 'weekly') amountNum = 8000;
+                  if (plan.id === 'yearly') amountNum = 50000;
+
+                  currentUser.pendingActivation = plan.id === 'weekly' ? 'subscription_weekly' : (plan.id === 'yearly' ? 'subscription_yearly' : 'subscription_monthly');
+                  currentUser.pendingPaymentProof = base64Data;
+                  currentUser.pendingPaymentAmount = amountNum;
+                  currentUser.pendingPaymentDate = new Date().toISOString();
+
+                  existingUsers[userEmail.toLowerCase()] = currentUser;
+                  localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+                  
+                  syncUserFromLocalToFirestore(userEmail).then(() => {
+                      setStatus('failed');
+                      setTimeout(() => {
+                          alert("Payment submitted for Admin activation. Server Synchronization Pending.");
+                      }, 500);
+                  }).catch((e) => {
+                      console.error("Firestore sync error", e);
+                      setStatus('failed');
+                  });
+              } else {
+                  setStatus('failed');
+              }
+          }
+      }, 3500);
+    } catch (e) {
+      console.error("Error reading file", e);
+      setStatus('failed');
+      alert("Error reading payment proof. Please try uploading again.");
+    }
   };
 
   if (isFetching) {

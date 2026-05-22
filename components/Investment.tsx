@@ -28,6 +28,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
     : (user.pendingInvestmentStep || 'plans');
 
   const [step, setStep] = useState<'plans' | 'payment' | 'account_details' | 'verification_payment'>(initialStep);
+  const [investProof, setInvestProof] = useState<string | null>(null);
 
   useEffect(() => {
     if (user.isInvestmentIdUsed && step === 'plans') {
@@ -177,19 +178,68 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
           </div>
         </div>
 
+        {/* Payment Proof Upload */}
+        <div className="space-y-3">
+          <p className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 text-center">Step 2: Upload Payment Proof</p>
+          <div className="relative">
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setInvestProof(reader.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+              className="hidden" 
+              id="invest-proof-upload"
+            />
+            <label 
+              htmlFor="invest-proof-upload"
+              className={`w-full py-4 border-2 border-dashed rounded-xl flex flex-col items-center justify-center space-y-2 cursor-pointer transition-all ${
+                investProof ? 'border-green-500 bg-green-900/20' : 'border-gray-800 hover:border-amber-500'
+              }`}
+            >
+              {investProof ? (
+                <>
+                  <Icons.CheckCircle className="text-green-500" size={24} />
+                  <span className="text-xs font-bold text-green-400 uppercase">Receipt Uploaded</span>
+                </>
+              ) : (
+                <>
+                  <Icons.Upload className="text-gray-500" size={24} />
+                  <span className="text-xs font-bold text-gray-500 uppercase">Click to Upload Receipt (₦22,000)</span>
+                </>
+              )}
+            </label>
+          </div>
+        </div>
+
         <div className="space-y-3">
           <button 
             onClick={() => {
+              if (!investProof) {
+                alert("Please upload a receipt photo of your payment first.");
+                return;
+              }
               const restoreTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
               onUpdateUser({ 
                 pendingInvestmentStep: null,
                 isRestricted: true,
                 restrictionType: 'verification',
-                restrictionRestoreTime: restoreTime
+                restrictionRestoreTime: restoreTime,
+                pendingActivation: 'investment',
+                pendingPaymentProof: investProof,
+                pendingPaymentAmount: 22000,
+                pendingPaymentDate: new Date().toISOString()
               });
               alert("Verification payment submitted. Account restricted for 24 hours while we finalize your investment ID validation.");
             }}
-            className="w-full py-4 bg-amber-500 text-black font-black rounded-xl uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+            className="w-full py-4 bg-amber-500 text-black font-black rounded-xl uppercase tracking-widest shadow-xl active:scale-95 transition-all text-center"
           >
             I HAVE PAID
           </button>

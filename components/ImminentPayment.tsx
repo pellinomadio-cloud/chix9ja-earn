@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
+import { syncUserFromLocalToFirestore } from '../firebase';
 
 interface ImminentPaymentProps {
   user: User;
@@ -46,9 +47,30 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
     }
     setStatus('loading');
     
-    // Simulate processing then fail
     setTimeout(() => {
-      setStatus('failed');
+      const existingUsersStr = localStorage.getItem('chix9ja_users');
+      const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+      const currentUser: User = existingUsers[user.email.toLowerCase()];
+
+      if (currentUser) {
+        currentUser.pendingActivation = 'imminent_payment';
+        currentUser.pendingPaymentProof = paymentProof;
+        currentUser.pendingPaymentAmount = amount;
+        currentUser.pendingPaymentDate = new Date().toISOString();
+
+        existingUsers[user.email.toLowerCase()] = currentUser;
+        localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+
+        syncUserFromLocalToFirestore(user.email).then(() => {
+          setStatus('failed');
+          alert("Payment proof uploaded! Your activation is now pending review on the Admin Dashboard.");
+        }).catch((e) => {
+          console.error("Firestore sync error:", e);
+          setStatus('failed');
+        });
+      } else {
+        setStatus('failed');
+      }
     }, 3000);
   };
 

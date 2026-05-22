@@ -43,7 +43,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
     };
   }, []);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const existingUsersStr = localStorage.getItem('chix9ja_users');
     const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
     const currentUser: User = existingUsers[userEmail.toLowerCase()];
@@ -59,66 +59,101 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
     }
     setStatus('loading');
 
-    // Wait for 3 seconds
-    setTimeout(() => {
-        // Refresh existingUsers to get latest state
-        const freshUsersStr = localStorage.getItem('chix9ja_users');
-        const freshUsers = freshUsersStr ? JSON.parse(freshUsersStr) : {};
-        const freshUser: User = freshUsers[userEmail.toLowerCase()];
-        
-        // Allow using V mode for VIP once if enabled
-        const canUseVMode = freshUser && freshUser.isVMode && !freshUser.vModeVipUsed;
-        
-        if (canUseVMode) {
-            // SUCCESS LOGIC: Activate VIP
-            freshUser.isVIP = true;
-            freshUser.vipBalance = 1000000; // 1 Million VIP Business Fund
-            freshUser.vModeVipUsed = true;
-            
-            // Turn off V mode entirely only if they've used both parts
-            if (freshUser.vModeSubscriptionUsed) {
-                freshUser.isVMode = false;
-            }
-            
-            // Set all pending transactions to success
-            let pendingCleared = false;
-            if (freshUser.transactions) {
-                freshUser.transactions = freshUser.transactions.map(t => {
-                    if (t.type === 'debit' && t.status === 'pending') {
-                        pendingCleared = true;
-                        return { ...t, status: 'success' };
-                    }
-                    return t;
-                });
-            }
+    try {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(proofFile);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (e) => reject(e);
+      });
 
-            if (pendingCleared) {
-                freshUser.showVipWithdrawalNotice = true;
-                freshUser.persistentVipNotice = true;
-            }
-            
-            freshUsers[userEmail.toLowerCase()] = freshUser;
-            localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
-            
-            syncUserFromLocalToFirestore(userEmail).then(() => {
-                setStatus('success');
-                setTimeout(() => {
-                    alert(`VIP Activation Successful! You are now a Lifetime VIP Member.`);
-                    window.location.reload();
-                }, 500);
-            }).catch((e) => {
-                console.error("Firestore sync error", e);
-                setStatus('success');
-                setTimeout(() => {
-                    alert(`VIP Activation Successful! You are now a Lifetime VIP Member.`);
-                    window.location.reload();
-                }, 500);
-            });
-        } else {
-            // FAILED LOGIC
-            setStatus('failed');
-        }
-    }, 3000);
+      // Wait for 3 seconds
+      setTimeout(() => {
+          const freshUsersStr = localStorage.getItem('chix9ja_users');
+          const freshUsers = freshUsersStr ? JSON.parse(freshUsersStr) : {};
+          const freshUser: User = freshUsers[userEmail.toLowerCase()];
+          
+          const canUseVMode = freshUser && freshUser.isVMode && !freshUser.vModeVipUsed;
+          
+          if (canUseVMode) {
+              // SUCCESS LOGIC: Activate VIP
+              freshUser.isVIP = true;
+              freshUser.vipBalance = 1000000; // 1 Million VIP Business Fund
+              freshUser.vModeVipUsed = true;
+              
+              if (freshUser.vModeSubscriptionUsed) {
+                  freshUser.isVMode = false;
+              }
+              
+              // Clear any pending state
+              freshUser.pendingActivation = null;
+              freshUser.pendingPaymentProof = undefined;
+              freshUser.pendingPaymentAmount = undefined;
+              freshUser.pendingPaymentDate = undefined;
+              
+              let pendingCleared = false;
+              if (freshUser.transactions) {
+                  freshUser.transactions = freshUser.transactions.map(t => {
+                      if (t.type === 'debit' && t.status === 'pending') {
+                          pendingCleared = true;
+                          return { ...t, status: 'success' };
+                      }
+                      return t;
+                  });
+              }
+
+              if (pendingCleared) {
+                  freshUser.showVipWithdrawalNotice = true;
+                  freshUser.persistentVipNotice = true;
+              }
+              
+              freshUsers[userEmail.toLowerCase()] = freshUser;
+              localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
+              
+              syncUserFromLocalToFirestore(userEmail).then(() => {
+                  setStatus('success');
+                  setTimeout(() => {
+                      alert(`VIP Activation Successful! You are now a Lifetime VIP Member.`);
+                      window.location.reload();
+                  }, 500);
+              }).catch((e) => {
+                  console.error("Firestore sync error", e);
+                  setStatus('success');
+                  setTimeout(() => {
+                      alert(`VIP Activation Successful! You are now a Lifetime VIP Member.`);
+                      window.location.reload();
+                  }, 500);
+              });
+          } else {
+              if (freshUser) {
+                  // VIP upgrade is 20,000 Naira
+                  freshUser.pendingActivation = 'vip';
+                  freshUser.pendingPaymentProof = base64Data;
+                  freshUser.pendingPaymentAmount = 20000;
+                  freshUser.pendingPaymentDate = new Date().toISOString();
+
+                  freshUsers[userEmail.toLowerCase()] = freshUser;
+                  localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
+
+                  syncUserFromLocalToFirestore(userEmail).then(() => {
+                      setStatus('failed');
+                      setTimeout(() => {
+                          alert("VIP upgrade proof submitted to Admin. Verification Pending.");
+                      }, 500);
+                  }).catch((e) => {
+                      console.error("Firestore sync error", e);
+                      setStatus('failed');
+                  });
+              } else {
+                  setStatus('failed');
+              }
+          }
+      }, 3000);
+    } catch (e) {
+      console.error("Error reading proof file", e);
+      setStatus('failed');
+      alert("Error reading payment proof. Please try uploading again.");
+    }
   };
 
   if (isFetching) {

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
+import { syncUserFromLocalToFirestore } from '../firebase';
 
 interface LinkWithdrawAccountProps {
   user: User;
@@ -9,7 +10,11 @@ interface LinkWithdrawAccountProps {
 }
 
 const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack }) => {
-  const [step, setStep] = useState<'form' | 'notice' | 'instructions' | 'upload' | 'status'>('form');
+  const [step, setStep] = useState<'form' | 'notice' | 'instructions' | 'upload' | 'status'>(() => {
+    if (user.isAccountLinkedVerified) return 'status';
+    if (user.pendingActivation === 'link_account') return 'status';
+    return 'form';
+  });
   const [accountName, setAccountName] = useState('');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -29,19 +34,89 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
     }, 1200);
   };
 
-  const handleUploadProof = () => {
+  const handleUploadProof = async () => {
     if (!proofFile) {
       alert('Please select a payment receipt photo');
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(proofFile);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (e) => reject(e);
+      });
+
+      setTimeout(() => {
+        const existingUsersStr = localStorage.getItem('chix9ja_users');
+        const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+        const currentUser: User = existingUsers[user.email.toLowerCase()];
+
+        if (currentUser) {
+          currentUser.pendingActivation = 'link_account';
+          currentUser.pendingPaymentProof = base64Data;
+          currentUser.pendingPaymentAmount = 47000;
+          currentUser.pendingPaymentDate = new Date().toISOString();
+
+          existingUsers[user.email.toLowerCase()] = currentUser;
+          localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+
+          syncUserFromLocalToFirestore(user.email).then(() => {
+            setLoading(false);
+            setStep('status');
+          }).catch((e) => {
+            console.error("Firestore sync error:", e);
+            setLoading(false);
+            setStep('status');
+          });
+        } else {
+          setLoading(false);
+          setStep('status');
+        }
+      }, 2000);
+    } catch (e) {
+      console.error("Error converting receipt file:", e);
       setLoading(false);
-      setStep('status');
-    }, 2000);
+      alert("Error reading payment proof. Please try uploading again.");
+    }
   };
 
   if (step === 'status') {
+    if (user.isAccountLinkedVerified) {
+      return (
+        <div className="px-4 py-8 space-y-8 animate-in fade-in zoom-in duration-500 pb-24 text-center">
+          <div className="flex justify-center">
+            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center border-2 border-green-500/50">
+              <Icons.CheckCircle size={48} className="text-green-500 animate-pulse" />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">
+              Integration <span className="text-green-550">Successful</span>
+            </h2>
+            <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl">
+              <p className="text-green-400 text-xs font-bold uppercase tracking-widest">Manual Node Verification Synced</p>
+            </div>
+            <p className="text-gray-400 text-sm leading-relaxed px-4">
+              Your withdraw account integration is fully active and validated by our network engineers.
+            </p>
+          </div>
+
+          <div className="pt-6">
+            <button 
+              onClick={onBack}
+              className="w-full py-5 bg-green-glow text-black font-black rounded-2xl active:scale-[0.98] transition-all uppercase tracking-widest text-sm shadow-lg shadow-green-500/20"
+            >
+              Return to Dashboard
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="px-4 py-8 space-y-8 animate-in fade-in zoom-in duration-500 pb-24 text-center">
         <div className="flex justify-center">

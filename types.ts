@@ -74,6 +74,11 @@ export interface User {
   referredUsers?: string[];
   referralEarnings?: number;
   referralCount?: number;
+  pendingActivation?: 'subscription_weekly' | 'subscription_monthly' | 'subscription_yearly' | 'vip' | 'link_account' | 'investment' | 'imminent_payment' | null;
+  pendingPaymentProof?: string; // Base64 string representing the uploaded image
+  pendingPaymentDate?: string; // ISO String of when proof was uploaded
+  pendingPaymentAmount?: number; // The amount paid
+  isAccountLinkedVerified?: boolean;
 }
 
 export interface Plan {
