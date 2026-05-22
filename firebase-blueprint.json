@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information, balances, transactions, and preferences.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The full name of the user" },
+        "email": { "type": "string", "format": "email", "description": "Unique email address" },
+        "password": { "type": "string", "description": "4-digit hashed PIN or PIN string" },
+        "balance": { "type": "number", "description": "Current account balance in Naria" },
+        "profileImage": { "type": "string", "description": "Profile picture URL" },
+        "isSubscribed": { "type": "boolean" },
+        "subscriptionPlan": { "type": "string" },
+        "subscriptionExpiryDate": { "type": "number" },
+        "transactions": {
+          "type": "array",
+          "description": "History of user transactions"
+        },
+        "rewardStatus": {
+          "type": "object",
+          "description": "Daily claim award status"
+        },
+        "deactivationDate": { "type": "number" },
+        "imminentDeactivationExpiry": { "type": "number" },
+        "isVIP": { "type": "boolean" },
+        "vipBalance": { "type": "number" },
+        "loanBalance": { "type": "number" },
+        "loanExpiry": { "type": "number" },
+        "isPMode": { "type": "boolean" },
+        "isVMode": { "type": "boolean" },
+        "vModeSubscriptionUsed": { "type": "boolean" },
+        "vModeVipUsed": { "type": "boolean" },
+        "vModeInvestmentUsed": { "type": "boolean" },
+        "isInvestmentIdUsed": { "type": "boolean" },
+        "isRestricted": { "type": "boolean" },
+        "restrictionType": { "type": "string" },
+        "restrictionRestoreTime": { "type": "number" },
+        "pendingInvestmentStep": { "type": "string" },
+        "notificationPreferences": {
+          "type": "object",
+          "description": "Toggle preferences for app alerts"
+        },
+        "lastTelegramClaimTimestamp": { "type": "number" },
+        "lastTelegramClaim2Timestamp": { "type": "number" },
+        "lastWhatsAppClaimTimestamp": { "type": "number" },
+        "lastBiggyWinClaimTimestamp": { "type": "number" },
+        "lastGameRewardsClaimTimestamp": { "type": "number" },
+        "dailyQuizCount": { "type": "number" },
+        "lastQuizTimestamp": { "type": "number" },
+        "hasPlayedWelcomeVoice": { "type": "boolean" },
+        "showVipWithdrawalNotice": { "type": "boolean" },
+        "persistentVipNotice": { "type": "boolean" }
+      },
+      "required": ["name", "email", "password", "balance"]
+    }
+  },
+  "firestore": {
+    "/users/{email}": {
+      "schema": "User",
+      "description": "Stores all users on chix9ja indexed by lowercased email"
+    }
+  }
+}

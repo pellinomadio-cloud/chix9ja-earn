@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  --color-green-glow: #00FF41;
+  --color-green-light: #39FF14;
+  --color-green-dark: #008F11;
+  
+  --shadow-green: 0 0 15px rgba(0, 255, 65, 0.4);
+  --shadow-green-lg: 0 0 25px rgba(0, 255, 65, 0.6);
+  
+  --drop-shadow-green: 0 0 8px rgba(0, 255, 65, 0.5);
+  
+  --animate-green-pulse: green-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  @keyframes green-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .8; transform: scale(1.02); filter: brightness(1.2); }
+  }
+}
+
+@layer utilities {
+  .glow-green {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+  }
+  
+  .glow-green-lg {
+    box-shadow: 0 0 35px rgba(0, 255, 65, 0.7);
+  }
+
+  .text-glow-green {
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.6);
+  }
+
+  .animate-gold-shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .animate-gold-shine::after {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0) 40%,
+      rgba(255, 255, 255, 0.5) 50%,
+      rgba(255, 255, 255, 0) 60%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: rotate(45deg);
+    animation: shine 3s infinite;
+  }
+
+  @keyframes shine {
+    0% { transform: translateX(-100%) rotate(45deg); }
+    30% { transform: translateX(100%) rotate(45deg); }
+    100% { transform: translateX(100%) rotate(45deg); }
+  }
+
+  .animate-green-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.3), transparent);
+    background-size: 200% 100%;
+    animation: green-shimmer 3s infinite linear;
+  }
+}
+
+@keyframes green-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Override some default styles for a more "premium" feel */
+.bg-green-glow {
+  background-color: #00FF41;
+  background-image: linear-gradient(135deg, #00FF41 0%, #39FF14 50%, #008F11 100%);
+}
+
+.text-green-glow {
+  color: #00FF41;
+  filter: drop-shadow(0 0 2px rgba(0, 255, 65, 0.3));
+}
+
+body {
+  background-color: #000000;
+  color: #ffffff;
+}
