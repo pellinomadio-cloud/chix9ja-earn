@@ -18,6 +18,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({});
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [activeReceiptUser, setActiveReceiptUser] = useState<User | null>(null);
+  const [notifMessage, setNotifMessage] = useState('');
+  const [notifTarget, setNotifTarget] = useState<'all' | string>('all');
+  const [isSendingNotif, setIsSendingNotif] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -278,6 +281,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     alert(`Declined activation for ${updatedUser.name}. Proof removed.`);
   };
 
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifMessage.trim()) {
+        alert("Please enter a notification message.");
+        return;
+    }
+    
+    setIsSendingNotif(true);
+    const newNotifItem = {
+        id: Math.random().toString(36).substring(2, 9),
+        message: notifMessage.trim(),
+        date: new Date().toISOString(),
+        read: false
+    };
+
+    try {
+        if (notifTarget === 'all') {
+            if (!confirm(`Are you sure you want to broadcast this message to ALL ${users.length} users?`)) {
+                setIsSendingNotif(false);
+                return;
+            }
+            
+            let successCount = 0;
+            for (const targetUser of users) {
+                const userEmail = targetUser.email.toLowerCase().trim();
+                const updatedList = [newNotifItem, ...(targetUser.adminNotifications || [])];
+                const updatedUser = {
+                    ...targetUser,
+                    adminNotifications: updatedList
+                };
+                
+                await saveUserDocument(userEmail, updatedUser);
+                successCount++;
+            }
+            alert(`Broadcast notification sent successfully to all ${successCount} users!`);
+        } else {
+            const targetUser = users.find(u => u.email.toLowerCase().trim() === notifTarget.toLowerCase().trim());
+            if (targetUser) {
+                const updatedList = [newNotifItem, ...(targetUser.adminNotifications || [])];
+                const updatedUser = {
+                    ...targetUser,
+                    adminNotifications: updatedList
+                };
+                await saveUserDocument(targetUser.email, updatedUser);
+                alert(`Notification sent successfully to ${targetUser.name}!`);
+            } else {
+                alert("Target user not found.");
+            }
+        }
+        
+        setNotifMessage('');
+    } catch (err) {
+        console.error("Error sending notification:", err);
+        alert("Failed to send notification.");
+    } finally {
+        setIsSendingNotif(false);
+    }
+  };
+
+  const handleQuickNotify = (email: string) => {
+    setNotifTarget(email.toLowerCase().trim());
+    const formElement = document.getElementById('admin-notify-form');
+    if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   const getDeactivationStatus = (user: User) => {
     if (user.imminentDeactivationExpiry && user.imminentDeactivationExpiry > currentTime) {
          const minsLeft = Math.ceil((user.imminentDeactivationExpiry - currentTime) / (1000 * 60));
@@ -403,6 +473,51 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
         </div>
 
+        {/* Send System Notification Panel */}
+        <div id="admin-notify-form" className="bg-gray-900 rounded-xl shadow-sm border border-green-glow/20 overflow-hidden">
+            <div className="p-4 bg-green-glow/5 border-b border-green-glow/10 flex items-center space-x-2">
+                <Icons.Notification className="text-green-glow animate-pulse" size={18} />
+                <h3 className="font-bold text-white text-sm">Send System Notification</h3>
+            </div>
+            
+            <form onSubmit={handleSendNotification} className="p-4 space-y-4">
+                <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Recipient State</label>
+                    <select
+                        className="w-full text-xs p-3 rounded-lg border border-gray-800 bg-black text-white outline-none focus:border-green-glow"
+                        value={notifTarget}
+                        onChange={(e) => setNotifTarget(e.target.value)}
+                    >
+                        <option value="all">📢 ALL REGISTERED USERS (Broadcast / Global Announcement)</option>
+                        {users.map((u, i) => (
+                            <option key={i} value={u.email.toLowerCase().trim()}>
+                                👤 {u.name} ({u.email})
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Notification Message</label>
+                    <textarea
+                        className="w-full text-xs p-3 rounded-lg border border-gray-800 bg-black text-white outline-none focus:border-green-glow min-h-[80px]"
+                        value={notifMessage}
+                        onChange={(e) => setNotifMessage(e.target.value)}
+                        placeholder="Enter the notification or alert message to send..."
+                        rows={3}
+                    />
+                </div>
+
+                <button 
+                    type="submit" 
+                    disabled={isSendingNotif}
+                    className="w-full py-3 bg-green-glow text-black font-extrabold text-xs uppercase tracking-widest rounded-lg hover:bg-green-dark transition-colors disabled:opacity-50"
+                >
+                    {isSendingNotif ? 'Sending Notification...' : 'Send Notification Message'}
+                </button>
+            </form>
+        </div>
+
         <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden">
             <div className="p-4 bg-black border-b border-gray-800">
                 <h3 className="font-bold text-white">Registered Accounts ({users.length})</h3>
@@ -489,6 +604,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                         </button>
                                         <button onClick={() => handleTriggerImminent(user.email)} className={`py-2 text-[10px] font-bold rounded-lg border col-span-2 transition-colors ${isImminent ? 'bg-red-600 text-white border-red-700' : 'bg-orange-900/30 text-orange-400 border-orange-800'}`}>
                                             {isImminent ? 'Cancel 20m Warning' : 'Trigger 20m Warning'}
+                                        </button>
+                                        <button onClick={() => handleQuickNotify(user.email)} className="py-2 text-[10px] font-bold rounded-lg border border-green-glow/20 bg-green-glow/10 text-green-glow col-span-2 hover:bg-green-glow/25 transition-all">
+                                            ✉ Send Custom Notification to User
                                         </button>
                                     </div>
                                 </div>

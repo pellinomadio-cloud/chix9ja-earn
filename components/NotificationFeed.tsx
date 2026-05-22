@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icons } from './Icons';
+import { User } from '../types';
 
 interface Feedback {
   user: string;
@@ -30,9 +31,11 @@ const times = ["Just now", "1 min ago", "2 mins ago", "3 mins ago", "4 mins ago"
 
 interface NotificationFeedProps {
   onBack: () => void;
+  user?: User;
+  onUpdateUser?: (updatedFields: Partial<User>) => void;
 }
 
-const NotificationFeed: React.FC<NotificationFeedProps> = ({ onBack }) => {
+const NotificationFeed: React.FC<NotificationFeedProps> = ({ onBack, user, onUpdateUser }) => {
   const generateRandomFeedback = useCallback((): Feedback => {
     const name = names[Math.floor(Math.random() * names.length)];
     const message = messageTemplates[Math.floor(Math.random() * messageTemplates.length)];
@@ -53,13 +56,68 @@ const NotificationFeed: React.FC<NotificationFeedProps> = ({ onBack }) => {
     return () => clearInterval(interval);
   }, [generateRandomFeedback]);
 
+  // Mark all unread notifications as read on mount
+  useEffect(() => {
+    if (user?.adminNotifications && onUpdateUser) {
+      const hasUnread = user.adminNotifications.some(n => !n.read);
+      if (hasUnread) {
+        const readNotifications = user.adminNotifications.map(n => ({ ...n, read: true }));
+        onUpdateUser({ adminNotifications: readNotifications });
+      }
+    }
+  }, [user?.adminNotifications, onUpdateUser]);
+
   return (
     <div className="px-4 py-6 space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 min-h-[70vh] flex flex-col">
       <div className="flex items-center space-x-2">
         <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-800 transition-colors">
              <Icons.ArrowLeft size={24} className="text-white" />
         </button>
-        <h2 className="text-xl font-bold text-white">Live Success Stories</h2>
+        <h2 className="text-xl font-bold text-white">Inbox & Live Success</h2>
+      </div>
+
+      {/* Official Admin Notifications / Announcements */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-extrabold uppercase tracking-widest text-green-glow flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 bg-green-glow rounded-full animate-pulse"></span>
+            <span>Official Inbox Alerts & System Messages</span>
+        </h3>
+
+        {user?.adminNotifications && user.adminNotifications.length > 0 ? (
+            <div className="space-y-3">
+                {user.adminNotifications.map((notif) => (
+                    <div key={notif.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-start space-x-3 shadow-lg relative overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="bg-green-glow/10 border border-green-glow/20 p-2.5 rounded-full flex-shrink-0 text-green-glow mt-0.5 animate-pulse">
+                            <Icons.Notification size={16} />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-green-glow uppercase tracking-widest">Office Broadcast</span>
+                                <span className="text-[9px] font-mono text-gray-500 font-bold">{new Date(notif.date).toLocaleDateString()} {new Date(notif.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <p className="text-xs text-white leading-relaxed font-semibold">
+                                {notif.message}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <div className="bg-gray-950 rounded-2xl p-6 border border-gray-900 text-center space-y-2">
+                <div className="w-12 h-12 bg-gray-900/50 rounded-full flex items-center justify-center mx-auto text-gray-700">
+                    <Icons.CheckCircle size={28} strokeWidth={1.5} />
+                </div>
+                <p className="text-xs text-gray-400 font-extrabold uppercase tracking-widest">Your Inbox is Clear</p>
+                <p className="text-[11px] text-gray-500 font-semibold leading-relaxed">
+                    You have no custom administrative alerts or broadcast messages at this time.
+                </p>
+            </div>
+        )}
+      </div>
+
+      <div className="text-xs font-extrabold uppercase tracking-widest text-[#22c55e] flex items-center space-x-2 mt-2 pt-2 border-t border-gray-900">
+         <Icons.Trophy className="text-green-glow" size={16} />
+         <span>Success Stories</span>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center space-y-8 pb-8">

@@ -25,6 +25,13 @@ export interface RewardStatus {
 
 export type NotificationType = 'withdrawals' | 'transfers' | 'airtime' | 'rewards';
 
+export interface SystemNotificationItem {
+  id: string;
+  message: string;
+  date: string; // ISO string
+  read?: boolean;
+}
+
 export interface NotificationPreferences {
   withdrawals: boolean;
   transfers: boolean;
@@ -79,6 +86,7 @@ export interface User {
   pendingPaymentDate?: string; // ISO String of when proof was uploaded
   pendingPaymentAmount?: number; // The amount paid
   isAccountLinkedVerified?: boolean;
+  adminNotifications?: SystemNotificationItem[];
 }
 
 export interface Plan {

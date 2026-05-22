@@ -216,6 +216,12 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (user?.adminNotifications) {
+      const hasUnread = user.adminNotifications.some((n) => !n.read);
+      setHasUnreadNotifications(hasUnread);
+    }
+  }, [user?.adminNotifications]);
 
   // Check Subscription Expiry
   useEffect(() => {
@@ -1022,7 +1028,7 @@ const App: React.FC = () => {
                   onSubscribe={() => setActiveTab('subscribe')}
                 />
               ) : activeTab === 'notifications' ? (
-                <NotificationFeed onBack={handleBack} />
+                <NotificationFeed user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
               ) : activeTab === 'send_money' ? (
                 <SendMoney user={user!} onTransfer={handleTransfer} onSubscribeRedirect={() => setActiveTab('subscribe')} onGoHome={() => setActiveTab('home')} />
               ) : activeTab === 'buy_service' ? (
