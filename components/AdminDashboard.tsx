@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
-import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 
 
@@ -24,9 +24,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-        loadUsers();
+        // Setup real-time listener for the users collection
+        const unsubscribe = onSnapshot(collection(db, 'users'), (querySnapshot) => {
+            const globalUsers: User[] = [];
+            querySnapshot.forEach((doc) => {
+                globalUsers.push(doc.data() as User);
+            });
+            
+            // Sync local storage cache so it stays consistent
+            const existingUsers: Record<string, User> = {};
+            globalUsers.forEach(u => {
+                if (u.email) {
+                    existingUsers[u.email.toLowerCase().trim()] = u;
+                }
+            });
+            localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+            
+            setUsers(globalUsers);
+        }, (err) => {
+            console.error("Error with real-time Firestore listener:", err);
+            // Fallback to manual one-time load
+            loadUsers();
+        });
+
         const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
-        return () => clearInterval(interval);
+        return () => {
+            unsubscribe();
+            clearInterval(interval);
+        };
     }
   }, [isAuthenticated]);
 
