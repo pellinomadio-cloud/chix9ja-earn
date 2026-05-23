@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
-import { syncUserFromLocalToFirestore } from '../firebase';
+import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
 
 
 interface UpgradePaymentProps {
@@ -17,10 +17,10 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const accountNumber = "0435119272";
+  const { bankDetails } = useBankDetails();
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(accountNumber);
+    navigator.clipboard.writeText(bankDetails.accountNumber);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -221,7 +221,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
               <span className="text-xs text-gray-500 uppercase font-bold">Account Number</span>
               <div className="flex items-center space-x-2">
-                <span className="text-lg font-black text-white tracking-widest">{accountNumber}</span>
+                <span className="text-lg font-black text-white tracking-widest">{bankDetails.accountNumber}</span>
                 <button 
                   onClick={handleCopy}
                   className={`p-1.5 rounded-md transition-all ${copied ? 'bg-green-500 text-white' : 'bg-green-glow/20 text-green-glow hover:bg-green-glow/30'}`}
@@ -232,11 +232,11 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
             </div>
             <div className="flex justify-between items-center border-b border-gray-800 pb-2">
               <span className="text-xs text-gray-500 uppercase font-bold">Bank Name</span>
-              <span className="text-lg font-black text-green-glow uppercase">Paga</span>
+              <span className="text-lg font-black text-green-glow uppercase">{bankDetails.bankName}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-xs text-gray-500 uppercase font-bold">Account Name</span>
-              <span className="text-sm font-black text-white uppercase">Marvelous Michael O</span>
+              <span className="text-sm font-black text-white uppercase">{bankDetails.accountName}</span>
             </div>
           </div>
           

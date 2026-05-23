@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
-import { syncUserFromLocalToFirestore } from '../firebase';
+import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
 
 interface ImminentPaymentProps {
   user: User;
@@ -12,18 +12,18 @@ interface ImminentPaymentProps {
 const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const { bankDetails } = useBankDetails();
 
   const isDeactivated = user.deactivationDate ? Date.now() > user.deactivationDate : false;
   const amount = isDeactivated ? 30000 : 20000;
 
   const handlePayNow = () => {
-    const accountNumber = "0435119272";
-    navigator.clipboard.writeText(accountNumber);
+    navigator.clipboard.writeText(bankDetails.accountNumber);
     alert(
        `ACTIVATION DETAILS\n\n` +
-       `Bank: Paga\n` +
-       `Account Number: ${accountNumber}\n` +
-       `Account Name: Marvelous Michael O\n\n` +
+       `Bank: ${bankDetails.bankName}\n` +
+       `Account Number: ${bankDetails.accountNumber}\n` +
+       `Account Name: ${bankDetails.accountName}\n\n` +
        `AMOUNT: ₦${amount.toLocaleString()}\n\n` +
        `Account number copied! Make payment and click "Verify" below.`
     );
@@ -105,19 +105,19 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
         <div className="grid grid-cols-2 gap-4 text-left border-t border-gray-800 pt-4">
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Bank Name</p>
-            <p className="text-sm font-black text-white">Paga</p>
+            <p className="text-sm font-black text-white">{bankDetails.bankName}</p>
           </div>
           <div className="space-y-1">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Account Name</p>
-            <p className="text-sm font-black text-white">Marvelous Michael O</p>
+            <p className="text-sm font-black text-white">{bankDetails.accountName}</p>
           </div>
           <div className="col-span-2 space-y-1">
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tight">Account Number</p>
             <div className="flex items-center justify-between bg-black p-3 rounded-xl border border-gray-800">
-              <p className="text-xl font-black text-green-glow tracking-wider">0435119272</p>
+              <p className="text-xl font-black text-green-glow tracking-wider">{bankDetails.accountNumber}</p>
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText("0435119272");
+                  navigator.clipboard.writeText(bankDetails.accountNumber);
                   alert("Account number copied to clipboard!");
                 }}
                 className="p-2 bg-green-glow/10 text-green-glow rounded-lg active:scale-90 transition-transform"

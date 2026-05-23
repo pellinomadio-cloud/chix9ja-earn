@@ -25,5 +25,9 @@ service cloud.firestore {
     match /users/{email} {
       allow read, write: if isSignedIn();
     }
+
+    match /settings/{id} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

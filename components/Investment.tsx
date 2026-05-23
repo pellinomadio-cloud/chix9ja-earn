@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
+import { useBankDetails } from '../firebase';
 
 interface InvestmentPlan {
   id: string;
@@ -49,9 +50,10 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
     accountName: ''
   });
 
-  const accountNumber = "0435119272";
-  const bankName = "Paga";
-  const accountName = "Marvelous Michael O";
+  const { bankDetails } = useBankDetails();
+  const accountNumber = bankDetails.accountNumber;
+  const bankName = bankDetails.bankName;
+  const accountName = bankDetails.accountName;
 
   const plans: InvestmentPlan[] = [
     { id: 'silver', name: 'Silver Plan', investAmount: 10000, returnAmount: 70000, duration: '24 Hours', color: 'from-gray-400 to-gray-600' },

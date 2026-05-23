@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db, sanitizeForFirestore } from '../firebase';
+import { db, sanitizeForFirestore, useBankDetails, updateBankDetails } from '../firebase';
 
 
 interface AdminDashboardProps {
@@ -37,6 +37,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   // Filter accounts state
   const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted'>('all');
+
+  // Bank details configuration states
+  const { bankDetails } = useBankDetails();
+  const [editBankName, setEditBankName] = useState('');
+  const [editAccountNum, setEditAccountNum] = useState('');
+  const [editAccountName, setEditAccountName] = useState('');
+  const [isUpdatingBank, setIsUpdatingBank] = useState(false);
+  const [bankSuccessMsg, setBankSuccessMsg] = useState('');
+
+  useEffect(() => {
+    if (bankDetails) {
+      setEditBankName(bankDetails.bankName);
+      setEditAccountNum(bankDetails.accountNumber);
+      setEditAccountName(bankDetails.accountName);
+    }
+  }, [bankDetails]);
+
+  const handleUpdateBankSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editBankName.trim() || !editAccountNum.trim() || !editAccountName.trim()) {
+      alert("All fields are required to update settings!");
+      return;
+    }
+    setIsUpdatingBank(true);
+    setBankSuccessMsg('');
+    try {
+      await updateBankDetails({
+        bankName: editBankName.trim(),
+        accountNumber: editAccountNum.trim(),
+        accountName: editAccountName.trim()
+      });
+      setBankSuccessMsg('Bank account configuration updated successfully across all user portals!');
+      setTimeout(() => setBankSuccessMsg(''), 5000);
+    } catch (err) {
+      console.error("Error updating bank details in Firestore settings:", err);
+      alert("Failed to update bank configuration: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsUpdatingBank(false);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -667,6 +707,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     className="w-full py-3 bg-green-glow text-black font-extrabold text-xs uppercase tracking-widest rounded-lg hover:bg-green-dark transition-colors disabled:opacity-50"
                 >
                     {isSendingNotif ? 'Sending Notification...' : 'Send Notification Message'}
+                </button>
+            </form>
+        </div>
+
+        {/* Configure System Bank Details Panel */}
+        <div className="bg-gray-900 rounded-xl shadow-sm border border-blue-500/20 overflow-hidden">
+            <div className="p-4 bg-blue-950/20 border-b border-blue-500/10 flex items-center space-x-2">
+                <Icons.Banknote className="text-blue-400 animate-pulse" size={18} />
+                <h3 className="font-bold text-white text-sm">Configure System Bank Details</h3>
+            </div>
+            
+            <form onSubmit={handleUpdateBankSettings} className="p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1 col-span-1">
+                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Bank Name</label>
+                        <input
+                            type="text"
+                            className="w-full text-xs p-3 rounded-lg border border-gray-800 bg-black text-white outline-none focus:border-blue-500"
+                            value={editBankName}
+                            onChange={(e) => setEditBankName(e.target.value)}
+                            placeholder="e.g. Moniepoint, Paga, etc."
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-1 col-span-1">
+                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Account Number</label>
+                        <input
+                            type="text"
+                            className="w-full text-xs p-3 rounded-lg border border-gray-800 bg-black text-white outline-none focus:border-blue-500 font-mono tracking-wider"
+                            value={editAccountNum}
+                            onChange={(e) => setEditAccountNum(e.target.value)}
+                            placeholder="e.g. 0435119272"
+                            required
+                        />
+                    </div>
+
+                    <div className="space-y-1 col-span-1">
+                        <label className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Account Name</label>
+                        <input
+                            type="text"
+                            className="w-full text-xs p-3 rounded-lg border border-gray-800 bg-black text-white outline-none focus:border-blue-500 uppercase"
+                            value={editAccountName}
+                            onChange={(e) => setEditAccountName(e.target.value)}
+                            placeholder="e.g. Marvelous Michael O"
+                            required
+                        />
+                    </div>
+                </div>
+
+                {bankSuccessMsg && (
+                    <p className="text-green-400 text-xs font-bold font-mono bg-green-950/20 p-2 rounded border border-green-800/30 text-center animate-bounce">
+                        {bankSuccessMsg}
+                    </p>
+                )}
+
+                <button 
+                    type="submit" 
+                    disabled={isUpdatingBank}
+                    className="w-full py-3 bg-blue-600 text-white font-extrabold text-xs uppercase tracking-widest rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                >
+                    {isUpdatingBank ? 'Saving Changes...' : 'Save Bank Details'}
                 </button>
             </form>
         </div>

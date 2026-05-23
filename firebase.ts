@@ -1,7 +1,8 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
+import { useState, useEffect } from 'react';
 
 const app = initializeApp(firebaseConfig);
 export const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)')
@@ -226,4 +227,55 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
+}
+
+// Global Bank Details Config Manager
+export interface BankDetails {
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}
+
+export const DEFAULT_BANK_DETAILS: BankDetails = {
+  bankName: "Paga",
+  accountNumber: "0435119272",
+  accountName: "Marvelous Michael O"
+};
+
+export function useBankDetails() {
+  const [bankDetails, setBankDetails] = useState<BankDetails>(DEFAULT_BANK_DETAILS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'bank');
+    const unsub = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setBankDetails({
+          bankName: data.bankName || DEFAULT_BANK_DETAILS.bankName,
+          accountNumber: data.accountNumber || DEFAULT_BANK_DETAILS.accountNumber,
+          accountName: data.accountName || DEFAULT_BANK_DETAILS.accountName,
+        });
+      } else {
+        setBankDetails(DEFAULT_BANK_DETAILS);
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Error reading bank settings from Firestore:", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  return { bankDetails, loading };
+}
+
+export async function updateBankDetails(details: BankDetails): Promise<void> {
+  const docRef = doc(db, 'settings', 'bank');
+  await setDoc(docRef, {
+    bankName: details.bankName,
+    accountNumber: details.accountNumber,
+    accountName: details.accountName
+  });
 }

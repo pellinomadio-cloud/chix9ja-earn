@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
-import { syncUserFromLocalToFirestore } from '../firebase';
+import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
 
 interface LinkWithdrawAccountProps {
   user: User;
@@ -10,6 +10,7 @@ interface LinkWithdrawAccountProps {
 }
 
 const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack }) => {
+  const { bankDetails } = useBankDetails();
   const [step, setStep] = useState<'form' | 'notice' | 'instructions' | 'upload' | 'status'>(() => {
     if (user.isAccountLinkedVerified) return 'status';
     if (user.pendingActivation === 'link_account') return 'status';
@@ -240,15 +241,15 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
         <div className="bg-gradient-to-br from-gray-900 to-black border border-white/5 rounded-[2.5rem] p-8 space-y-6 shadow-2xl">
            <div className="space-y-1">
               <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Management Bank</p>
-              <p className="text-xl font-bold text-white tracking-tight">Paga</p>
+              <p className="text-xl font-bold text-white tracking-tight">{bankDetails.bankName}</p>
            </div>
            
            <div className="space-y-1">
               <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Account Number</p>
               <div className="flex items-center justify-between">
-                <p className="text-3xl font-black text-blue-400 tracking-wider">0435119272</p>
+                <p className="text-3xl font-black text-blue-400 tracking-wider">{bankDetails.accountNumber}</p>
                 <button 
-                  onClick={() => {navigator.clipboard.writeText('0435119272'); alert('Account Number Copied')}}
+                  onClick={() => {navigator.clipboard.writeText(bankDetails.accountNumber); alert('Account Number Copied')}}
                   className="p-2 bg-blue-600/10 text-blue-400 rounded-lg active:scale-90 transition-all"
                 >
                   <Icons.Copy size={16} />
@@ -258,7 +259,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
 
            <div className="space-y-1">
               <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Account Name</p>
-              <p className="text-lg font-bold text-white uppercase">Marvelous Michael O</p>
+              <p className="text-lg font-bold text-white uppercase">{bankDetails.accountName}</p>
            </div>
         </div>
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { Plan, User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { syncUserFromLocalToFirestore } from '../firebase';
+import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
 
 
 interface SubscribePaymentProps {
@@ -19,10 +19,10 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const accountNumber = "0435119272";
+  const { bankDetails } = useBankDetails();
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(accountNumber);
+    navigator.clipboard.writeText(bankDetails.accountNumber);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -210,13 +210,13 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
           <div className="space-y-6">
             <div className="space-y-1">
                <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Bank Name</p>
-               <p className="text-xl font-black text-white uppercase tracking-tight">Paga</p>
+               <p className="text-xl font-black text-white uppercase tracking-tight">{bankDetails.bankName}</p>
             </div>
 
             <div className="space-y-1">
               <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Account Number</p>
               <div className="flex items-center justify-between">
-                <p className="text-4xl font-black text-green-glow tracking-widest font-mono">{accountNumber}</p>
+                <p className="text-4xl font-black text-green-glow tracking-widest font-mono">{bankDetails.accountNumber}</p>
                 <button 
                   onClick={handleCopy}
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${copied ? 'bg-green-500 text-white animate-bounce' : 'bg-green-glow/10 text-green-glow hover:bg-green-glow/20'}`}
@@ -228,7 +228,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
 
             <div className="space-y-1">
               <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Account Name</p>
-              <p className="text-lg font-black text-white/90 uppercase tracking-tight">Marvelous Michael O</p>
+              <p className="text-lg font-black text-white/90 uppercase tracking-tight">{bankDetails.accountName}</p>
             </div>
           </div>
           
