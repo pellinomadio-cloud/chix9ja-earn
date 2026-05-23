@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, sanitizeForFirestore } from '../firebase';
 
 
 interface AdminDashboardProps {
@@ -21,6 +21,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [notifMessage, setNotifMessage] = useState('');
   const [notifTarget, setNotifTarget] = useState<'all' | string>('all');
   const [isSendingNotif, setIsSendingNotif] = useState(false);
+
+  // Expanded user editing states
+  const [expandedUserEmail, setExpandedUserEmail] = useState<string | null>(null);
+  const [editBalance, setEditBalance] = useState('');
+  const [editVipBalance, setEditVipBalance] = useState('');
+  const [editLoanBalance, setEditLoanBalance] = useState('');
+
+  // Transaction injector states
+  const [injectTxType, setInjectTxType] = useState<'credit' | 'debit'>('credit');
+  const [injectTxAmount, setInjectTxAmount] = useState('');
+  const [injectTxDesc, setInjectTxDesc] = useState('');
+  const [injectTxStatus, setInjectTxStatus] = useState<'success' | 'pending' | 'failed'>('success');
+
+  // Filter accounts state
+  const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted'>('all');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -94,7 +109,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     setUsers(prev => prev.map(u => u.email.toLowerCase().trim() === emailKey ? updatedUser : u));
     
     try {
-        await setDoc(doc(db, 'users', emailKey), updatedUser);
+        const sanitized = sanitizeForFirestore(updatedUser);
+        await setDoc(doc(db, 'users', emailKey), sanitized);
     } catch (e) {
         console.error("Error updating user document in Firestore:", e);
     }
@@ -373,6 +389,96 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   };
 
+  const handleToggleExpandUser = (email: string, targetUser: User) => {
+    if (expandedUserEmail === email) {
+        setExpandedUserEmail(null);
+    } else {
+        setExpandedUserEmail(email);
+        setEditBalance(targetUser.balance.toString());
+        setEditVipBalance((targetUser.vipBalance || 0).toString());
+        setEditLoanBalance((targetUser.loanBalance || 0).toString());
+        setInjectTxAmount('');
+        setInjectTxDesc('');
+        setInjectTxType('credit');
+        setInjectTxStatus('success');
+    }
+  };
+
+  const handleSaveBalances = async (userObj: User) => {
+    const updatedUser = {
+        ...userObj,
+        balance: parseFloat(editBalance) || 0,
+        vipBalance: parseFloat(editVipBalance) || 0,
+        loanBalance: parseFloat(editLoanBalance) || 0,
+    };
+    await saveUserDocument(userObj.email, updatedUser);
+    alert(`Balances successfully updated for ${userObj.name}!`);
+  };
+
+  const handleToggleRestriction = async (userObj: User) => {
+    const isNowRestricted = !userObj.isRestricted;
+    const updatedUser = {
+        ...userObj,
+        isRestricted: isNowRestricted,
+        restrictionType: isNowRestricted ? 'verification' as const : undefined,
+    };
+    await saveUserDocument(userObj.email, updatedUser);
+    alert(`User restrict status is now: ${isNowRestricted ? 'RESTRICTED / BLOCKED' : 'UNRESTRICTED / ACTIVE'}`);
+  };
+
+  const handleToggleAccountLinkedVerified = async (userObj: User) => {
+    const isNowVerified = !userObj.isAccountLinkedVerified;
+    const updatedUser = {
+        ...userObj,
+        isAccountLinkedVerified: isNowVerified
+    };
+    await saveUserDocument(userObj.email, updatedUser);
+    alert(`Account Link Verification set to: ${isNowVerified ? 'VERIFIED' : 'UNVERIFIED'}`);
+  };
+
+  const handleInjectTransaction = async (userObj: User) => {
+    if (!injectTxAmount || !injectTxDesc.trim()) {
+        alert("Please specify description and amount of the transaction.");
+        return;
+    }
+    
+    const amount = parseFloat(injectTxAmount);
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    const newTx: Transaction = {
+        id: 'tx_' + Math.random().toString(36).substring(2, 9),
+        type: injectTxType,
+        amount: amount,
+        description: injectTxDesc.trim(),
+        date: new Date().toISOString(),
+        status: injectTxStatus
+    };
+
+    const updatedUser = {
+        ...userObj,
+        transactions: [newTx, ...(userObj.transactions || [])]
+    };
+
+    await saveUserDocument(userObj.email, updatedUser);
+    alert(`Successfully injected transaction: "${injectTxDesc.trim()}" (₦${amount.toLocaleString()})!`);
+    
+    setInjectTxAmount('');
+    setInjectTxDesc('');
+  };
+
+  const handleClearTransactions = async (userObj: User) => {
+    if (!confirm(`Are you sure you want to completely clear the transaction history for ${userObj.name}?`)) return;
+    const updatedUser = {
+        ...userObj,
+        transactions: []
+    };
+    await saveUserDocument(userObj.email, updatedUser);
+    alert(`Cleared transaction history for ${userObj.name}.`);
+  };
+
   const getDeactivationStatus = (user: User) => {
     if (user.imminentDeactivationExpiry && user.imminentDeactivationExpiry > currentTime) {
          const minsLeft = Math.ceil((user.imminentDeactivationExpiry - currentTime) / (1000 * 60));
@@ -393,6 +499,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   };
 
   const pendingUsers = users.filter(u => u.pendingActivation);
+
+  const displayedUsers = users.filter(user => {
+    if (filterType === 'pending_verification') return !!user.pendingActivation;
+    if (filterType === 'unsubscribed') return !user.isSubscribed;
+    if (filterType === 'restricted') return user.isRestricted || !!user.deactivationDate || !!user.imminentDeactivationExpiry;
+    return true;
+  });
 
   if (!isAuthenticated) {
     return (
@@ -544,15 +657,47 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         </div>
 
         <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden">
-            <div className="p-4 bg-black border-b border-gray-800">
-                <h3 className="font-bold text-white">Registered Accounts ({users.length})</h3>
+            <div className="p-4 bg-black border-b border-gray-800 space-y-3">
+                <div className="flex justify-between items-center">
+                    <h3 className="font-bold text-white text-sm">Registered Accounts ({displayedUsers.length}/{users.length})</h3>
+                </div>
+                <div className="grid grid-cols-4 gap-1">
+                    <button
+                        type="button"
+                        onClick={() => setFilterType('all')}
+                        className={`py-1.5 px-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider text-center border transition-all ${filterType === 'all' ? 'bg-green-glow text-black border-green-glow' : 'bg-transparent text-gray-400 border-gray-800 hover:border-gray-700'}`}
+                    >
+                        All
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFilterType('pending_verification')}
+                        className={`py-1.5 px-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider text-center border transition-all ${filterType === 'pending_verification' ? 'bg-green-glow text-black border-green-glow' : 'bg-transparent text-gray-400 border-gray-800 hover:border-gray-700'}`}
+                    >
+                        Pending Acts
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFilterType('unsubscribed')}
+                        className={`py-1.5 px-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider text-center border transition-all ${filterType === 'unsubscribed' ? 'bg-green-glow text-black border-green-glow' : 'bg-transparent text-gray-400 border-gray-800 hover:border-gray-700'}`}
+                    >
+                        Unsubs
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setFilterType('restricted')}
+                        className={`py-1.5 px-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider text-center border transition-all ${filterType === 'restricted' ? 'bg-green-glow text-black border-green-glow' : 'bg-transparent text-gray-400 border-gray-800 hover:border-gray-700'}`}
+                    >
+                        Locked
+                    </button>
+                </div>
             </div>
             
             <div className="divide-y divide-gray-800">
-                {users.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">No users found.</div>
+                {displayedUsers.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 text-xs">No accounts matching filter.</div>
                 ) : (
-                    users.map((user, idx) => {
+                    displayedUsers.map((user, idx) => {
                         const status = getDeactivationStatus(user);
                         const isDeactivated = status === 'Deactivated';
                         const isImminent = status.startsWith('Imminent');
@@ -563,27 +708,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                     <div>
                                         <p className="font-bold text-white text-sm">{user.name}</p>
                                         <p className="text-xs text-gray-500">{user.email}</p>
-                                        <p className="text-xs font-mono mt-1 text-gray-400">Bal: ₦{user.balance.toLocaleString()}</p>
+                                        <div className="flex flex-col space-y-1 mt-1 font-mono text-[10px] text-gray-300">
+                                            <span>Bal: ₦{user.balance.toLocaleString()}</span>
+                                            {user.vipBalance !== undefined && user.vipBalance > 0 && (
+                                                <span className="text-green-glow">VIP: ₦{user.vipBalance.toLocaleString()}</span>
+                                            )}
+                                            {user.loanBalance !== undefined && user.loanBalance > 0 && (
+                                                <span className="text-red-400">Loan: ₦{user.loanBalance.toLocaleString()}</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex flex-col items-end space-y-1">
                                         <div className={`px-2 py-1 rounded text-[10px] font-bold ${user.isSubscribed ? 'bg-green-900/30 text-green-400' : 'bg-yellow-900/30 text-yellow-400'}`}>
                                             {user.isSubscribed ? 'SUBSCRIBED' : 'PENDING'}
                                         </div>
-                                        <div className="flex space-x-1">
+                                        <div className="flex flex-wrap gap-1 justify-end max-w-[150px]">
                                             {user.isVMode && (
-                                                <div className="px-2 py-1 rounded text-[10px] font-bold bg-blue-900/50 text-blue-300">
+                                                <div className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-blue-900/50 text-blue-300 border border-blue-800/40">
                                                     V MODE
                                                 </div>
                                             )}
                                             {user.isPMode && (
-                                                <div className="px-2 py-1 rounded text-[10px] font-bold bg-orange-900/50 text-orange-300">
+                                                <div className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-orange-900/50 text-orange-300 border border-orange-850/40">
                                                     P MODE
                                                 </div>
                                             )}
-                                            <div className={`px-2 py-1 rounded text-[10px] font-bold ${user.isVIP ? 'bg-green-glow/20 text-green-glow' : 'bg-gray-800 text-gray-400'}`}>
+                                            <div className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${user.isVIP ? 'bg-green-glow/20 text-green-glow border border-green-glow/40' : 'bg-gray-800 text-gray-400'}`}>
                                                 {user.isVIP ? 'VIP' : 'REGULAR'}
                                             </div>
-                                            <div className={`px-2 py-1 rounded text-[10px] font-bold ${user.isInvestmentIdUsed ? 'bg-amber-900/30 text-amber-400' : 'bg-gray-800 text-gray-400'}`}>
+                                            <div className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${user.isInvestmentIdUsed ? 'bg-amber-900/30 text-amber-400 border border-amber-800/20' : 'bg-gray-800 text-gray-400'}`}>
                                                 {user.isInvestmentIdUsed ? 'ID USED' : 'ID OPEN'}
                                             </div>
                                         </div>
@@ -633,7 +786,158 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                         <button onClick={() => handleQuickNotify(user.email)} className="py-2 text-[10px] font-bold rounded-lg border border-green-glow/20 bg-green-glow/10 text-green-glow col-span-2 hover:bg-green-glow/25 transition-all">
                                             ✉ Send Custom Notification to User
                                         </button>
+                                        <button 
+                                            type="button"
+                                            onClick={() => handleToggleExpandUser(user.email, user)} 
+                                            className={`py-2 text-[10px] font-bold rounded-lg border col-span-2 transition-colors ${expandedUserEmail === user.email ? 'bg-amber-600 text-white border-amber-700' : 'bg-amber-950/20 text-amber-500 border-amber-900/40 hover:bg-amber-950/30'}`}
+                                        >
+                                            {expandedUserEmail === user.email ? '✕ Close Advanced Controls' : '💻 Open Advanced Controls & Balance Editor'}
+                                        </button>
                                     </div>
+
+                                    {expandedUserEmail === user.email && (
+                                        <div className="mt-4 p-4 bg-black/60 rounded-xl border border-amber-500/20 space-y-4 text-left animate-in fade-in duration-300">
+                                            <div className="border-b border-gray-800 pb-2 flex items-center justify-between">
+                                                <h4 className="text-xs font-bold text-amber-500 uppercase tracking-widest">💻 Advanced User Controls</h4>
+                                                <span className="text-[9px] font-mono text-gray-500">{user.email}</span>
+                                            </div>
+                                            
+                                            {/* Sub-section: Live Balance Controls */}
+                                            <div className="space-y-3">
+                                                <h5 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">1. Directly Override Account Balances</h5>
+                                                
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-500 uppercase">Broker Balance (₦)</label>
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-850 focus:border-green-glow outline-none"
+                                                            value={editBalance}
+                                                            onChange={(e) => setEditBalance(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-500 uppercase">VIP Funds (₦)</label>
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-855 focus:border-green-glow outline-none"
+                                                            value={editVipBalance}
+                                                            onChange={(e) => setEditVipBalance(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-500 uppercase">Loan Debt (₦)</label>
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-855 focus:border-green-glow outline-none"
+                                                            value={editLoanBalance}
+                                                            onChange={(e) => setEditLoanBalance(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => handleSaveBalances(user)}
+                                                    className="w-full py-2 bg-green-glow/10 border border-green-glow/30 text-green-glow text-[10px] font-extrabold uppercase tracking-wide rounded-lg hover:bg-green-glow hover:text-black transition-colors"
+                                                >
+                                                    💾 Overwrite & Save Balances
+                                                </button>
+                                            </div>
+
+                                            {/* Sub-section: Account Overrides */}
+                                            <div className="space-y-2 pt-2 border-t border-gray-800/60">
+                                                <h5 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest">2. Account Status & Switches</h5>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleToggleAccountLinkedVerified(user)}
+                                                        className={`py-2 px-1 text-[9px] font-bold rounded-lg border transition-all ${user.isAccountLinkedVerified ? 'bg-emerald-950 text-emerald-400 border-emerald-800/40' : 'bg-gray-950 text-gray-400 border-gray-800'}`}
+                                                    >
+                                                        {user.isAccountLinkedVerified ? '✅ Linked Status: VERIFIED' : '❌ Linked Status: UNVERIFIED'}
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleToggleRestriction(user)}
+                                                        className={`py-2 px-1 text-[9px] font-bold rounded-lg border transition-all ${user.isRestricted ? 'bg-red-950 text-red-400 border-red-800/50 hover:bg-red-900/60' : 'bg-gray-950 text-gray-400 border-gray-800 hover:bg-gray-900/45'}`}
+                                                    >
+                                                        {user.isRestricted ? '🔒 Account: RESTRICTED' : '🔓 Account: UNRESTRICTED'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Sub-section: Transaction Injector */}
+                                            <div className="space-y-3 pt-2 border-t border-gray-800/60 font-sans">
+                                                <h5 className="text-[10px] font-extrabold text-blue-400 uppercase tracking-widest font-sans">3. Inject Custom Activity / Transaction</h5>
+                                                
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-500 uppercase">Transaction Flow</label>
+                                                        <select 
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-800 focus:border-green-glow outline-none"
+                                                            value={injectTxType}
+                                                            onChange={(e) => setInjectTxType(e.target.value as 'credit' | 'debit')}
+                                                        >
+                                                            <option value="credit">➕ Credit (Addition)</option>
+                                                            <option value="debit">➖ Debit (Deduction)</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-400 uppercase font-bold">Transaction Status</label>
+                                                        <select 
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-800 focus:border-green-glow outline-none"
+                                                            value={injectTxStatus}
+                                                            onChange={(e) => setInjectTxStatus(e.target.value as 'success' | 'pending' | 'failed')}
+                                                        >
+                                                            <option value="success">🟢 Success</option>
+                                                            <option value="pending">🟡 Pending Verification</option>
+                                                            <option value="failed">🔴 Failed</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div className="col-span-1 space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-500 uppercase">Amount (₦)</label>
+                                                        <input 
+                                                            type="number"
+                                                            placeholder="Amount"
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-800 focus:border-green-glow outline-none font-mono"
+                                                            value={injectTxAmount}
+                                                            onChange={(e) => setInjectTxAmount(e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 space-y-1">
+                                                        <label className="text-[9px] font-bold text-gray-500 uppercase">Activity / Description</label>
+                                                        <input 
+                                                            type="text"
+                                                            placeholder="e.g. Daily Bonus, Account Verification Charge"
+                                                            className="w-full text-xs p-2 rounded bg-gray-950 text-white border border-gray-800 focus:border-green-glow outline-none"
+                                                            value={injectTxDesc}
+                                                            onChange={(e) => setInjectTxDesc(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-2 pt-1 font-sans">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleInjectTransaction(user)}
+                                                        className="py-2.5 bg-yellow-500 hover:bg-yellow-600 text-black text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors"
+                                                    >
+                                                        ⚡ Inject Transaction
+                                                    </button>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => handleClearTransactions(user)}
+                                                        className="py-2.5 bg-red-950/40 hover:bg-red-900 border border-red-800/50 text-red-400 hover:text-white text-[10px] font-extrabold uppercase tracking-wider rounded-lg transition-all"
+                                                    >
+                                                        🗑️ Clear Tx History
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
