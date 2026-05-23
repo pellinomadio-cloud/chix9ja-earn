@@ -37,6 +37,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   // Filter accounts state
   const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted'>('all');
+  const [searchEmail, setSearchEmail] = useState('');
 
   // Bank details configuration states
   const { bankDetails } = useBankDetails();
@@ -547,6 +548,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const pendingUsers = users.filter(u => u.pendingActivation);
 
   const displayedUsers = users.filter(user => {
+    if (searchEmail.trim()) {
+      const query = searchEmail.trim().toLowerCase();
+      const emailMatch = user.email && user.email.toLowerCase().includes(query);
+      const nameMatch = user.name && user.name.toLowerCase().includes(query);
+      if (!emailMatch && !nameMatch) return false;
+    }
     if (filterType === 'pending_verification') return !!user.pendingActivation;
     if (filterType === 'unsubscribed') return !user.isSubscribed;
     if (filterType === 'restricted') return user.isRestricted || !!user.deactivationDate || !!user.imminentDeactivationExpiry;
@@ -775,8 +782,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
         <div className="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden">
             <div className="p-4 bg-black border-b border-gray-800 space-y-3">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                     <h3 className="font-bold text-white text-sm">Registered Accounts ({displayedUsers.length}/{users.length})</h3>
+                    {/* Registered Email Search Input */}
+                    <div className="relative w-full md:max-w-xs">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                            <Icons.Search size={14} />
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search by registered email..."
+                            value={searchEmail}
+                            onChange={(e) => setSearchEmail(e.target.value)}
+                            className="w-full pl-9 pr-8 py-1.5 text-xs rounded-lg border border-gray-800 bg-black text-white outline-none focus:border-green-glow focus:ring-1 focus:ring-green-glow transition-all"
+                        />
+                        {searchEmail && (
+                            <button
+                                onClick={() => setSearchEmail('')}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-white"
+                            >
+                                <Icons.X size={14} />
+                            </button>
+                        )}
+                    </div>
                 </div>
                 <div className="grid grid-cols-4 gap-1">
                     <button
