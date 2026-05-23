@@ -8,6 +8,7 @@ interface SendMoneyProps {
   onTransfer: (amount: number, recipientInfo: string) => void;
   onSubscribeRedirect: () => void;
   onGoHome: () => void;
+  onRequestFreeWithdrawal?: () => void;
 }
 
 const banks = [
@@ -26,7 +27,7 @@ const banks = [
   "Sterling Bank"
 ];
 
-const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedirect, onGoHome }) => {
+const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedirect, onGoHome, onRequestFreeWithdrawal }) => {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [bank, setBank] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
@@ -162,6 +163,25 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
                     You must subscribe to a premium plan to perform bank withdrawals.
                 </p>
             </div>
+            
+            {onRequestFreeWithdrawal && (
+             <div className="w-full max-w-sm bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-6 rounded-3xl space-y-4 shadow-[0_4px_20px_rgba(245,158,11,0.1)]">
+                 <div className="flex items-center justify-center space-x-2">
+                     <Icons.Gift className="text-amber-500 animate-bounce" size={20} />
+                     <h3 className="font-black text-amber-500 text-xs uppercase tracking-widest animate-pulse">Referrals Promo</h3>
+                 </div>
+                 <p className="text-xs text-gray-300 leading-relaxed font-bold">
+                     Need free withdrawal? Get up to 30 referrals and withdraw freely!
+                 </p>
+                 <button
+                     onClick={onRequestFreeWithdrawal}
+                     className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs uppercase tracking-wider rounded-2xl active:scale-95 transition-all shadow-md shadow-amber-500/10"
+                 >
+                     Claim Free Withdrawal Option
+                 </button>
+             </div>
+            )}
+
             <button 
                 onClick={onSubscribeRedirect}
                 className="w-full max-w-sm bg-white hover:bg-gray-100 text-black font-bold py-3 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.6)] transition-all animate-white-glow-button"

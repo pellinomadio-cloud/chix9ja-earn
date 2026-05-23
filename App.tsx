@@ -306,6 +306,7 @@ const App: React.FC = () => {
   const [showQuizAd, setShowQuizAd] = useState(false);
   const [taskMode, setTaskMode] = useState<'quiz' | 'telegram' | 'all'>('all');
   const [showVipNotice, setShowVipNotice] = useState(false);
+  const [showWithdrawReferralAdvert, setShowWithdrawReferralAdvert] = useState(false);
 
   useEffect(() => {
     if (user?.isRestricted && user?.restrictionRestoreTime && now > user.restrictionRestoreTime) {
@@ -1030,7 +1031,13 @@ const App: React.FC = () => {
               ) : activeTab === 'notifications' ? (
                 <NotificationFeed user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
               ) : activeTab === 'send_money' ? (
-                <SendMoney user={user!} onTransfer={handleTransfer} onSubscribeRedirect={() => setActiveTab('subscribe')} onGoHome={() => setActiveTab('home')} />
+                <SendMoney 
+                  user={user!} 
+                  onTransfer={handleTransfer} 
+                  onSubscribeRedirect={() => setActiveTab('subscribe')} 
+                  onGoHome={() => setActiveTab('home')} 
+                  onRequestFreeWithdrawal={() => setShowWithdrawReferralAdvert(true)} 
+                />
               ) : activeTab === 'buy_service' ? (
                  <BuyAirtimeData type={serviceType} user={user!} onPurchase={handleServicePurchase} onBack={() => setActiveTab('home')} />
               ) : activeTab === 'sync_account' ? (
@@ -1184,6 +1191,64 @@ const App: React.FC = () => {
           )}
           {showWelcomeAd && (
             <TelegramAd onJoin={() => window.open('https://t.me/chix9ja', '_blank')} onContinue={() => setShowWelcomeAd(false)} />
+          )}
+          {showWithdrawReferralAdvert && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center px-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-300">
+              <div className="bg-gray-900 border border-amber-500/30 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_50px_rgba(245,158,11,0.25)] relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+                
+                <div className="flex justify-center">
+                  <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center animate-pulse">
+                    <Icons.Gift size={44} className="text-amber-500" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">Free Withdrawal?</h2>
+                  <p className="text-amber-500 font-bold text-xs uppercase tracking-wider">Special Referral Offer</p>
+                </div>
+
+                <div className="bg-black/50 p-6 rounded-2xl border border-gray-800/80">
+                  <p className="text-sm font-bold leading-relaxed text-gray-200">
+                    Need free withdrawal? Get up to 30 referrals and withdraw freely!
+                  </p>
+                </div>
+
+                <div className="flex flex-col space-y-3">
+                  <button 
+                    onClick={() => {
+                      setShowWithdrawReferralAdvert(false);
+                      setActiveTab('referrals');
+                    }}
+                    className="w-full py-4 bg-amber-500 text-black font-black rounded-2xl shadow-lg hover:shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95 uppercase tracking-widest text-xs font-sans"
+                  >
+                    Proceed to Referrals
+                  </button>
+                  
+                  <button 
+                    onClick={() => {
+                      setShowWithdrawReferralAdvert(false);
+                      setActiveTab('subscribe');
+                    }}
+                    className="w-full py-3 bg-gray-800 text-white font-bold rounded-2xl hover:bg-gray-700 transition-all active:scale-95 text-xs font-sans"
+                  >
+                    Or Subscribe to Premium
+                  </button>
+
+                  <button 
+                    onClick={() => setShowWithdrawReferralAdvert(false)}
+                    className="text-gray-500 hover:text-gray-300 text-xs font-semibold py-1 transition-colors font-sans"
+                  >
+                    Close
+                  </button>
+                </div>
+                
+                <div className="flex items-center justify-center space-x-2 text-[9px] text-gray-500 font-bold uppercase tracking-wider">
+                  <Icons.ShieldCheck size={12} className="text-amber-500" />
+                  <span>Verified Referral Program</span>
+                </div>
+              </div>
+            </div>
           )}
           {showQuizAd && !showWelcomeAd && activeTab !== 'task_dashboard' && activeTab !== 'imminent_payment' && (
              <QuizAd onStart={() => { setShowQuizAd(false); setTaskMode('quiz'); setActiveTab('task_dashboard'); }} onClose={() => setShowQuizAd(false)} />
