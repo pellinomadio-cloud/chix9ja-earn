@@ -12,6 +12,7 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [users, setUsers] = useState<User[]>([]);
@@ -118,6 +119,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const lowerEmail = adminEmail.toLowerCase().trim();
+    if (lowerEmail !== 'pellionamdio@gmail.com' && lowerEmail !== 'pellinomadio@gmail.com') {
+        setError('Access Denied: Only pellionamdio@gmail.com is authorized to access the panel');
+        return;
+    }
     if (password === 'MAVELL999') {
         setIsAuthenticated(true);
         setError('');
@@ -515,13 +521,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
             <h2 className="text-2xl font-bold text-white">Admin Access</h2>
             <form onSubmit={handleLogin} className="w-full max-w-xs space-y-4">
-                <div>
+                <div className="space-y-3">
+                    <input
+                        type="email"
+                        placeholder="Enter Admin Email"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-gray-800 bg-gray-900 text-white focus:ring-2 focus:ring-green-glow outline-none"
+                        required
+                    />
                     <input
                         type="password"
                         placeholder="Enter Admin Password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full p-3 rounded-xl border border-gray-800 bg-gray-900 text-white focus:ring-2 focus:ring-green-glow outline-none"
+                        required
                     />
                 </div>
                 {error && <p className="text-red-500 text-sm text-center">{error}</p>}

@@ -12,7 +12,45 @@ export const auth = getAuth();
 // Monkeypatch localStorage.setItem to gracefully handle QuotaExceededError (e.g., of chix9ja_users cache)
 if (typeof window !== 'undefined' && window.localStorage) {
   const originalSetItem = localStorage.setItem.bind(localStorage);
+  const originalGetItem = localStorage.getItem.bind(localStorage);
+  const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+  const memoryBackup: Record<string, string> = {};
+
+  // Hydrate memoryBackup on boot
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k) {
+        memoryBackup[k] = originalGetItem(k) || '';
+      }
+    }
+  } catch (e) {
+    console.warn("Could not hydrate memoryBackup:", e);
+  }
+
+  localStorage.getItem = (key: string) => {
+    try {
+      const val = originalGetItem(key);
+      if (val !== null) return val;
+    } catch (e) {
+      console.warn(`Local storage getItem failed for key "${key}":`, e);
+    }
+    return memoryBackup[key] !== undefined ? memoryBackup[key] : null;
+  };
+
+  localStorage.removeItem = (key: string) => {
+    delete memoryBackup[key];
+    try {
+      originalRemoveItem(key);
+    } catch (e) {
+      console.warn(`Local storage removeItem failed for key "${key}":`, e);
+    }
+  };
+
   localStorage.setItem = (key: string, value: string) => {
+    // Always update memory backup
+    memoryBackup[key] = value;
+
     try {
       originalSetItem(key, value);
     } catch (error) {
@@ -28,19 +66,33 @@ if (typeof window !== 'undefined' && window.localStorage) {
             const usersObj = JSON.parse(value);
             const activeEmail = localStorage.getItem('chix9ja_active_session')?.toLowerCase().trim();
             
+            // Helper to clean large fields inside a single user object to save space (e.g. Base64 proofs)
+            const cleanUserPayload = (u: any, isSelf: boolean) => {
+              if (!u) return u;
+              const cleaned = { ...u };
+              // Limit transactions
+              cleaned.transactions = u.transactions ? (isSelf ? u.transactions.slice(0, 10) : []) : [];
+              
+              // Strip any values that are very large (strings > 1000 chars, e.g. base64 screenshots)
+              for (const k in cleaned) {
+                if (typeof cleaned[k] === 'string' && cleaned[k].length > 1000) {
+                  cleaned[k] = ""; // strip base64 content in localStorage cache
+                }
+              }
+              return cleaned;
+            };
+
             const pruned: Record<string, any> = {};
             for (const email in usersObj) {
               const u = usersObj[email];
               if (!u) continue;
               const isSelf = activeEmail && email.toLowerCase() === activeEmail;
-              pruned[email] = {
-                ...u,
-                // Keep only last 10 transactions for self, clear for others to save quota
-                transactions: u.transactions ? (isSelf ? u.transactions.slice(0, 10) : []) : []
-              };
+              pruned[email] = cleanUserPayload(u, !!isSelf);
             }
             
-            originalSetItem(key, JSON.stringify(pruned));
+            const prunedStr = JSON.stringify(pruned);
+            memoryBackup[key] = prunedStr;
+            originalSetItem(key, prunedStr);
             console.log("Successfully stored pruned user cache to local storage after quota exceeded.");
             return;
           } catch (innerErr) {
@@ -51,18 +103,30 @@ if (typeof window !== 'undefined' && window.localStorage) {
                 const usersObj = JSON.parse(value);
                 const selfObj = usersObj[activeEmail];
                 if (selfObj) {
-                  originalSetItem(key, JSON.stringify({ [activeEmail]: selfObj }));
+                  // Clean self object too
+                  const cleanedSelf = { ...selfObj };
+                  for (const k in cleanedSelf) {
+                    if (typeof cleanedSelf[k] === 'string' && cleanedSelf[k].length > 1000) {
+                      cleanedSelf[k] = "";
+                    }
+                  }
+                  if (cleanedSelf.transactions) {
+                    cleanedSelf.transactions = cleanedSelf.transactions.slice(0, 5);
+                  }
+                  const finalStr = JSON.stringify({ [activeEmail]: cleanedSelf });
+                  memoryBackup[key] = finalStr;
+                  originalSetItem(key, finalStr);
                   return;
                 }
               }
               localStorage.removeItem(key);
             } catch (e2) {
-              console.error("Could not recover from quota error:", e2);
+              console.error("Could not recover from quota error even after radical prune. Falling back to in-memory store.", e2);
             }
           }
         }
       } else {
-        throw error;
+        console.error(`LocalStorage.setItem failed for key "${key}":`, error);
       }
     }
   };
