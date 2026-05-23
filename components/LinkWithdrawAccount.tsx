@@ -96,10 +96,13 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
 
           <div className="space-y-4">
             <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-tight">
-              Integration <span className="text-green-550">Successful</span>
+              Congratulations!
             </h2>
-            <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl">
-              <p className="text-green-400 text-xs font-bold uppercase tracking-widest">Manual Node Verification Synced</p>
+            <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-2xl space-y-2">
+              <p className="text-green-400 text-xs font-bold uppercase tracking-widest">Withdraw Account Activated</p>
+              <p className="text-sm font-bold text-white leading-relaxed">
+                Your withdraw account integration is successful and validated. Kindly message support for more information.
+              </p>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed px-4">
               Your withdraw account integration is fully active and validated by our network engineers.
