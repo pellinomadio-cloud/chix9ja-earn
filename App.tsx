@@ -223,6 +223,36 @@ const App: React.FC = () => {
     }
   }, [user?.adminNotifications]);
 
+  // Periodic deletion of admin notifications older than 1 hour
+  useEffect(() => {
+    if (!user || !user.email || !user.adminNotifications || user.adminNotifications.length === 0) return;
+
+    const nowMs = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    
+    // Check if there are any that have expired
+    const expiredCount = user.adminNotifications.filter(n => {
+      const notifTime = new Date(n.date).getTime();
+      return (nowMs - notifTime) >= oneHour;
+    }).length;
+
+    if (expiredCount > 0) {
+      // Filter out all expired ones
+      const validNotifications = user.adminNotifications.filter(n => {
+        const notifTime = new Date(n.date).getTime();
+        return (nowMs - notifTime) < oneHour;
+      });
+
+      const updatedUser = {
+        ...user,
+        adminNotifications: validNotifications
+      };
+
+      setUser(updatedUser);
+      saveUserToStorage(updatedUser);
+    }
+  }, [user, now]);
+
   // Check Subscription Expiry
   useEffect(() => {
     if (user?.isSubscribed && user.subscriptionExpiryDate) {
@@ -1077,6 +1107,42 @@ const App: React.FC = () => {
                 />
               ) : (
                  <main className="px-4 py-2 space-y-4 animate-in fade-in duration-500">
+                    {user?.adminNotifications && user.adminNotifications.filter(n => {
+                      const notifTime = new Date(n.date).getTime();
+                      return (now - notifTime) < 60 * 60 * 1000;
+                    }).map(n => {
+                      const notifTime = new Date(n.date).getTime();
+                      const elapsed = now - notifTime;
+                      const remainingMs = (60 * 60 * 1000) - elapsed;
+                      const remainingMins = Math.max(0, Math.ceil(remainingMs / (60 * 1000)));
+                      
+                      return (
+                        <div 
+                          key={n.id} 
+                          className="bg-black border-2 border-green-glow rounded-xl p-4 shadow-green space-y-3 relative overflow-hidden animate-in slide-in-from-top-4 duration-500"
+                        >
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-green-glow/5 rounded-full blur-2xl pointer-events-none" />
+                          
+                          <div className="flex items-center justify-between relative z-10">
+                            <div className="flex items-center space-x-2">
+                              <span className="flex h-2 w-2 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-glow opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-glow"></span>
+                              </span>
+                              <span className="text-[11px] font-black uppercase tracking-widest text-green-glow text-glow-green">ADMIN MESSAGE</span>
+                            </div>
+                            <div className="flex items-center space-x-1 text-gray-400 bg-gray-950 px-2 py-0.5 rounded-md text-[10px] font-bold border border-gray-800">
+                              <Icons.Clock size={11} className="text-green-glow" />
+                              <span className="uppercase tracking-wider">DELETING IN {remainingMins}M</span>
+                            </div>
+                          </div>
+                          
+                          <p className="text-white text-xs font-bold leading-relaxed whitespace-pre-line pr-1 relative z-10">
+                            {n.message}
+                          </p>
+                        </div>
+                      );
+                    })}
                     {hasUnreadNotifications && (
                       <div onClick={() => { setActiveTab('notifications'); setHasUnreadNotifications(false); }} className="bg-green-glow text-black p-3 rounded-xl shadow-lg flex items-center justify-between cursor-pointer border border-green-dark animate-in slide-in-from-top-4 duration-500">
                          <div className="flex items-center space-x-2">
