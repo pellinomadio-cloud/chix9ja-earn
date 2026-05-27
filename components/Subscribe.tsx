@@ -23,8 +23,8 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     { 
       id: 'weekly', 
       name: 'Weekly Saver', 
-      price: '₦8,000', 
-      amount: '8,000 Naira', 
+      price: '₦10,000', 
+      amount: '10,000 Naira', 
       duration: '7 Days Access',
       limitDescription: 'Withdraw up to ₦200,000',
       features: ['Priority Withdrawals', 'Weekly Rewards', 'Basic Support'],
@@ -34,8 +34,8 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     { 
       id: 'monthly', 
       name: 'Monthly Pro', 
-      price: '₦15,000', 
-      amount: '15,000 Naira', 
+      price: '₦24,000', 
+      amount: '24,000 Naira', 
       duration: '30 Days Access', 
       recommended: true,
       limitDescription: 'Withdraw up to ₦2,000,000',
@@ -46,8 +46,8 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     { 
       id: 'yearly', 
       name: 'Premium Elite', 
-      price: '₦50,000', 
-      amount: '50,000 Naira', 
+      price: '₦70,000', 
+      amount: '70,000 Naira', 
       duration: '365 Days Access',
       limitDescription: 'Unlimited Withdrawals',
       features: ['No Withdrawal Limits', 'VIP Exclusive Hub', 'Dedicated Manager'],

@@ -635,7 +635,7 @@ const App: React.FC = () => {
     const nowTs = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
     if (nowTs - rewardStatus.lastClaimedTimestamp >= twentyFourHours) {
-        const rewardAmount = 100000;
+        const rewardAmount = 30000;
         const newTransaction: Transaction = {
             id: `trx-rew-${Date.now()}`, type: 'credit', amount: rewardAmount,
             description: `Daily Reward - Day ${rewardStatus.currentDay}`,
@@ -943,7 +943,7 @@ const App: React.FC = () => {
 
   const handleGameResult = (win: boolean) => {
     if (!user) return;
-    const amount = win ? 7000 : 1000;
+    const amount = win ? 2000 : 1000;
     const now = new Date();
     const lastQuiz = user.lastQuizTimestamp ? new Date(user.lastQuizTimestamp) : null;
     

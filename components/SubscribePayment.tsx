@@ -104,11 +104,11 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
                       window.location.reload();
                   }, 500);
               });
-          } else {
-              if (currentUser) {
-                  let amountNum = 15000;
-                  if (plan.id === 'weekly') amountNum = 8000;
-                  if (plan.id === 'yearly') amountNum = 50000;
+              } else {
+                  if (currentUser) {
+                      let amountNum = 24000;
+                      if (plan.id === 'weekly') amountNum = 10000;
+                      if (plan.id === 'yearly') amountNum = 70000;
 
                   currentUser.pendingActivation = plan.id === 'weekly' ? 'subscription_weekly' : (plan.id === 'yearly' ? 'subscription_yearly' : 'subscription_monthly');
                   currentUser.pendingPaymentProof = base64Data;

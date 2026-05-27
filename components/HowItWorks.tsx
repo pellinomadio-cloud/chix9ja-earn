@@ -42,7 +42,7 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ onBack, onPlayQuiz, onSubscribe
               </div>
             </div>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Test your knowledge with our daily quizzes. Every correct answer builds your balance. Win up to <span className="text-white font-bold">₦7,000</span> per win!
+              Test your knowledge with our daily quizzes. Every correct answer builds your balance. Win up to <span className="text-white font-bold">₦2,000</span> per win!
             </p>
             <button 
                 onClick={onPlayQuiz}

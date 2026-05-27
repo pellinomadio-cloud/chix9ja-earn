@@ -141,7 +141,7 @@ const Rewards: React.FC<RewardsProps> = ({ currentDay, canClaim, onClaim, lastCl
                     >
                         <span className="text-[10px] font-medium text-gray-500 mb-1">Day {day}</span>
                         <span className={`text-[9px] font-black mb-2 ${isClaimed || isCurrent ? 'text-green-glow' : 'text-gray-600'}`}>
-                            ₦100,000
+                            ₦30,000
                         </span>
                         {isClaimed && (
                             <div className="flex items-center text-[8px] text-green-glow font-bold bg-green-glow/10 px-1.5 py-0.5 rounded-full">

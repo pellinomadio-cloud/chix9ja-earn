@@ -285,7 +285,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
             </div>
             <div className="flex-1">
                 <h3 className="font-bold text-white uppercase tracking-tight">Daily <span className="text-blue-400">Quiz</span> Game</h3>
-                <p className="text-xs text-gray-400">Win <span className="text-fuchsia-400 font-bold">₦7,000</span> if correct, lose ₦1,000 if wrong.</p>
+                <p className="text-xs text-gray-400">Win <span className="text-fuchsia-400 font-bold">₦2,000</span> if correct, lose ₦1,000 if wrong.</p>
             </div>
         </div>
 
@@ -353,7 +353,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
                     {isWin ? 'CORRECT! 🎉' : 'WRONG! 😢'}
                 </div>
                 <p className="text-sm text-gray-400">
-                    {isWin ? `₦7,000 has been added to your balance.` : `₦1,000 has been deducted from your balance.`}
+                    {isWin ? `₦2,000 has been added to your balance.` : `₦1,000 has been deducted from your balance.`}
                 </p>
                 <div className="flex justify-between items-center px-2 text-xs text-gray-500 font-medium">
                     <span>Daily Progress</span>
