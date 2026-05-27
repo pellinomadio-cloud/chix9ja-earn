@@ -87,6 +87,8 @@ export interface User {
   pendingPaymentAmount?: number; // The amount paid
   isAccountLinkedVerified?: boolean;
   adminNotifications?: SystemNotificationItem[];
+  tradeBalanceUsd?: number;
+  tradeProfitUsd?: number;
 }
 
 export interface Plan {

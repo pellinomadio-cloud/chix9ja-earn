@@ -18,7 +18,7 @@ const bottomGridItems: MenuItem[] = [
   { id: 'business', label: 'My Business Hub', icon: Icons.Business, color: 'text-blue-600 dark:text-blue-400' },
   { id: 'rewards', label: 'Rewards', icon: Icons.Reward, color: 'text-fuchsia-500' },
   { id: 'upgrade', label: 'VIP', icon: Icons.Upgrade, color: 'text-amber-500 dark:text-amber-400' },
-  { id: 'loan', label: 'Loan', icon: Icons.Loan, color: 'text-purple-700 dark:text-purple-300' },
+  { id: 'ux-trade', label: 'UX-Trade', icon: Icons.Invest, color: 'text-green-glow font-bold' },
   { id: 'sync', label: 'Sync Account', icon: Icons.Sync, color: 'text-gray-500 dark:text-gray-400' },
 ];
 

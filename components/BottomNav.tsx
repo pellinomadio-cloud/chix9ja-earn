@@ -11,7 +11,7 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, user }) => {
   const tabs = [
     { id: 'home', label: 'Home', icon: Icons.Home },
-    { id: 'loan', label: 'Loan', icon: Icons.LoanTab },
+    { id: 'ux-trade', label: 'UX-Trade', icon: Icons.Invest },
     { id: 'finance', label: 'Finance', icon: Icons.Finance },
     { id: 'reward', label: 'Reward', icon: Icons.Reward },
     { id: 'me', label: 'Me', icon: Icons.Me },

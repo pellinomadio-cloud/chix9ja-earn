@@ -33,7 +33,7 @@ import LinkWithdrawAccount from './components/LinkWithdrawAccount';
 import HowItWorks from './components/HowItWorks';
 import NotificationFeed from './components/NotificationFeed';
 import Referrals from './components/Referrals';
-import Loan from './components/Loan';
+import UXTrade from './components/UXTrade';
 import Investment from './components/Investment';
 import SystemNotification from './components/SystemNotification';
 import { Icons } from './components/Icons';
@@ -471,7 +471,7 @@ const App: React.FC = () => {
     } else if (activeTab === 'receipt') {
         setActiveTab('transaction_history');
         setSelectedTransaction(null);
-    } else if (activeTab === 'send_money' || activeTab === 'sync_account' || activeTab === 'buy_service' || activeTab === 'transaction_history' || activeTab === 'reward' || activeTab === 'imminent_payment' || activeTab === 'task_dashboard' || activeTab === 'upgrade_proposal' || activeTab === 'business_hub' || activeTab === 'notifications' || activeTab === 'me' || activeTab === 'finance' || activeTab === 'loan' || activeTab === 'link_withdraw_account' || activeTab === 'how_it_works') {
+    } else if (activeTab === 'send_money' || activeTab === 'sync_account' || activeTab === 'buy_service' || activeTab === 'transaction_history' || activeTab === 'reward' || activeTab === 'imminent_payment' || activeTab === 'task_dashboard' || activeTab === 'upgrade_proposal' || activeTab === 'business_hub' || activeTab === 'notifications' || activeTab === 'me' || activeTab === 'finance' || activeTab === 'loan' || activeTab === 'ux-trade' || activeTab === 'link_withdraw_account' || activeTab === 'how_it_works') {
         setActiveTab('home');
     } else if (activeTab === 'admin') {
         const existingUsers = getStoredUsers();
@@ -681,8 +681,8 @@ const App: React.FC = () => {
         setActiveTab('finance');
     } else if (id === 'invest') {
         setActiveTab('invest');
-    } else if (id === 'loan') {
-        setActiveTab('loan');
+    } else if (id === 'loan' || id === 'ux-trade') {
+        setActiveTab('ux-trade');
     } else if (id === 'support') {
         window.open('https://t.me/chix9jaservice', '_blank');
     } else if (id === 'airtime' || id === 'data') {
@@ -996,7 +996,7 @@ const App: React.FC = () => {
   const isClaimable = nowTs - rewardStatus.lastClaimedTimestamp >= twentyFourHours;
 
   const pageTitles: Record<string, string> = {
-    'loan': 'Loans', 'finance': 'Business Hub', 'reward': 'Rewards', 'me': 'My Profile',
+    'loan': 'UX-Trade Desk', 'ux-trade': 'UX-Trade Desk', 'finance': 'Business Hub', 'reward': 'Rewards', 'me': 'My Profile',
     'referrals': 'Referrals Control',
     'subscribe': 'Subscribe', 'subscribe_payment': 'Payment Details', 'send_money': 'Withdraw',
     'buy_service': serviceType === 'airtime' ? 'Buy Airtime' : 'Buy Data',
@@ -1018,7 +1018,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-black font-sans text-white transition-colors duration-200">
         <div className="max-w-md mx-auto bg-black min-h-screen relative shadow-2xl transition-colors duration-200">
           <div className="pb-24">
-              {activeTab !== 'reward' && activeTab !== 'admin' && activeTab !== 'imminent_payment' && activeTab !== 'task_dashboard' && activeTab !== 'business_hub' && activeTab !== 'finance' && activeTab !== 'notifications' && activeTab !== 'receipt' && activeTab !== 'loan' && activeTab !== 'invest' && (
+              {activeTab !== 'reward' && activeTab !== 'admin' && activeTab !== 'imminent_payment' && activeTab !== 'task_dashboard' && activeTab !== 'business_hub' && activeTab !== 'finance' && activeTab !== 'notifications' && activeTab !== 'receipt' && activeTab !== 'loan' && activeTab !== 'ux-trade' && activeTab !== 'invest' && (
                   <Header 
                     userName={user?.name} profileImage={user?.profileImage} 
                     onLogout={handleLogout} showBack={activeTab !== 'home'}
@@ -1036,8 +1036,8 @@ const App: React.FC = () => {
                  <Referrals user={user} onBack={handleBack} />
               ) : activeTab === 'reward' ? (
                 <Rewards currentDay={rewardStatus.currentDay} canClaim={isClaimable} onClaim={handleClaimReward} lastClaimedTimestamp={rewardStatus.lastClaimedTimestamp} onBack={handleBack} />
-              ) : activeTab === 'loan' && user ? (
-                <Loan user={user} onApply={handleApplyLoan} onBack={handleBack} />
+              ) : (activeTab === 'loan' || activeTab === 'ux-trade') && user ? (
+                <UXTrade user={user} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
               ) : activeTab === 'invest' && user ? (
                 <Investment user={user} onBack={handleBack} onUpdateUser={handleUpdateProfile} />
               ) : activeTab === 'subscribe' ? (
