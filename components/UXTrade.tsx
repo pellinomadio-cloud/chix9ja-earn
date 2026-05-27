@@ -35,6 +35,19 @@ interface ActiveTrade {
   timestamp: number;
 }
 
+interface HistoricalTrade {
+  id: string;
+  asset: string;
+  type: 'BUY' | 'SELL';
+  entryPrice: number;
+  closePrice: number;
+  amount: number;
+  leverage: number;
+  pnl: number;
+  timestamp: number;
+  status: 'WIN' | 'LOSS';
+}
+
 const ASSETS = [
   { id: 'BTC-USD', name: 'Bitcoin / USD', basePrice: 68500, icon: 'BTC', volatility: 0.0015 },
   { id: 'ETH-USD', name: 'Ethereum / USD', basePrice: 3550, icon: 'ETH', volatility: 0.0025 },
@@ -45,12 +58,13 @@ const ASSETS = [
 const EXCHANGE_RATE = 1500; // 1 USD = 1,500 NGN
 
 const UXTrade: React.FC<UXTradeProps> = ({ user, onUpdateUser, onBack }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'trade' | 'wallet'>('trade');
+  const [activeSubTab, setActiveSubTab] = useState<'trade' | 'wallet' | 'history'>('trade');
   const [selectedAssetId, setSelectedAssetId] = useState('BTC-USD');
   const [tradeType, setTradeType] = useState<'BUY' | 'SELL'>('BUY');
   const [tradeAmount, setTradeAmount] = useState<string>('50');
   const [leverage, setLeverage] = useState<number>(10);
   const [activeTrades, setActiveTrades] = useState<ActiveTrade[]>([]);
+  const [historicalTrades, setHistoricalTrades] = useState<HistoricalTrade[]>([]);
   
   // Wallet states
   const [depositAmountNaira, setDepositAmountNaira] = useState<string>('15000');
@@ -79,12 +93,26 @@ const UXTrade: React.FC<UXTradeProps> = ({ user, onUpdateUser, onBack }) => {
         console.warn('Could not restore trades:', e);
       }
     }
+
+    const savedHistory = localStorage.getItem(`chix9ja_trades_history_${user.email.toLowerCase()}`);
+    if (savedHistory) {
+      try {
+        setHistoricalTrades(JSON.parse(savedHistory));
+      } catch (e) {
+        console.warn('Could not restore historical trades:', e);
+      }
+    }
   }, [user.email]);
 
   // Save trades when they update
   const saveTrades = (newTrades: ActiveTrade[]) => {
     setActiveTrades(newTrades);
     localStorage.setItem(`chix9ja_trades_${user.email.toLowerCase()}`, JSON.stringify(newTrades));
+  };
+
+  const saveHistoricalTrades = (newHist: HistoricalTrade[]) => {
+    setHistoricalTrades(newHist);
+    localStorage.setItem(`chix9ja_trades_history_${user.email.toLowerCase()}`, JSON.stringify(newHist));
   };
 
   // Simulating live ticking prices & price feedback
@@ -323,6 +351,21 @@ const UXTrade: React.FC<UXTradeProps> = ({ user, onUpdateUser, onBack }) => {
     const remainingTrades = activeTrades.filter(t => t.id !== tradeId);
     saveTrades(remainingTrades);
 
+    // Save trade history item
+    const historyItem: HistoricalTrade = {
+      id: trade.id,
+      asset: trade.asset,
+      type: trade.type,
+      entryPrice: trade.entryPrice,
+      closePrice: trade.currentPrice,
+      amount: trade.amount,
+      leverage: trade.leverage,
+      pnl: pnl,
+      timestamp: Date.now(),
+      status: pnl >= 0 ? 'WIN' : 'LOSS'
+    };
+    saveHistoricalTrades([historyItem, ...historicalTrades]);
+
     // If profit is positive, record tradeProfitUsd. 
     // If it is loss, deduct it from returned tradeBalanceUsd
     const prevUsdBalance = user.tradeBalanceUsd || 0;
@@ -422,28 +465,39 @@ const UXTrade: React.FC<UXTradeProps> = ({ user, onUpdateUser, onBack }) => {
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex bg-gray-950 p-1 rounded-xl border border-gray-800">
+      <div className="flex bg-gray-950 p-1 rounded-xl border border-gray-800 gap-1">
         <button
           onClick={() => setActiveSubTab('trade')}
-          className={`w-1/2 py-2 text-xs font-bold uppercase tracking-widest rounded-lg flex items-center justify-center space-x-1.5 transition-all ${
+          className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg flex items-center justify-center space-x-1 transition-all ${
             activeSubTab === 'trade' 
               ? 'bg-green-glow text-black font-black' 
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          <Layers size={14} />
-          <span>Trading Desk</span>
+          <Layers size={13} />
+          <span>Desk</span>
         </button>
         <button
           onClick={() => setActiveSubTab('wallet')}
-          className={`w-1/2 py-2 text-xs font-bold uppercase tracking-widest rounded-lg flex items-center justify-center space-x-1.5 transition-all ${
+          className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg flex items-center justify-center space-x-1 transition-all ${
             activeSubTab === 'wallet' 
               ? 'bg-green-glow text-black font-black' 
               : 'text-gray-400 hover:text-white'
           }`}
         >
-          <Wallet size={14} />
-          <span>Wallets / Cashout</span>
+          <Wallet size={13} />
+          <span>Wallet</span>
+        </button>
+        <button
+          onClick={() => setActiveSubTab('history')}
+          className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider rounded-lg flex items-center justify-center space-x-1 transition-all ${
+            activeSubTab === 'history' 
+              ? 'bg-green-glow text-black font-black' 
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Activity size={13} />
+          <span>History</span>
         </button>
       </div>
 
@@ -828,6 +882,120 @@ const UXTrade: React.FC<UXTradeProps> = ({ user, onUpdateUser, onBack }) => {
               <span className="text-[9px] font-black uppercase tracking-widest text-yellow-500">Licensed Settlement Protocol</span>
               <p className="text-[10px] text-gray-500 font-sans leading-none mt-1">UX-Trade index leverages decentralised, tamper-proof security sensors.</p>
             </div>
+          </div>
+
+        </div>
+      )}
+
+      {activeSubTab === 'history' && (
+        <div className="space-y-4">
+          
+          {/* Metrics summary */}
+          <div className="grid grid-cols-3 gap-2 border border-gray-900 bg-gray-950/60 rounded-2xl p-2.5">
+            <div className="bg-black p-3 rounded-xl border border-gray-900 text-center flex flex-col justify-between">
+              <span className="text-[8px] font-bold text-gray-500 uppercase block tracking-wider">Total Trades</span>
+              <span className="text-sm font-black text-white font-mono leading-none mt-1.5">{historicalTrades.length}</span>
+            </div>
+            <div className="bg-black p-3 rounded-xl border border-gray-900 text-center flex flex-col justify-between">
+              <span className="text-[8px] font-bold text-gray-500 uppercase block tracking-wider">Win Rate</span>
+              <span className="text-sm font-black text-green-glow font-mono leading-none mt-1.5">
+                {historicalTrades.length > 0 
+                  ? `${Math.round((historicalTrades.filter(t => t.status === 'WIN').length / historicalTrades.length) * 100)}%`
+                  : '0%'
+                }
+              </span>
+            </div>
+            <div className="bg-black p-3 rounded-xl border border-gray-900 text-center flex flex-col justify-between font-mono">
+              <span className="text-[8px] font-bold text-gray-500 uppercase block tracking-wider">Cum. PnL</span>
+              {(() => {
+                const totalPnL = historicalTrades.reduce((sum, curr) => sum + curr.pnl, 0);
+                const isPos = totalPnL >= 0;
+                return (
+                  <span className={`text-sm font-black leading-none mt-1.5 ${isPos ? 'text-green-glow' : 'text-red-400'}`}>
+                    {isPos ? '+' : ''}${totalPnL.toFixed(2)}
+                  </span>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div className="bg-gray-950 p-4 rounded-2xl border border-gray-800 space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest block font-mono">Contract Settlement Logs</span>
+              {historicalTrades.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Are you sure you want to clear your trade history metrics?')) {
+                      saveHistoricalTrades([]);
+                    }
+                  }}
+                  className="text-[9px] text-red-550 hover:text-red-400 transition-colors uppercase font-bold"
+                >
+                  Clear Logs
+                </button>
+              )}
+            </div>
+
+            {historicalTrades.length === 0 ? (
+              <div className="bg-black py-12 text-center rounded-xl border border-gray-900 space-y-2">
+                <Activity size={28} className="text-gray-750 mx-auto" />
+                <p className="text-xs font-bold text-gray-500">No trading history on record.</p>
+                <p className="text-[10px] text-gray-650">Complete futures contracts on the desk layout to populate transaction records.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+                {historicalTrades.map((trade) => {
+                  const isWin = trade.status === 'WIN';
+                  const assetObj = ASSETS.find(a => a.id === trade.asset);
+                  const formattedTime = new Date(trade.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const formattedDate = new Date(trade.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+                  return (
+                    <div 
+                      key={trade.id} 
+                      className="bg-black border border-gray-900 rounded-xl p-3 space-y-2.5 relative overflow-hidden"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-1.5">
+                          <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded ${
+                            isWin 
+                              ? 'bg-green-glow/10 text-green-glow border border-green-glow/20' 
+                              : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                          }`}>
+                            {trade.status}
+                          </span>
+                          <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+                            ({trade.type} {trade.leverage}x)
+                          </span>
+                          <span className="text-xs font-black text-white font-mono">{assetObj?.icon || trade.asset}</span>
+                        </div>
+                        <span className="text-[9px] text-gray-500 font-mono">
+                          {formattedDate} {formattedTime}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1 pt-2 border-t border-gray-950 text-left font-mono text-[10px]">
+                        <div>
+                          <span className="text-[8px] text-gray-650 uppercase block mb-0.5">Entry</span>
+                          <span className="text-gray-300 font-bold block">${trade.entryPrice.toLocaleString()}</span>
+                        </div>
+                        <div>
+                          <span className="text-[8px] text-gray-655 uppercase block mb-0.5">Settle Mark</span>
+                          <span className="text-gray-300 font-bold block">${trade.closePrice.toLocaleString()}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[8px] text-gray-655 uppercase block mb-0.5">Profit / Loss</span>
+                          <span className={`font-black block ${isWin ? 'text-green-glow' : 'text-red-400'}`}>
+                            {isWin ? '+' : ''}${trade.pnl.toFixed(2)} USD
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
         </div>
