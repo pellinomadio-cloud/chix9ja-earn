@@ -412,7 +412,7 @@ const App: React.FC = () => {
         try {
           const response = await ai.models.generateContent({
             model: "gemini-2.5-flash-preview-tts",
-            contents: [{ parts: [{ text: 'Say cheerfully: welcome to chix9ja, kindly notes that you can play games to earn, click the rewards button to earn rewards, you can withdraw to any bank as long as you subscribed, thanks for joining chix9ja' }] }],
+            contents: [{ parts: [{ text: 'Say cheerfully: welcome to chix9ja, kindly note that you can now trade cryptos in USD on the UX-Trade desk using your dashboard balance to earn in USD and withdraw straight into your balance, click the rewards button to earn rewards, you can withdraw to any bank as long as you are subscribed, thanks for joining chix9ja' }] }],
             config: {
               responseModalities: [Modality.AUDIO],
               speechConfig: {
@@ -983,10 +983,26 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (currentView !== 'dashboard') return;
-    const interval = setInterval(() => setShowQuizAd(true), 60000);
+    if (currentView !== 'dashboard' || !user) return;
+    
+    const adsShownKey = `chix9ja_trade_ad_views_${user.email.toLowerCase()}`;
+    const initialShown = parseInt(localStorage.getItem(adsShownKey) || '0', 10);
+    if (initialShown >= 2) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const currentShown = parseInt(localStorage.getItem(adsShownKey) || '0', 10);
+      if (currentShown < 2) {
+        setShowQuizAd(true);
+        localStorage.setItem(adsShownKey, (currentShown + 1).toString());
+      } else {
+        clearInterval(interval);
+      }
+    }, 60000);
+
     return () => clearInterval(interval);
-  }, [currentView]);
+  }, [currentView, user?.email]);
 
   if (currentView === 'register') return <div className={darkMode ? 'dark' : ''}><Register onRegister={handleRegister} onSwitchToLogin={() => setCurrentView('login')} defaultReferralCode={initialRefCode} /></div>;
   if (currentView === 'login') return <div className={darkMode ? 'dark' : ''}><Login onLogin={handleLogin} onSwitchToRegister={() => setCurrentView('register')} /></div>;
@@ -1316,8 +1332,8 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          {showQuizAd && !showWelcomeAd && activeTab !== 'task_dashboard' && activeTab !== 'imminent_payment' && (
-             <QuizAd onStart={() => { setShowQuizAd(false); setTaskMode('quiz'); setActiveTab('task_dashboard'); }} onClose={() => setShowQuizAd(false)} />
+          {showQuizAd && !showWelcomeAd && activeTab !== 'ux-trade' && activeTab !== 'imminent_payment' && (
+             <QuizAd onStart={() => { setShowQuizAd(false); setActiveTab('ux-trade'); }} onClose={() => setShowQuizAd(false)} />
           )}
         </div>
       </div>
