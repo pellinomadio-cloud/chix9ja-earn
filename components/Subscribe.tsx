@@ -34,8 +34,8 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     { 
       id: 'monthly', 
       name: 'Monthly Pro', 
-      price: '₦24,000', 
-      amount: '24,000 Naira', 
+      price: '₦17,000', 
+      amount: '17,000 Naira', 
       duration: '30 Days Access', 
       recommended: true,
       limitDescription: 'Withdraw up to ₦2,000,000',

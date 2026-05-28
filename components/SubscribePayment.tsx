@@ -106,7 +106,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               });
               } else {
                   if (currentUser) {
-                      let amountNum = 24000;
+                      let amountNum = 17000;
                       if (plan.id === 'weekly') amountNum = 10000;
                       if (plan.id === 'yearly') amountNum = 70000;
 
