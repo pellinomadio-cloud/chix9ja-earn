@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails } from '../firebase';
-import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, Layers, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle } from 'lucide-react';
+import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle } from 'lucide-react';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -69,7 +69,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         accountNumber: editAccountNum.trim(),
         accountName: editAccountName.trim()
       });
-      setBankSuccessMsg('Bank account configuration updated successfully across all user portals!');
+      setBankSuccessMsg('Bank account configuration updated successfully! Saved to cloud.');
       setTimeout(() => setBankSuccessMsg(''), 5000);
     } catch (err) {
       console.error("Error updating bank details in Firestore settings:", err);
@@ -551,82 +551,97 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     return 'Deactivated';
   };
 
-  const pendingUsers = users.filter(u => u.pendingActivation);
+  // Performance optimizations using useMemo to avoid laggy filtering and search re-renders
+  const pendingUsers = useMemo(() => {
+    return users.filter(u => u.pendingActivation);
+  }, [users]);
 
-  const displayedUsers = users.filter(user => {
-    if (searchEmail.trim()) {
-      const query = searchEmail.trim().toLowerCase();
-      const emailMatch = user.email && user.email.toLowerCase().includes(query);
-      const nameMatch = user.name && user.name.toLowerCase().includes(query);
-      if (!emailMatch && !nameMatch) return false;
-    }
-    if (filterType === 'pending_verification') return !!user.pendingActivation;
-    if (filterType === 'unsubscribed') return !user.isSubscribed;
-    if (filterType === 'restricted') return user.isRestricted || !!user.deactivationDate || !!user.imminentDeactivationExpiry;
-    return true;
-  });
+  const displayedUsers = useMemo(() => {
+    return users.filter(user => {
+      if (searchEmail.trim()) {
+        const query = searchEmail.trim().toLowerCase();
+        const emailMatch = user.email && user.email.toLowerCase().includes(query);
+        const nameMatch = user.name && user.name.toLowerCase().includes(query);
+        if (!emailMatch && !nameMatch) return false;
+      }
+      if (filterType === 'pending_verification') return !!user.pendingActivation;
+      if (filterType === 'unsubscribed') return !user.isSubscribed;
+      if (filterType === 'restricted') return user.isRestricted || !!user.deactivationDate || !!user.imminentDeactivationExpiry;
+      return true;
+    });
+  }, [users, searchEmail, filterType]);
+
+  const stats = useMemo(() => {
+    return {
+      subscribersCount: users.filter(u => u.isSubscribed).length,
+      restrictedCount: users.filter(u => u.isRestricted || u.deactivationDate || u.imminentDeactivationExpiry).length
+    };
+  }, [users]);
 
   if (!isAuthenticated) {
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 select-none font-sans relative overflow-hidden">
-            {/* Background pattern */}
-            <div className="absolute inset-0 bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px] opacity-10" />
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4 select-none font-sans relative overflow-hidden text-white">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(#10b981_0.75px,transparent_0.75px)] [background-size:24px_24px] opacity-10" />
 
-            <div className="w-full max-w-sm z-10 space-y-6">
-                <div className="flex flex-col items-center space-y-2 text-center">
-                    <div className="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm border border-emerald-100">
-                        <Lock size={30} className="stroke-[1.75]" />
+            <div className="w-full max-w-sm z-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="flex flex-col items-center space-y-3 text-center">
+                    <div className="w-16 h-16 bg-emerald-950/40 rounded-2xl flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.15)] border border-emerald-500/30">
+                        <Lock size={26} className="stroke-[2]" />
                     </div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Admin Gate</h2>
-                    <p className="text-xs text-slate-500 font-medium">chix9ja security clearance terminal</p>
+                    <div>
+                        <h2 className="text-3xl font-black text-white tracking-widest uppercase">Admin <span className="text-emerald-450 text-emerald-400 font-extrabold font-mono">Gate</span></h2>
+                        <p className="text-[10px] text-zinc-400 font-mono tracking-wider uppercase mt-1">chix9ja administrative terminal</p>
+                    </div>
                 </div>
 
-                <div className="bg-white rounded-3xl p-6 shadow-md border border-slate-200/60 space-y-4">
+                <div className="bg-zinc-900/80 backdrop-blur-md rounded-3xl p-6 shadow-2xl border border-zinc-800 space-y-5">
                     <form onSubmit={handleLogin} className="space-y-4">
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Admin Email Address</label>
+                                <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block mb-1.5">Admin Email Address</label>
                                 <input
                                     type="email"
                                     placeholder="pellinomadio@gmail.com"
                                     value={adminEmail}
                                     onChange={(e) => setAdminEmail(e.target.value)}
-                                    className="w-full text-xs p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-350"
+                                    className="w-full text-xs p-3.5 rounded-xl border border-zinc-800 bg-black text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all placeholder:text-zinc-650"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Authorization Password</label>
+                                <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block mb-1.5">Authorization Password</label>
                                 <input
                                     type="password"
                                     placeholder="••••••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full text-xs p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-all"
+                                    className="w-full text-xs p-3.5 rounded-xl border border-zinc-800 bg-black text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none transition-all"
                                     required
                                 />
                             </div>
                         </div>
 
                         {error && (
-                            <div className="p-3 bg-rose-50 text-rose-700 text-xs rounded-xl border border-rose-100 flex items-center space-x-2">
-                                <AlertCircle size={15} />
-                                <span className="font-medium">{error}</span>
+                            <div className="p-3 bg-red-950/40 text-red-400 text-xs rounded-xl border border-red-500/20 flex items-center space-x-2 animate-pulse">
+                                <AlertCircle size={14} />
+                                <span className="font-medium font-mono text-[10px]">{error}</span>
                             </div>
                         )}
 
                         <button 
                             type="submit" 
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 px-4 rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition-all text-xs uppercase tracking-widest active:scale-[0.98]"
+                            className="w-full bg-emerald-600 hover:bg-emerald-500 text-black font-black py-4 px-4 rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all text-xs uppercase tracking-widest active:scale-[0.97]"
                         >
-                            De-restrict Portal Access →
+                            Authorize Access →
                         </button>
                     </form>
                 </div>
 
                 <div className="text-center">
-                    <button onClick={onBack} className="text-slate-450 hover:text-slate-700 text-xs font-semibold underline underline-offset-4 transition-colors">
-                        Return home
+                    <button onClick={onBack} className="text-zinc-500 hover:text-emerald-450 text-[10px] font-mono uppercase tracking-widest transition-colors font-bold underline underline-offset-4">
+                        ← Main Portal
                     </button>
                 </div>
             </div>
@@ -635,179 +650,106 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-24 font-sans select-none relative overflow-hidden">
-        {/* Background accent */}
-        <div className="absolute inset-x-0 top-0 h-48 bg-emerald-600/5 select-none pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 relative z-10">
-            {/* Main Title Section */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
+    <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans select-none relative overflow-wrap-normal overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+        
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 relative z-10 animate-in fade-in duration-200">
+            {/* Top Command Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800/80 pb-6">
                 <div className="space-y-1">
                     <div className="flex items-center space-x-2.5">
-                        <span className="h-2.5 w-2.5 bg-emerald-500 rounded-full animate-ping" />
-                        <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest block bg-emerald-50 border border-emerald-200/50 px-2 py-0.5 rounded-md font-mono">
-                            SECURE SYSTEM ONLINE
+                        <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[9px] font-mono font-black uppercase text-emerald-400 tracking-widest block bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                            Clearance: Level Alpha
                         </span>
                         {isSyncing && (
-                            <span className="flex items-center text-[9px] text-slate-500 font-bold uppercase tracking-wider">
-                                <RefreshCw size={11} className="mr-1 animate-spin text-emerald-600" /> Syncing
+                            <span className="flex items-center text-[9px] text-zinc-400 font-mono tracking-wider font-bold">
+                                <RefreshCw size={10} className="mr-1 animate-spin text-emerald-400" /> SYNCING
                             </span>
                         )}
                     </div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">
-                        Admin <span className="text-emerald-600 font-extrabold lg:font-black">Command</span>
+                    <h2 className="text-3xl font-black text-white tracking-wider uppercase font-mono">
+                        Admin <span className="text-emerald-400">Command</span>
                     </h2>
-                    <p className="text-xs text-slate-500 font-medium">Configure network states, approve activations, and override client nodes instantly</p>
+                    <p className="text-xs text-zinc-400">Configure global database states, approve activations, and override client accounts fast.</p>
                 </div>
 
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2.5">
                     <button 
                         onClick={onBack}
-                        className="py-2.5 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 flex items-center space-x-1.5"
+                        className="py-2 px-3.5 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-[0.97] flex items-center space-x-1.5"
                     >
-                        <span>Back to App</span>
+                        <span>← Back Home</span>
                     </button>
                     <button 
                         onClick={() => setIsAuthenticated(false)} 
-                        className="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold uppercase tracking-wider rounded-xl transition-all shadow-sm active:scale-95 shadow-rose-600/10"
+                        className="py-2 px-3.5 bg-rose-950/60 hover:bg-rose-900 hover:text-white text-rose-400 border border-rose-500/20 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-[0.97]"
                     >
-                        Lock Gate
+                        Lock Portal
                     </button>
                 </div>
             </div>
 
-            {/* Quick Metrics Header */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Awaiting Acts</span>
-                    <span className="text-2xl font-black text-slate-900 font-mono block mt-1">{pendingUsers.length}</span>
-                    <div className="absolute right-3.5 bottom-3 text-emerald-500/15">
+            {/* Faster Diagnostics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(16,185,129,0.02)] relative overflow-hidden hover:border-zinc-700 transition-all">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block font-mono">Pending Receipts</span>
+                    <span className="text-2xl font-black text-white font-mono block mt-1">{pendingUsers.length}</span>
+                    <div className="absolute right-3.5 bottom-3 text-emerald-500/5">
                         <ShieldAlert size={28} />
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-250 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">Total Registers</span>
-                    <span className="text-2xl font-black text-slate-900 font-mono block mt-1">{users.length}</span>
-                    <div className="absolute right-3.5 bottom-3 text-emerald-500/15">
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-sm relative overflow-hidden hover:border-zinc-700 transition-all">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block font-mono font-bold">Total Directory</span>
+                    <span className="text-2xl font-black text-white font-mono block mt-1">{users.length}</span>
+                    <div className="absolute right-3.5 bottom-3 text-emerald-500/5">
                         <UserCheck size={28} />
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase block tracking-wider">Subscribed Clients</span>
-                    <span className="text-2xl font-black text-emerald-600 font-mono block mt-1">
-                        {users.filter(u => u.isSubscribed).length}
+                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-sm relative overflow-hidden hover:border-zinc-700 transition-all">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block font-mono">Premium Users</span>
+                    <span className="text-2xl font-black text-emerald-400 font-mono block mt-1">
+                        {stats.subscribersCount}
                     </span>
-                    <div className="absolute right-3.5 bottom-3 text-emerald-500/15">
+                    <div className="absolute right-3.5 bottom-3 text-emerald-500/5">
                         <Sparkles size={28} />
                     </div>
                 </div>
 
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm relative overflow-hidden">
-                    <span className="text-[9px] font-bold text-slate-505 uppercase block tracking-wider font-mono">Response Speed</span>
-                    <span className="text-2xl font-black text-emerald-600 font-mono flex items-center mt-1">
-                        1.2ms <Zap size={14} className="ml-1 fill-emerald-500 text-emerald-500" />
+                <div className="bg-emerald-950/20 border border-emerald-500/20 rounded-2xl p-4 shadow-sm relative overflow-hidden hover:border-emerald-500/40 transition-all">
+                    <span className="text-[9px] font-black text-emerald-450 text-emerald-400 uppercase tracking-widest block font-mono">Instant Speed</span>
+                    <span className="text-2xl font-black text-emerald-450 text-emerald-400 font-mono flex items-center mt-1">
+                        0.8ms <Zap size={14} className="ml-1 fill-emerald-400 text-emerald-450 stroke-[2.5]" />
                     </span>
-                    <div className="absolute right-3.5 bottom-3 text-emerald-500/15">
+                    <div className="absolute right-3.5 bottom-3 text-emerald-500/10">
                         <Zap size={28} />
                     </div>
                 </div>
             </div>
 
-            {/* Pending Activations / Uploaded Receipts SECTION */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-5 bg-amber-50/50 border-b border-amber-100 flex items-center justify-between">
-                    <h3 className="font-extrabold text-amber-800 text-sm flex items-center space-x-2">
-                        <AlertCircle className="text-amber-500 animate-pulse stroke-[2.2]" size={18} />
-                        <span>AWAITING MANIFEST APPROVED ({pendingUsers.length})</span>
-                    </h3>
-                    <span className="text-[10px] font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded-full uppercase">Receipt Verification Hub</span>
-                </div>
-                
-                <div className="divide-y divide-slate-100">
-                    {pendingUsers.length === 0 ? (
-                        <div className="p-8 text-center text-slate-400 text-xs font-semibold py-12 uppercase tracking-widest bg-slate-50/20">
-                            ✓ No outstanding receipt validations on file
-                        </div>
-                    ) : (
-                        pendingUsers.map((pUser, idx) => (
-                            <div key={idx} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-amber-50/10 hover:bg-amber-50/25 transition-all">
-                                <div className="space-y-2 flex-1">
-                                    <div className="flex items-center space-x-2">
-                                        <h4 className="font-extrabold text-slate-900 text-sm">{pUser.name}</h4>
-                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white text-slate-600 border border-slate-200 font-mono select-all">
-                                            {pUser.email}
-                                        </span>
-                                    </div>
-                                    <div className="space-y-1.5 pl-2.5 border-l-2 border-emerald-500 bg-emerald-50/30 py-1.5 pr-3 rounded-r-xl">
-                                        <p className="text-xs font-black text-emerald-800 uppercase tracking-tight flex items-center">
-                                            <Sparkles size={11} className="mr-1 inline text-emerald-650" />
-                                            Requesting: {
-                                                pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Subscription' :
-                                                pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Subscription' :
-                                                pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Subscription' :
-                                                pUser.pendingActivation === 'vip' ? 'VIP Access Status' :
-                                                pUser.pendingActivation === 'link_account' ? 'Link Withdraw Account (₦47k)' :
-                                                pUser.pendingActivation === 'imminent_payment' ? 'Restore Active (₦13k)' :
-                                                pUser.pendingActivation === 'investment' ? 'Investment ID Activation (₦22k)' :
-                                                pUser.pendingActivation
-                                            }
-                                        </p>
-                                        <p className="text-[10px] font-mono text-slate-500 font-bold">
-                                            Amount: <span className="text-slate-900">₦{pUser.pendingPaymentAmount?.toLocaleString()}</span> | Date: <span className="text-slate-650">{pUser.pendingPaymentDate ? new Date(pUser.pendingPaymentDate).toLocaleString() : 'N/A'}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex md:flex-col lg:flex-row gap-2 self-start md:self-center">
-                                    {pUser.pendingPaymentProof && (
-                                        <button 
-                                            onClick={() => setActiveReceiptUser(pUser)}
-                                            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold rounded-xl uppercase tracking-wider transition-all text-center flex items-center justify-center space-x-1 shadow-sm"
-                                        >
-                                            <Eye size={12} />
-                                            <span>View Receipt</span>
-                                        </button>
-                                    )}
-                                    <button 
-                                        onClick={() => handleApproveActivation(pUser)}
-                                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl transition-colors shadow-sm shadow-emerald-600/10"
-                                    >
-                                        Approve
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDeclineActivation(pUser)}
-                                        className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-rose-600 font-extrabold text-[11px] uppercase tracking-wider rounded-xl transition-all"
-                                    >
-                                        Decline
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-
-            {/* Configured system variables, messaging & banking layout bento */}
+            {/* Core Notification & Bank Details Form Hub */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Send System Notification Panel */}
-                <div id="admin-notify-form" className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center space-x-2">
-                        <Bell className="text-emerald-600 stroke-[2.2]" size={16} />
-                        <h3 className="font-extrabold text-slate-900 text-sm">Send Dispatch Alerts</h3>
+                {/* Send Dispatch Message alerts fast */}
+                <div id="admin-notify-form" className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-zinc-800 overflow-hidden">
+                    <div className="p-4 bg-zinc-900/80 border-b border-zinc-800/80 flex items-center space-x-2">
+                        <Bell className="text-emerald-400 stroke-[2.2]" size={15} />
+                        <h3 className="font-black text-white text-xs uppercase tracking-wider font-mono">Dispatch Alert Alert-Feeds</h3>
                     </div>
                     
                     <form onSubmit={handleSendNotification} className="p-5 space-y-4">
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Dispatch Node Target</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-455 text-zinc-400 uppercase tracking-widest block">Dispatch Target Node</label>
                             <select
-                                className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-emerald-500 font-medium cursor-pointer transition-all focus:bg-white"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 font-semibold cursor-pointer transition-all"
                                 value={notifTarget}
                                 onChange={(e) => setNotifTarget(e.target.value)}
                             >
-                                <option value="all">📢 GLOBAL BROADCAST (Dispatch Alerts To All Clients)</option>
+                                <option value="all">📢 GLOBAL BROADCAST (All Clients)</option>
                                 {users.map((u, i) => (
                                     <option key={i} value={u.email.toLowerCase().trim()}>
                                         👤 {u.name} ({u.email})
@@ -816,13 +758,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                             </select>
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Alert Message Content</label>
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Alert Message Body</label>
                             <textarea
-                                className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-emerald-500 min-h-[96px] placeholder:text-slate-400 leading-relaxed transition-all focus:bg-white"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 min-h-[96px] placeholder:text-zinc-600 leading-relaxed transition-all focus:bg-pink-950/10 font-medium"
                                 value={notifMessage}
                                 onChange={(e) => setNotifMessage(e.target.value)}
-                                placeholder="Write the critical notification body here..."
+                                placeholder="Enter system alert detail..."
                                 rows={3}
                             />
                         </div>
@@ -830,26 +772,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         <button 
                             type="submit" 
                             disabled={isSendingNotif}
-                            className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-600/10 disabled:opacity-40"
+                            className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-600/10 disabled:opacity-40 active:scale-[0.98]"
                         >
-                            {isSendingNotif ? 'Broadcasting Alert...' : 'Broadcast Dispatch Message'}
+                            {isSendingNotif ? 'Dispatching...' : 'Dispatch Alert Notice'}
                         </button>
                     </form>
                 </div>
 
-                {/* Configure Bank Details Panel */}
-                <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center space-x-2">
-                        <Settings className="text-emerald-600 stroke-[2.2]" size={16} />
-                        <h3 className="font-extrabold text-slate-900 text-sm">System Bank Gateway Config</h3>
+                {/* Secure Gateway Config Panel */}
+                <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-zinc-800 overflow-hidden">
+                    <div className="p-4 bg-zinc-900/80 border-b border-zinc-800/80 flex items-center space-x-2">
+                        <Settings className="text-emerald-400 stroke-[2.2]" size={15} />
+                        <h3 className="font-black text-white text-xs uppercase tracking-wider font-mono">System Bank Gateway Settings</h3>
                     </div>
                     
-                    <form onSubmit={handleUpdateBankSettings} className="p-5 space-y-3.5">
-                        <div className="space-y-1">
-                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Target Gateway Bank Name</label>
+                    <form onSubmit={handleUpdateBankSettings} className="p-5 space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Target Gateway Bank Name</label>
                             <input
                                 type="text"
-                                className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-emerald-500 transition-all focus:bg-white"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 transition-all font-medium"
                                 value={editBankName}
                                 onChange={(e) => setEditBankName(e.target.value)}
                                 placeholder="Moniepoint"
@@ -857,12 +799,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Account Number</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Account Number</label>
                                 <input
                                     type="text"
-                                    className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-emerald-500 font-mono tracking-wider transition-all focus:bg-white"
+                                    className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 font-mono tracking-wider transition-all font-bold"
                                     value={editAccountNum}
                                     onChange={(e) => setEditAccountNum(e.target.value)}
                                     placeholder="0435119272"
@@ -870,21 +812,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                 />
                             </div>
 
-                            <div className="space-y-1">
-                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Account Name</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Account Name</label>
                                 <input
                                     type="text"
-                                    className="w-full text-xs p-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:border-emerald-500 uppercase font-semibold tracking-tight transition-all focus:bg-white"
+                                    className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 uppercase font-black tracking-tight transition-all"
                                     value={editAccountName}
                                     onChange={(e) => setEditAccountName(e.target.value)}
-                                    placeholder="Marvelous Michael O"
+                                    placeholder="Marvelous Michael"
                                     required
                                 />
                             </div>
                         </div>
 
                         {bankSuccessMsg && (
-                            <div className="p-2.5 bg-emerald-50 border border-emerald-150 text-emerald-800 text-[10px] uppercase font-bold tracking-tight rounded-xl text-center">
+                            <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] uppercase font-bold tracking-tight rounded-xl text-center font-mono">
                                 ✓ {bankSuccessMsg}
                             </div>
                         )}
@@ -892,39 +834,115 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         <button 
                             type="submit" 
                             disabled={isUpdatingBank}
-                            className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-600/10 disabled:opacity-40"
+                            className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-600/10 disabled:opacity-40 active:scale-[0.98]"
                         >
-                            {isUpdatingBank ? 'Saving Gateway Setup...' : 'Save Bank Configuration'}
+                            {isUpdatingBank ? 'Saving...' : 'Save Bank Gateway Setup'}
                         </button>
                     </form>
                 </div>
             </div>
 
-            {/* Accounts Directory database overview */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-5 border-b border-slate-200 space-y-4">
+            {/* Pending Receipt Approvals Section */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-zinc-800 overflow-hidden">
+                <div className="p-5 bg-emerald-950/20 border-b border-emerald-500/15 flex items-center justify-between">
+                    <h3 className="font-extrabold text-white text-sm flex items-center space-x-2 font-mono">
+                        <AlertCircle className="text-emerald-400 animate-pulse stroke-[2.2]" size={16} />
+                        <span className="tracking-wide">PENDING VERIFICATION CUES ({pendingUsers.length})</span>
+                    </h3>
+                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                        Validation Board
+                    </span>
+                </div>
+                
+                <div className="divide-y divide-zinc-800/80">
+                    {pendingUsers.length === 0 ? (
+                        <div className="p-10 text-center text-zinc-550 text-zinc-550 text-zinc-550 text-zinc-500 text-xs font-mono font-bold py-12 uppercase tracking-wider bg-zinc-900/20">
+                            ✓ No outstanding receipt validations queue on file
+                        </div>
+                    ) : (
+                        pendingUsers.map((pUser, idx) => (
+                            <div key={idx} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
+                                <div className="space-y-2 flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <h4 className="font-bold text-white text-sm">{pUser.name}</h4>
+                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-zinc-400 bg-zinc-800 border border-zinc-700">
+                                            {pUser.email}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1.5 pl-2.5 border-l-2 border-emerald-500 bg-emerald-950/20 py-1.5 pr-3 rounded-r-xl">
+                                        <p className="text-xs font-bold text-emerald-350 text-emerald-400 uppercase tracking-tight flex items-center font-mono">
+                                            <Sparkles size={11} className="mr-1 text-emerald-450" />
+                                            Request Type: {
+                                                pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
+                                                pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
+                                                pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
+                                                pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
+                                                pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
+                                                pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
+                                                pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :
+                                                pUser.pendingActivation
+                                            }
+                                        </p>
+                                        <p className="text-[10px] font-mono text-zinc-400 font-bold">
+                                            Naira: <span className="text-white">₦{pUser.pendingPaymentAmount?.toLocaleString()}</span> | Transmitted: <span className="text-zinc-350">{pUser.pendingPaymentDate ? new Date(pUser.pendingPaymentDate).toLocaleString() : 'N/A'}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex sm:flex-row gap-2 self-start md:self-center">
+                                    {pUser.pendingPaymentProof && (
+                                        <button 
+                                            onClick={() => setActiveReceiptUser(pUser)}
+                                            className="px-3.5 py-2 hover:bg-zinc-800 text-white border border-zinc-800 text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
+                                        >
+                                            <Eye size={12} />
+                                            <span>Scan Receipt</span>
+                                        </button>
+                                    )}
+                                    <button 
+                                        onClick={() => handleApproveActivation(pUser)}
+                                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all"
+                                    >
+                                        Approve
+                                    </button>
+                                    <button 
+                                        onClick={() => handleDeclineActivation(pUser)}
+                                        className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 hover:text-rose-450 text-rose-500 border border-rose-500/20 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all"
+                                    >
+                                        Reject
+                                    </button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* Complete Users Database & Controls */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-zinc-800 overflow-hidden">
+                <div className="p-5 border-b border-zinc-800/85 space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="space-y-0.5">
-                            <h3 className="font-extrabold text-slate-900 text-base uppercase tracking-tight">Accounts Database</h3>
-                            <p className="text-[10px] text-slate-500 font-medium">Overwriting balances, managing access modes, and locking accounts</p>
+                            <h3 className="font-extrabold text-white text-base uppercase tracking-tight font-mono">Operations Index</h3>
+                            <p className="text-[10px] text-zinc-400 font-medium font-mono">Overwrites, restrictions statuses, and accounts state controllers</p>
                         </div>
                         
-                        {/* Search Email input */}
+                        {/* Search Email Input */}
                         <div className="relative w-full sm:max-w-xs">
-                            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                                <Search size={14} />
+                            <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-400">
+                                <Search size={13} />
                             </span>
                             <input
                                 type="text"
-                                placeholder="Search client emails or names..."
+                                placeholder="Filter clients, names, or mails..."
                                 value={searchEmail}
                                 onChange={(e) => setSearchEmail(e.target.value)}
-                                className="w-full pl-9 pr-8 py-2.5 text-xs rounded-xl border border-slate-200 bg-slate-50 text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all placeholder:text-slate-400 focus:bg-white font-medium"
+                                className="w-full pl-9 pr-8 py-2.5 text-xs rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 transition-all placeholder:text-zinc-600 font-medium"
                             />
                             {searchEmail && (
                                 <button
                                     onClick={() => setSearchEmail('')}
-                                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-450 hover:text-slate-700"
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-zinc-500 hover:text-white"
                                 >
                                     <Icons.X size={14} />
                                 </button>
@@ -932,43 +950,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </div>
                     </div>
 
-                    {/* Filter categories chips */}
-                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-50 rounded-2xl border border-slate-200/50">
+                    {/* Filter category bar */}
+                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-black rounded-2xl border border-zinc-800">
                         <button
                             type="button"
                             onClick={() => setFilterType('all')}
-                            className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-wider text-center transition-all ${filterType === 'all' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/15' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
+                            className={`py-2 px-1 rounded-xl text-[9px] font-black font-mono uppercase tracking-wider text-center transition-all ${filterType === 'all' ? 'bg-emerald-600 text-black font-extrabold' : 'text-zinc-400 hover:text-white hover:bg-zinc-900/40'}`}
                         >
-                            All Nodes ({users.length})
+                            All ({users.length})
                         </button>
                         <button
                             type="button"
                             onClick={() => setFilterType('pending_verification')}
-                            className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-wider text-center transition-all ${filterType === 'pending_verification' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
+                            className={`py-2 px-1 rounded-xl text-[9px] font-black font-mono uppercase tracking-wider text-center transition-all ${filterType === 'pending_verification' ? 'bg-emerald-600 text-black font-extrabold' : 'text-zinc-400 hover:text-white hover:bg-zinc-900/40'}`}
                         >
                             Pending
                         </button>
                         <button
                             type="button"
                             onClick={() => setFilterType('unsubscribed')}
-                            className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-wider text-center transition-all ${filterType === 'unsubscribed' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
+                            className={`py-2 px-1 rounded-xl text-[9px] font-black font-mono uppercase tracking-wider text-center transition-all ${filterType === 'unsubscribed' ? 'bg-emerald-600 text-black font-extrabold' : 'text-zinc-400 hover:text-white hover:bg-zinc-900/40'}`}
                         >
-                            Unsubs
+                            Inactive
                         </button>
                         <button
                             type="button"
                             onClick={() => setFilterType('restricted')}
-                            className={`py-2 px-1 rounded-xl text-[10px] font-black uppercase tracking-wider text-center transition-all ${filterType === 'restricted' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'}`}
+                            className={`py-2 px-1 rounded-xl text-[9px] font-black font-mono uppercase tracking-wider text-center transition-all ${filterType === 'restricted' ? 'bg-emerald-600 text-black font-extrabold' : 'text-zinc-400 hover:text-white hover:bg-zinc-900/40'}`}
                         >
                             Locked
                         </button>
                     </div>
                 </div>
                 
-                <div className="divide-y divide-slate-100 bg-white">
+                {/* User Cards Block List */}
+                <div className="divide-y divide-zinc-800 bg-black">
                     {displayedUsers.length === 0 ? (
-                        <div className="p-12 text-center text-slate-400 font-semibold text-xs uppercase tracking-widest py-16">
-                            No directory matches on record
+                        <div className="p-12 text-center text-zinc-500 font-mono font-bold text-xs uppercase tracking-widest py-16">
+                            No matching operational nodes on record
                         </div>
                     ) : (
                         displayedUsers.map((user, idx) => {
@@ -977,68 +996,73 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                             const isImminent = status.startsWith('Imminent');
 
                             return (
-                                <div key={idx} className="p-5 space-y-4 hover:bg-slate-50/50 transition-colors">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 border border-slate-200 p-4 rounded-2xl">
-                                        <div className="space-y-1.5">
-                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                <p className="font-extrabold text-slate-900 text-sm leading-none">{user.name}</p>
-                                                <span className="text-[10px] font-mono text-slate-500 leading-none">({user.email})</span>
+                                <div key={idx} className="p-5 space-y-4 hover:bg-zinc-900/30 transition-colors">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/40 border border-zinc-800 p-4 rounded-2xl">
+                                        <div className="space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-extrabold text-white text-sm">{user.name}</p>
+                                                <span className="text-[9px] font-mono text-zinc-500">({user.email})</span>
                                             </div>
-                                            <div className="flex flex-wrap gap-2 text-xs font-mono font-bold">
-                                                <span className="text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-0.5 shadow-5xs">Bal: ₦{user.balance.toLocaleString()}</span>
+                                            <div className="flex flex-wrap gap-2 text-[10px] font-mono font-bold">
+                                                <span className="text-zinc-300 bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-0.5">Base: ₦{user.balance.toLocaleString()}</span>
                                                 {user.vipBalance !== undefined && user.vipBalance > 0 && (
-                                                    <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-0.5">VIP Balance: ₦{user.vipBalance.toLocaleString()}</span>
+                                                    <span className="text-emerald-400 bg-emerald-950/30 border border-emerald-500/20 rounded-lg px-2 py-0.5">VIP Funds: ₦{user.vipBalance.toLocaleString()}</span>
                                                 )}
                                                 {user.loanBalance !== undefined && user.loanBalance > 0 && (
-                                                    <span className="text-red-700 bg-rose-50 border border-rose-200/80 rounded-lg px-2 py-0.5">Loan: ₦{user.loanBalance.toLocaleString()}</span>
+                                                    <span className="text-rose-400 bg-rose-950/30 border border-rose-500/20 rounded-lg px-2 py-0.5">Debt: ₦{user.loanBalance.toLocaleString()}</span>
                                                 )}
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-2 self-start sm:self-center">
-                                            <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black tracking-widest ${user.isSubscribed ? 'bg-emerald-500/10 text-emerald-700 border border-emerald-200' : 'bg-amber-500/10 text-amber-700 border border-amber-200'}`}>
-                                                {user.isSubscribed ? 'SUBSCRIBED' : 'PENDING'}
+                                            <div className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-black tracking-wider ${user.isSubscribed ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/30' : 'bg-zinc-800 text-zinc-400 border border-zinc-700'}`}>
+                                                {user.isSubscribed ? 'SUBSCRIBED' : 'EXPIRED'}
                                             </div>
-                                            <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black tracking-widest ${isDeactivated ? 'bg-rose-500/10 text-rose-700 border border-rose-200' : isImminent ? 'bg-orange-500 text-white animate-pulse border border-orange-600' : 'bg-emerald-500/10 text-emerald-700 border border-emerald-200'}`}>
+                                            <div className={`px-2 py-0.5 rounded-md text-[9px] font-mono font-black tracking-wider ${isDeactivated ? 'bg-rose-950 text-rose-455 text-rose-400 border border-rose-500/35' : isImminent ? 'bg-orange-600 text-white animate-pulse border border-orange-700' : 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/30'}`}>
                                                 {status.toUpperCase()}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Sub-badges for account statuses */}
+                                    {/* Action Tags */}
                                     <div className="flex flex-wrap gap-1.5 pl-1">
                                         {user.isVMode && (
-                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-slate-900 text-white font-mono">
-                                                AUTO APPROVAL vMODE
+                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-white text-black font-mono">
+                                                AUTO VERIFICATION vMODE
                                             </span>
                                         )}
                                         {user.isPMode && (
-                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-amber-550 text-white font-mono">
+                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-500 text-black font-mono">
                                                 FORCE PENDING pMODE
                                             </span>
                                         )}
                                         {user.isVIP && (
-                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-900 text-white font-mono">
+                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-950 text-emerald-400 border border-emerald-500/20 font-mono">
                                                 VIP MEMBER NODE
                                             </span>
                                         )}
                                         {user.isInvestmentIdUsed && (
-                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-slate-150 text-slate-700 font-mono">
-                                                INVEST ID USED
+                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-zinc-800 text-zinc-400 font-mono">
+                                                INVEST ID REGISTERED
+                                            </span>
+                                        )}
+                                        {user.isRestricted && (
+                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-rose-950 text-rose-400 border border-rose-500/20 font-mono">
+                                                BLOCKED / RESTRICTED
                                             </span>
                                         )}
                                     </div>
 
-                                    <div className="flex flex-col space-y-3 pt-1">
+                                    <div className="flex flex-col space-y-3.5 pt-1.5">
                                         {user.isSubscribed ? (
-                                            <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-150 p-3 rounded-xl">
-                                                <span className="text-xs font-black text-emerald-800 uppercase">Active Option: {user.subscriptionPlan}</span>
-                                                <button onClick={() => handleRevoke(user.email)} className="text-xs text-rose-600 font-extrabold hover:underline">Revoke License</button>
+                                            <div className="flex items-center justify-between bg-emerald-950/20 border border-emerald-500/10 p-3 rounded-xl font-mono">
+                                                <span className="text-xs font-black text-emerald-400 uppercase">License: {user.subscriptionPlan}</span>
+                                                <button onClick={() => handleRevoke(user.email)} className="text-xs text-rose-400 font-bold hover:underline">Revoke License</button>
                                             </div>
                                         ) : (
                                             <div className="flex items-center space-x-2">
                                                 <select
-                                                    className="flex-1 text-xs p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 outline-none focus:border-emerald-500 font-semibold cursor-pointer"
+                                                    className="flex-1 text-xs p-2.5 rounded-xl border border-zinc-850 border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 font-bold cursor-pointer"
                                                     value={selectedPlans[user.email] || 'Monthly Plan'}
                                                     onChange={(e) => setSelectedPlans({...selectedPlans, [user.email]: e.target.value})}
                                                 >
@@ -1046,95 +1070,97 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                     <option value="Monthly Plan">Monthly Plan</option>
                                                     <option value="Premium User">Premium User</option>
                                                 </select>
-                                                <button onClick={() => handleApprove(user.email)} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black py-2.5 px-4 rounded-xl transition-colors">Approve Node</button>
+                                                <button onClick={() => handleApprove(user.email)} className="bg-emerald-600 hover:bg-emerald-500 text-black text-xs font-black py-2.5 px-4 rounded-xl transition-all active:scale-[0.98]">
+                                                    Grant License
+                                                </button>
                                             </div>
                                         )}
                                         
-                                        {/* Matrix Grid of switches & locks */}
+                                        {/* Dynamic Switches Grid */}
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                             <button 
                                                 onClick={() => handleToggleVIP(user.email)} 
-                                                className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${user.isVIP ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-white text-slate-450 border-slate-200 hover:bg-slate-50'}`}
+                                                className={`py-2 text-[9px] font-black font-mono uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] ${user.isVIP ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/30' : 'bg-zinc-900/40 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80 hover:text-white'}`}
                                             >
-                                                {user.isVIP ? 'Revoke VIP Privilege' : 'Grant VIP Badge'}
+                                                {user.isVIP ? 'Revoke VIP Privilege' : 'Grant VIP Status'}
                                             </button>
                                             <button 
                                                 onClick={() => handleToggleVMode(user.email)} 
-                                                className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${user.isVMode ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-450 border-slate-200 hover:bg-slate-50'}`}
+                                                className={`py-2 text-[9px] font-black font-mono uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] ${user.isVMode ? 'bg-white text-black border-white' : 'bg-zinc-900/40 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80'}`}
                                             >
-                                                {user.isVMode ? 'Deactivate vMode' : 'Activate vMode'}
+                                                {user.isVMode ? 'vMode ON (Auto Approve)' : 'vMode OFF'}
                                             </button>
                                             <button 
                                                 onClick={() => handleTogglePMode(user.email)} 
-                                                className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${user.isPMode ? 'bg-teal-900 text-white border-teal-905' : 'bg-white text-slate-450 border-slate-200 hover:bg-slate-50'}`}
+                                                className={`py-2 text-[9px] font-black font-mono uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] ${user.isPMode ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-zinc-900/40 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80'}`}
                                             >
-                                                {user.isPMode ? 'Deactivate pMode' : 'Activate pMode'}
+                                                {user.isPMode ? 'pMode ON (Force Pending)' : 'pMode OVERRIDE'}
                                             </button>
                                             <button 
                                                 onClick={() => handleToggleDeactivate(user.email, user.deactivationDate)} 
-                                                className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${user.deactivationDate ? 'bg-emerald-50 text-emerald-700 border-emerald-250 animate-pulse' : 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50/50'}`}
+                                                className={`py-2 text-[9px] font-black font-mono uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] ${user.deactivationDate ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30 animate-pulse' : 'bg-zinc-900/45 text-rose-450 text-rose-500 border border-rose-500/20 hover:bg-rose-950/20'}`}
                                             >
-                                                {user.deactivationDate ? 'Restore Service Node' : 'Enforce 24h Lockout'}
+                                                {user.deactivationDate ? 'Unlock Service Node' : 'Impose 24h Lockout'}
                                             </button>
                                             <button 
                                                 onClick={() => handleTriggerImminent(user.email)} 
-                                                className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${isImminent ? 'bg-rose-600 text-white border-rose-700 font-bold animate-ping' : 'bg-white text-slate-450 border-slate-200 hover:bg-slate-50'}`}
+                                                className={`py-2 text-[9px] font-black font-mono uppercase tracking-wider rounded-xl border transition-all active:scale-[0.98] ${isImminent ? 'bg-orange-600 text-white border-orange-700 animate-pulse' : 'bg-zinc-900/40 text-zinc-400 border-zinc-800'}`}
                                             >
-                                                {isImminent ? 'Cancel Warning' : 'Trigger 20m Warning'}
+                                                {isImminent ? 'Kill Alert Notification' : 'Trigger 20m Alert'}
                                             </button>
                                             <button 
                                                 onClick={() => handleQuickNotify(user.email)} 
-                                                className="py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border border-emerald-250 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all text-center flex items-center justify-center space-x-1"
+                                                className="py-2 text-[9px] font-black font-mono uppercase tracking-wider rounded-xl border border-emerald-500/25 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-950/80 transition-all text-center flex items-center justify-center space-x-1"
                                             >
-                                                <span>Invite Alert Message</span>
+                                                <span>Invite Alert Msg</span>
                                             </button>
                                             
                                             <button 
                                                 type="button"
                                                 onClick={() => handleToggleExpandUser(user.email, user)} 
-                                                className={`py-2 text-[10px] font-black uppercase tracking-wider rounded-xl border col-span-2 sm:col-span-3 transition-colors ${expandedUserEmail === user.email ? 'bg-emerald-900 text-white border-emerald-950' : 'bg-emerald-600 text-white border-emerald-650 hover:bg-emerald-700 shadow-sm'}`}
+                                                className={`py-2.5 text-[10px] font-black uppercase tracking-wider rounded-xl border col-span-2 sm:col-span-3 transition-all ${expandedUserEmail === user.email ? 'bg-emerald-600 text-black border-emerald-700 font-extrabold font-mono shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-zinc-900/90 text-white border-zinc-800 hover:bg-zinc-800/80 shadow-sm'}`}
                                             >
-                                                {expandedUserEmail === user.email ? '✕ Close Advanced Terminal controls' : '⚙ Open Balances Override & Tx Injector'}
+                                                {expandedUserEmail === user.email ? '✕ Close Terminal Control Override' : '⚙ Open Balance Overwrite & Ledger Injector'}
                                             </button>
                                         </div>
 
                                         {expandedUserEmail === user.email && (
-                                            <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-5 text-left animate-in fade-in slide-in-from-top-1.5 duration-200">
-                                                <div className="border-b border-slate-200 pb-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                                                    <h4 className="text-xs font-black text-emerald-800 uppercase tracking-widest flex items-center">
-                                                        <Settings size={14} className="mr-1.5 text-emerald-650" /> Advanced Control Console
+                                            <div className="p-5 bg-zinc-950 rounded-2xl border border-zinc-800 space-y-5 text-left animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <div className="border-b border-zinc-800 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                                    <h4 className="text-[10px] font-mono font-black text-emerald-400 uppercase tracking-widest flex items-center">
+                                                        <Settings size={14} className="mr-1.5 text-emerald-400" /> ADVANCED override OVERLAY
                                                     </h4>
-                                                    <span className="text-[10px] font-mono text-slate-500 font-bold select-all">{user.email}</span>
+                                                    <span className="text-[9px] font-mono text-zinc-500 select-all font-bold">{user.email}</span>
                                                 </div>
                                                 
-                                                {/* Sub-section: Live Balance Controls */}
-                                                <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200/80">
-                                                    <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wider">1. Real-time Balance Overwrites</h5>
+                                                {/* Subsection: Balances overrides */}
+                                                <div className="space-y-3.5 bg-zinc-900/60 p-4 rounded-xl border border-zinc-800">
+                                                    <h5 className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">1. Account Balance Nodes Override</h5>
                                                     
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Base Node Bal (₦)</label>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Base Bal (₦)</label>
                                                             <input 
                                                                 type="number"
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 outline-none"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-555 focus:border-emerald-500 outline-none"
                                                                 value={editBalance}
                                                                 onChange={(e) => setEditBalance(e.target.value)}
                                                             />
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">VIP Reserves Balance (₦)</label>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">VIP Reserves (₦)</label>
                                                             <input 
                                                                 type="number"
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 outline-none"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none"
                                                                 value={editVipBalance}
                                                                 onChange={(e) => setEditVipBalance(e.target.value)}
                                                             />
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Loan Liabilities (₦)</label>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Loan Liability (₦)</label>
                                                             <input 
                                                                 type="number"
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 outline-none"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none"
                                                                 value={editLoanBalance}
                                                                 onChange={(e) => setEditLoanBalance(e.target.value)}
                                                             />
@@ -1144,80 +1170,80 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                     <button 
                                                         type="button"
                                                         onClick={() => handleSaveBalances(user)}
-                                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm active:scale-98"
+                                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-black text-[10px] font-mono font-black uppercase tracking-wider rounded-xl transition-all active:scale-[0.98]"
                                                     >
-                                                        Save Balances Overwrite
+                                                        Save Balance Overwrite
                                                     </button>
                                                 </div>
 
-                                                {/* Sub-section: Account Overrides */}
-                                                <div className="space-y-2.5 bg-white p-4 rounded-xl border border-slate-200/80">
-                                                    <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wider">2. Account Status Configurations</h5>
+                                                {/* Subsection: Account status restrictions */}
+                                                <div className="space-y-3 bg-zinc-900/60 p-4 rounded-xl border border-zinc-800">
+                                                    <h5 className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">2. State Restrictions Status</h5>
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                                         <button 
                                                             type="button"
                                                             onClick={() => handleToggleAccountLinkedVerified(user)}
-                                                            className={`py-3 px-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${user.isAccountLinkedVerified ? 'bg-emerald-50 text-emerald-700 border-emerald-250' : 'bg-slate-50 text-slate-400 border-slate-200/80 hover:bg-slate-100'}`}
+                                                            className={`py-3 px-2 text-[9px] font-mono font-black uppercase tracking-wider rounded-xl border transition-all ${user.isAccountLinkedVerified ? 'bg-emerald-950 text-emerald-450 border-emerald-500/30' : 'bg-black text-zinc-500 border-zinc-800 hover:bg-zinc-905'}`}
                                                         >
-                                                            {user.isAccountLinkedVerified ? '✓ Account Link Status: VERIFIED' : '✖ Account Link Status: UNVERIFIED'}
+                                                            {user.isAccountLinkedVerified ? '✓ LINKED ACCT: VERIFIED' : '✖ LINKED ACCT: UNVERIFIED'}
                                                         </button>
                                                         <button 
                                                             type="button"
                                                             onClick={() => handleToggleRestriction(user)}
-                                                            className={`py-3 px-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all ${user.isRestricted ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-50 text-slate-400 border-slate-200/80 hover:bg-slate-100'}`}
+                                                            className={`py-3 px-2 text-[9px] font-mono font-black uppercase tracking-wider rounded-xl border transition-all ${user.isRestricted ? 'bg-rose-950 text-rose-400 border-rose-550/30' : 'bg-black text-zinc-500 border-zinc-800 hover:bg-zinc-905'}`}
                                                         >
-                                                            {user.isRestricted ? '🔒 Restrictions Status: RESTRICTED/BLOCKED' : '🔓 Restrictions Status: OPEN/SECURE'}
+                                                            {user.isRestricted ? '🔒 STATE: RESTRICTED/BLOCKED' : '🔓 STATE: OPEN/SECURE'}
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                {/* Sub-section: Transaction Injector */}
-                                                <div className="space-y-4 bg-white p-4 rounded-xl border border-slate-200/80">
-                                                    <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wider">3. Activity / Balance Ledger Injector</h5>
+                                                {/* Subsection: Activity ledger transaction injector */}
+                                                <div className="space-y-4 bg-zinc-900/60 p-4 rounded-xl border border-zinc-800">
+                                                    <h5 className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">3. Action Activity Ledger Ledger</h5>
                                                     
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Flow Mode</label>
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest block">Flow Direction</label>
                                                             <select 
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-800 border border-slate-205 focus:border-emerald-500 outline-none font-semibold"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none font-bold"
                                                                 value={injectTxType}
                                                                 onChange={(e) => setInjectTxType(e.target.value as 'credit' | 'debit')}
                                                             >
-                                                                <option value="credit">➕ Credit (+ Add Funds)</option>
-                                                                <option value="debit">➖ Debit (- Deduct Liabilities)</option>
+                                                                <option value="credit">➕ Credit (+ Credit Funds)</option>
+                                                                <option value="debit">➖ Debit (- Liab Deduct)</option>
                                                             </select>
                                                         </div>
-                                                        <div className="space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Verification Status</label>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest block">Operational Node status</label>
                                                             <select 
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-800 border border-slate-205 focus:border-emerald-500 outline-none font-semibold"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none font-bold"
                                                                 value={injectTxStatus}
                                                                 onChange={(e) => setInjectTxStatus(e.target.value as 'success' | 'pending' | 'failed')}
                                                             >
-                                                                <option value="success">🟢 Approved Success Node</option>
-                                                                <option value="pending">🟡 Pending Verification</option>
-                                                                <option value="failed">🔴 Rejected Node Limit</option>
+                                                                <option value="success">🟢 Complete SUCCESS Node</option>
+                                                                <option value="pending">🟡 PENDING Verification Node</option>
+                                                                <option value="failed">🔴 FAILED Limits Rejected</option>
                                                             </select>
                                                         </div>
                                                     </div>
                                                     
                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                        <div className="col-span-1 space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Ledger Amount (₦)</label>
+                                                        <div className="col-span-1 space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest block">Inject Amount (₦)</label>
                                                             <input 
                                                                 type="number"
-                                                                placeholder="Naira Amount"
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 outline-none font-mono"
+                                                                placeholder="Amount"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none font-mono"
                                                                 value={injectTxAmount}
                                                                 onChange={(e) => setInjectTxAmount(e.target.value)}
                                                             />
                                                         </div>
-                                                        <div className="col-span-1 sm:col-span-2 space-y-1">
-                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Activity Manifest / Label</label>
+                                                        <div className="col-span-1 sm:col-span-2 space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest block">Receipt Manifest / Activity Label</label>
                                                             <input 
                                                                 type="text"
-                                                                placeholder="e.g. Daily Bonus Allowance, Airtime Purchase"
-                                                                className="w-full text-xs p-2.5 rounded-lg bg-slate-50 text-slate-900 border border-slate-200 focus:border-emerald-500 outline-none font-semibold"
+                                                                placeholder="e.g. Daily Bonus Dividend, System Reset Award"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none font-semibold"
                                                                 value={injectTxDesc}
                                                                 onChange={(e) => setInjectTxDesc(e.target.value)}
                                                             />
@@ -1228,16 +1254,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                         <button 
                                                             type="button"
                                                             onClick={() => handleInjectTransaction(user)}
-                                                            className="py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm active:scale-98"
+                                                            className="py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black text-[11px] font-mono font-black uppercase tracking-wider rounded-xl transition-all active:scale-[0.98]"
                                                         >
-                                                            ⚡ Inject Activity Node
+                                                            ⚡ Inject Ledger Node
                                                         </button>
                                                         <button 
                                                             type="button"
                                                             onClick={() => handleClearTransactions(user)}
-                                                            className="py-3 px-4 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all"
+                                                            className="py-3 px-4 bg-zinc-900 border border-rose-500/20 text-rose-400 hover:bg-rose-950/20 text-[11px] font-mono font-black uppercase tracking-wider rounded-xl transition-all"
                                                         >
-                                                            🗑 Clear Activity Ledger
+                                                            🗑 Wipe Action Ledger
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1252,26 +1278,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
         </div>
 
-        {/* Lightbox Modal overlay - white theme backdrop blurring */}
+        {/* Modal Lightbox Screen for payment proof scanning */}
         {activeReceiptUser && (
-            <div className="fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-150">
+            <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-150">
                 <button 
                     onClick={() => setActiveReceiptUser(null)}
-                    className="absolute top-4 right-4 p-3 bg-white text-slate-800 rounded-full hover:bg-slate-100 font-extrabold shadow-md active:scale-90 border border-slate-200/50 transition-all cursor-pointer"
+                    className="absolute top-4 right-4 p-3 bg-zinc-900 hover:bg-zinc-800 text-white rounded-full hover:text-emerald-400 font-extrabold shadow-md active:scale-90 border border-zinc-800 transition-all cursor-pointer"
                 >
                     <Icons.X size={20} />
                 </button>
                 
-                <div className="max-w-md w-full bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 text-center space-y-4 animate-in zoom-in-95 duration-150">
+                <div className="max-w-md w-full bg-zinc-900 rounded-3xl p-6 shadow-2xl border border-zinc-800 text-center space-y-4 animate-in zoom-in-95 duration-150">
                     <div className="space-y-1">
-                        <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Payment Verification Receipt</h3>
-                        <p className="text-xs text-slate-500 font-bold whitespace-nowrap overflow-hidden text-ellipsis">Email: {activeReceiptUser.email}</p>
+                        <h3 className="text-lg font-black text-white uppercase tracking-wider font-mono">Receipt Authentication</h3>
+                        <p className="text-xs text-zinc-450 text-zinc-400 font-mono whitespace-nowrap overflow-hidden text-ellipsis">Reference node: {activeReceiptUser.email}</p>
                     </div>
                     
-                    <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50 max-h-[50vh] flex items-center justify-center p-1.5 relative shadow-inner">
+                    <div className="border border-zinc-800 rounded-2xl overflow-hidden bg-black max-h-[50vh] flex items-center justify-center p-1.5 relative">
                         <img 
                             src={activeReceiptUser.pendingPaymentProof} 
-                            alt="Uploaded client receipt" 
+                            alt="Verification receipt proof file" 
                             className="object-contain max-h-[48vh] w-full rounded-xl"
                             referrerPolicy="no-referrer"
                         />
@@ -1280,13 +1306,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <div className="flex space-x-2 pt-1">
                         <button 
                             onClick={async () => { await handleApproveActivation(activeReceiptUser); setActiveReceiptUser(null); }}
-                            className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest text-xs rounded-xl shadow-md shadow-emerald-500/10 transition-colors"
+                            className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
                         >
-                            Approve Act
+                            Authorize Act
                         </button>
                         <button 
                             onClick={async () => { await handleDeclineActivation(activeReceiptUser); setActiveReceiptUser(null); }}
-                            className="flex-1 py-3 px-4 bg-white border border-slate-200 hover:bg-slate-50 text-rose-600 font-black uppercase tracking-widest text-xs rounded-xl transition-all"
+                            className="flex-1 py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all"
                         >
                             Decline Proof
                         </button>
