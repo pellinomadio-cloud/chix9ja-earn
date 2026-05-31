@@ -563,6 +563,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         const emailMatch = user.email && user.email.toLowerCase().includes(query);
         const nameMatch = user.name && user.name.toLowerCase().includes(query);
         if (!emailMatch && !nameMatch) return false;
+      } else {
+        // If search query is empty, do not show any users under 'all' view
+        if (filterType === 'all') return false;
       }
       if (filterType === 'pending_verification') return !!user.pendingActivation;
       if (filterType === 'unsubscribed') return !user.isSubscribed;
@@ -987,7 +990,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 <div className="divide-y divide-zinc-800 bg-black">
                     {displayedUsers.length === 0 ? (
                         <div className="p-12 text-center text-zinc-500 font-mono font-bold text-xs uppercase tracking-widest py-16">
-                            No matching operational nodes on record
+                            {!searchEmail.trim() && filterType === 'all' 
+                                ? "Search for a user by name or email to view and control their account" 
+                                : "No matching operational nodes on record"
+                            }
                         </div>
                     ) : (
                         displayedUsers.map((user, idx) => {

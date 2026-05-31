@@ -339,6 +339,14 @@ const App: React.FC = () => {
   const [showWithdrawReferralAdvert, setShowWithdrawReferralAdvert] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'admin' || params.get('admin') === 'true') {
+      setCurrentView('dashboard');
+      setActiveTab('admin');
+    }
+  }, []);
+
+  useEffect(() => {
     if (user?.isRestricted && user?.restrictionRestoreTime && now > user.restrictionRestoreTime) {
       if (user.restrictionType === 'verification') {
         // Restart countdown instead of unlocking
