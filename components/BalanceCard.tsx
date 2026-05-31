@@ -52,13 +52,13 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
             <div className="flex justify-between items-end">
                 <div className="flex flex-col">
                     <div className="flex items-center">
-                        <h1 className="text-3xl font-extrabold text-black tracking-tight">
+                        <h1 className="text-2xl font-extrabold text-black tracking-tight">
                             {isVisible ? formatCurrency(balance) : '₦ •••••••'}
                         </h1>
                         {isSubscribed && (
-                            <span className="ml-2 text-2xl animate-pulse" role="img" aria-label="congratulations">🎉</span>
+                            <span className="ml-2 text-xl animate-pulse" role="img" aria-label="congratulations">🎉</span>
                         )}
-                        <Icons.ChevronRight className="text-black ml-1" size={24} />
+                        <Icons.ChevronRight className="text-black ml-1" size={20} />
                     </div>
                 </div>
                 <button 
