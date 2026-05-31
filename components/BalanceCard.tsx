@@ -5,11 +5,12 @@ interface BalanceCardProps {
   balance: number;
   isSubscribed?: boolean;
   isVIP?: boolean;
+  subscriptionPlan?: string;
   onAdminClick?: () => void;
   onHistoryClick?: () => void;
 }
 
-const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false, isVIP = false, onAdminClick, onHistoryClick }) => {
+const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false, isVIP = false, subscriptionPlan = '', onAdminClick, onHistoryClick }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   const formatCurrency = (amount: number) => {
@@ -54,6 +55,9 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
                         <h1 className="text-3xl font-extrabold text-black tracking-tight">
                             {isVisible ? formatCurrency(balance) : '₦ •••••••'}
                         </h1>
+                        {isSubscribed && (
+                            <span className="ml-2 text-2xl animate-pulse" role="img" aria-label="congratulations">🎉</span>
+                        )}
                         <Icons.ChevronRight className="text-black ml-1" size={24} />
                     </div>
                 </div>

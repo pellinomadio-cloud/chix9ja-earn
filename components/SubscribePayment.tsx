@@ -77,6 +77,33 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               currentUser.subscriptionExpiryDate = expiryTimestamp;
               currentUser.vModeSubscriptionUsed = true;
               
+              let bonusAmount = 0;
+              let bonusDescription = "";
+              
+              const isWeekly = plan.id === 'weekly' || plan.name.toLowerCase().includes('weekly') || plan.name.toLowerCase().includes('saver');
+              const isMonthly = plan.id === 'monthly' || plan.name.toLowerCase().includes('monthly') || plan.name.toLowerCase().includes('pro');
+              
+              if (isWeekly) {
+                  bonusAmount = 120000;
+                  bonusDescription = "Weekly Subscription Welcome Bonus";
+              } else if (isMonthly) {
+                  bonusAmount = 200000;
+                  bonusDescription = "Monthly Subscription Welcome Bonus";
+              }
+              
+              if (bonusAmount > 0) {
+                  currentUser.balance = (currentUser.balance || 0) + bonusAmount;
+                  const newTx = {
+                      id: 'tx_sub_bonus_' + Math.random().toString(36).substring(2, 9),
+                      type: 'credit' as const,
+                      amount: bonusAmount,
+                      description: bonusDescription,
+                      date: new Date().toISOString(),
+                      status: 'success' as const
+                  };
+                  currentUser.transactions = [newTx, ...(currentUser.transactions || [])];
+              }
+              
               if (currentUser.vModeVipUsed) {
                   currentUser.isVMode = false;
               }

@@ -1227,6 +1227,7 @@ const App: React.FC = () => {
                       balance={user?.balance || 0} 
                       isSubscribed={user?.isSubscribed}
                       isVIP={user?.isVIP}
+                      subscriptionPlan={user?.subscriptionPlan}
                       onAdminClick={() => setActiveTab('admin')} 
                       onHistoryClick={() => setActiveTab('transaction_history')} 
                     />

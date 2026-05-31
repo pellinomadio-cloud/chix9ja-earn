@@ -189,18 +189,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     const targetUser = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (targetUser) {
+        let bonusAmount = 0;
+        let bonusDescription = "";
+        
+        const isWeekly = plan.toLowerCase().includes('weekly') || plan.toLowerCase().includes('saver');
+        const isMonthly = plan.toLowerCase().includes('monthly') || plan.toLowerCase().includes('pro');
+        
+        if (isWeekly) {
+            bonusAmount = 120000;
+            bonusDescription = "Weekly Subscription Balance Bonus";
+        } else if (isMonthly) {
+            bonusAmount = 200000;
+            bonusDescription = "Monthly Subscription Balance Bonus";
+        }
+        
+        let newBalance = targetUser.balance || 0;
+        let updatedTransactions = targetUser.transactions ? [...targetUser.transactions] : [];
+        
+        if (bonusAmount > 0) {
+            newBalance += bonusAmount;
+            const newTx: Transaction = {
+                id: 'tx_sub_bonus_' + Math.random().toString(36).substring(2, 9),
+                type: 'credit',
+                amount: bonusAmount,
+                description: bonusDescription,
+                date: new Date().toISOString(),
+                status: 'success'
+            };
+            updatedTransactions = [newTx, ...updatedTransactions];
+        }
+
         const updatedUser = {
             ...targetUser,
             isSubscribed: true,
             subscriptionPlan: plan,
             subscriptionExpiryDate: expiryTimestamp,
+            balance: newBalance,
+            transactions: updatedTransactions,
             pendingActivation: null,
             pendingPaymentProof: undefined,
             pendingPaymentAmount: undefined,
             pendingPaymentDate: undefined
         };
         saveUserDocument(email, updatedUser);
-        alert(`Subscription approved for ${targetUser.name} with ${plan}.`);
+        let alertMsg = `Subscription approved for ${targetUser.name} with ${plan}.`;
+        if (bonusAmount > 0) {
+            alertMsg += ` Bonus of ₦${bonusAmount.toLocaleString()} added to their dashboard!`;
+        }
+        alert(alertMsg);
     }
   };
 
@@ -324,6 +360,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         updatedUser.isSubscribed = true;
         updatedUser.subscriptionPlan = planName;
         updatedUser.subscriptionExpiryDate = expiryTimestamp;
+
+        let bonusAmount = 0;
+        let bonusDescription = "";
+        
+        if (type === 'subscription_weekly' || planName.toLowerCase().includes('weekly')) {
+            bonusAmount = 120000;
+            bonusDescription = "Weekly Subscription Welcome Bonus";
+        } else if (type === 'subscription_monthly' || planName.toLowerCase().includes('monthly')) {
+            bonusAmount = 200000;
+            bonusDescription = "Monthly Subscription Welcome Bonus";
+        }
+        
+        if (bonusAmount > 0) {
+            updatedUser.balance = (updatedUser.balance || 0) + bonusAmount;
+            const newTx: Transaction = {
+                id: 'tx_sub_bonus_' + Math.random().toString(36).substring(2, 9),
+                type: 'credit',
+                amount: bonusAmount,
+                description: bonusDescription,
+                date: new Date().toISOString(),
+                status: 'success'
+            };
+            updatedUser.transactions = [newTx, ...(updatedUser.transactions || [])];
+        }
     } else if (type === 'vip') {
         updatedUser.isVIP = true;
         updatedUser.vipBalance = 1000000; // 1 Million VIP Business Fund
