@@ -5,7 +5,7 @@ import { MenuItem } from '../types';
 
 const topRowItems: MenuItem[] = [
   { id: 'bank', label: 'Withdraw', icon: Icons.Send },
-  { id: 'palmpay', label: 'To chix9ja', icon: Icons.User },
+  { id: 'promo', label: 'Promo', icon: Icons.Gift },
   { id: 'quiz_game', label: 'Quiz Game', icon: Icons.Gamepad2 },
   { id: 'subscribe', label: 'Subscribe', icon: Icons.Subscribe },
 ];

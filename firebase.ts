@@ -279,3 +279,39 @@ export async function updateBankDetails(details: BankDetails): Promise<void> {
     accountName: details.accountName
   });
 }
+
+// Global Giveaway Settings Config Manager
+export interface GiveawaySettings {
+  unlocked: boolean;
+}
+
+export function useGiveawayStatus() {
+  const [unlocked, setUnlocked] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'giveaway');
+    const unsub = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setUnlocked(!!data.unlocked);
+      } else {
+        setUnlocked(false);
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Error reading giveaway settings from Firestore:", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  return { unlocked, loading };
+}
+
+export async function updateGiveawayStatus(unlocked: boolean): Promise<void> {
+  const docRef = doc(db, 'settings', 'giveaway');
+  await setDoc(docRef, { unlocked });
+}
+

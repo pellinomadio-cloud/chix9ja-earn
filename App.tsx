@@ -36,6 +36,7 @@ import Referrals from './components/Referrals';
 import UXTrade from './components/UXTrade';
 import Investment from './components/Investment';
 import SystemNotification from './components/SystemNotification';
+import PromoPage from './components/PromoPage';
 import { Icons } from './components/Icons';
 import { User, Plan, Transaction, RewardStatus } from './types';
 import { GoogleGenAI, Modality } from "@google/genai";
@@ -479,7 +480,7 @@ const App: React.FC = () => {
     } else if (activeTab === 'receipt') {
         setActiveTab('transaction_history');
         setSelectedTransaction(null);
-    } else if (activeTab === 'send_money' || activeTab === 'sync_account' || activeTab === 'buy_service' || activeTab === 'transaction_history' || activeTab === 'reward' || activeTab === 'imminent_payment' || activeTab === 'task_dashboard' || activeTab === 'upgrade_proposal' || activeTab === 'business_hub' || activeTab === 'notifications' || activeTab === 'me' || activeTab === 'finance' || activeTab === 'loan' || activeTab === 'ux-trade' || activeTab === 'link_withdraw_account' || activeTab === 'how_it_works') {
+    } else if (activeTab === 'send_money' || activeTab === 'sync_account' || activeTab === 'buy_service' || activeTab === 'transaction_history' || activeTab === 'reward' || activeTab === 'imminent_payment' || activeTab === 'task_dashboard' || activeTab === 'upgrade_proposal' || activeTab === 'business_hub' || activeTab === 'notifications' || activeTab === 'me' || activeTab === 'finance' || activeTab === 'loan' || activeTab === 'ux-trade' || activeTab === 'link_withdraw_account' || activeTab === 'how_it_works' || activeTab === 'promo') {
         setActiveTab('home');
     } else if (activeTab === 'admin') {
         const existingUsers = getStoredUsers();
@@ -661,12 +662,8 @@ const App: React.FC = () => {
   };
 
   const handleGridAction = (id: string) => {
-    if (id === 'palmpay') {
-        if (user && user.imminentDeactivationExpiry && now < user.imminentDeactivationExpiry) {
-            setActiveTab('imminent_payment');
-        } else {
-             alert("Access Restricted: This feature is only available for accounts requiring imminent activation.");
-        }
+    if (id === 'promo') {
+        setActiveTab('promo');
     } else if (id === 'rewards') {
         setActiveTab('reward');
     } else if (id === 'referrals') {
@@ -1084,6 +1081,8 @@ const App: React.FC = () => {
                 />
               ) : activeTab === 'notifications' ? (
                 <NotificationFeed user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
+              ) : activeTab === 'promo' ? (
+                <PromoPage user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
               ) : activeTab === 'send_money' ? (
                 <SendMoney 
                   user={user!} 

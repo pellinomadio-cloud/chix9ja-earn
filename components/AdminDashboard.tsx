@@ -1,13 +1,92 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
-import { collection, getDocs, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db, sanitizeForFirestore, useBankDetails, updateBankDetails } from '../firebase';
+import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus } from '../firebase';
 import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle } from 'lucide-react';
 
 interface AdminDashboardProps {
   onBack: () => void;
 }
+
+interface GiveawayReq {
+  id: string;
+  email: string;
+  name: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  date: string;
+  status: 'pending' | 'approved' | 'declined';
+  bonusCredited?: number;
+}
+
+const GiveawayClaimRow: React.FC<{
+  req: GiveawayReq;
+  onResolve: (email: string, status: 'approved' | 'declined', amount: number) => void;
+  onDelete: (email: string) => void;
+}> = ({ req, onResolve, onDelete }) => {
+  const [bonus, setBonus] = useState('5000');
+  return (
+    <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-950/20 hover:bg-zinc-950/40 transition-all border-b border-zinc-900/60">
+        <div className="space-y-1.5 flex-grow text-left">
+            <div className="flex items-center space-x-2">
+                <h4 className="font-bold text-white text-xs uppercase tracking-wide">{req.name}</h4>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-zinc-400 bg-zinc-800 border border-zinc-700">
+                    {req.email}
+                </span>
+            </div>
+            <div className="p-3 bg-black/60 rounded-xl space-y-1 font-mono text-[11px] border border-zinc-900/60 max-w-xl">
+                <p className="text-zinc-400"><span className="text-zinc-600 font-bold uppercase tracking-wider">Bank Name:</span> {req.bankName}</p>
+                <p className="text-zinc-400"><span className="text-zinc-600 font-bold uppercase tracking-wider">Account No:</span> <span className="text-amber-500 font-extrabold">{req.accountNumber}</span></p>
+                <p className="text-zinc-300 font-semibold"><span className="text-zinc-650 font-bold uppercase tracking-wider">Account Holder:</span> {req.accountName}</p>
+                <p className="text-[10px] text-zinc-700 tracking-tight mt-1">Submitted: {new Date(req.date || 0).toLocaleDateString()} {new Date(req.date || 0).toLocaleTimeString()}</p>
+                <p className="text-[10px] uppercase font-bold mt-1">Status: {
+                    req.status === 'pending' ? <span className="text-amber-500 font-black">PENDING APPROVAL</span> :
+                    req.status === 'approved' ? <span className="text-emerald-500 font-black">APPROVED (₦{req.bonusCredited?.toLocaleString() || '0'})</span> :
+                    <span className="text-red-500 font-black">DECLINED</span>
+                }</p>
+            </div>
+        </div>
+        
+        {req.status === 'pending' && (
+            <div className="flex flex-row items-center space-x-2 shrink-0">
+                <div className="flex items-center bg-black rounded-lg border border-zinc-800 pr-2">
+                    <span className="text-[10px] text-zinc-500 font-mono font-bold px-2">₦</span>
+                    <input
+                        type="text"
+                        value={bonus}
+                        onChange={(e) => setBonus(e.target.value.replace(/\D/g, ''))}
+                        className="w-16 bg-transparent text-[11px] py-1 text-amber-500 outline-none font-mono font-bold text-center"
+                        placeholder="5000"
+                    />
+                </div>
+                <button
+                    onClick={() => onResolve(req.email, 'approved', Number(bonus || 0))}
+                    className="px-3 py-1.5 bg-green-glow text-black font-extrabold text-[10px] uppercase tracking-wider rounded-lg shadow-sm active:scale-95 transition-transform"
+                >
+                    Approve
+                </button>
+                <button
+                    onClick={() => onResolve(req.email, 'declined', 0)}
+                    className="px-3 py-1.5 bg-zinc-800 text-red-500 font-extrabold text-[10px] uppercase tracking-wider rounded-lg active:scale-95 transition-transform"
+                >
+                    Decline
+                </button>
+            </div>
+        )}
+
+        {req.status !== 'pending' && (
+            <button
+                onClick={() => onDelete(req.email)}
+                className="px-3 py-1 bg-zinc-805 bg-zinc-900 border border-zinc-800 text-zinc-500 hover:bg-zinc-850 hover:text-white rounded-lg text-[9px] uppercase font-bold tracking-widest font-mono shrink-0"
+            >
+                Delete
+            </button>
+        )}
+    </div>
+  );
+};
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,6 +101,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [notifTarget, setNotifTarget] = useState<'all' | string>('all');
   const [isSendingNotif, setIsSendingNotif] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Giveaway state variables
+  const { unlocked: giveawayUnlocked } = useGiveawayStatus();
+  const [giveawayRequests, setGiveawayRequests] = useState<any[]>([]);
+  const [isUpdatingGiveaway, setIsUpdatingGiveaway] = useState(false);
 
   // Expanded user editing states
   const [expandedUserEmail, setExpandedUserEmail] = useState<string | null>(null);
@@ -79,6 +163,75 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   };
 
+  const handleToggleGiveaway = async () => {
+    setIsUpdatingGiveaway(true);
+    try {
+      await updateGiveawayStatus(!giveawayUnlocked);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to toggle giveaway status.");
+    } finally {
+      setIsUpdatingGiveaway(false);
+    }
+  };
+
+  const handleResolveGiveaway = async (email: string, status: 'approved' | 'declined', bonusAmount = 0) => {
+    try {
+      const emailKey = email.toLowerCase().trim();
+      const docRef = doc(db, 'giveaways', emailKey);
+      
+      if (status === 'approved' && bonusAmount > 0) {
+        // Load target user from Firestore users
+        const targetUserRef = doc(db, 'users', emailKey);
+        
+        // Find existing users list inside local state or pull dynamically
+        const foundUser = users.find(u => u.email?.toLowerCase().trim() === emailKey);
+
+        if (foundUser) {
+          const newTx: Transaction = {
+            id: 'tx_giveaway_' + Math.random().toString(36).substring(2, 9),
+            type: 'credit',
+            amount: bonusAmount,
+            description: 'Approved Promo Giveaway Grant',
+            date: new Date().toISOString(),
+            status: 'success'
+          };
+          
+          const updatedUser: User = {
+            ...foundUser,
+            balance: (foundUser.balance || 0) + bonusAmount,
+            transactions: [newTx, ...(foundUser.transactions || [])]
+          };
+          
+          await setDoc(targetUserRef, sanitizeForFirestore(updatedUser));
+        }
+      }
+
+      // Update giveaway document status
+      await setDoc(docRef, {
+        status: status,
+        resolvedAt: new Date().toISOString(),
+        bonusCredited: bonusAmount
+      }, { merge: true });
+
+      alert(`Giveaway request ${status} successfully!`);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to resolve giveaway request: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleDeleteGiveawayRequest = async (email: string) => {
+    if (!window.confirm("Are you sure you want to delete this giveaway request?")) return;
+    try {
+      await deleteDoc(doc(db, 'giveaways', email.toLowerCase().trim()));
+      alert("Giveaway request wiped!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete request.");
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
         setIsSyncing(true);
@@ -108,8 +261,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         });
 
         const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+
+        // Real-time giveaway claims fetch
+        const unsubGiveaway = onSnapshot(collection(db, 'giveaways'), (querySnapshot) => {
+            const list: any[] = [];
+            querySnapshot.forEach((doc) => {
+                list.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort by date descending
+            list.sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+            setGiveawayRequests(list);
+        });
+
         return () => {
             unsubscribe();
+            unsubGiveaway();
             clearInterval(interval);
         };
     }
@@ -904,6 +1070,66 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                             {isUpdatingBank ? 'Saving...' : 'Save Bank Gateway Setup'}
                         </button>
                     </form>
+                </div>
+            </div>
+
+            {/* Giveaway Desk Controls Panel */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-zinc-800 overflow-hidden">
+                <div className="p-4 bg-zinc-900/80 border-b border-zinc-800/80 flex items-center space-x-2">
+                    <Lock className="text-amber-500 stroke-[2.2]" size={15} />
+                    <h3 className="font-black text-white text-xs uppercase tracking-wider font-mono">Giveaway Desk Controls</h3>
+                </div>
+                
+                <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-zinc-950/40">
+                    <div className="text-left">
+                        <p className="text-[11px] font-bold text-white uppercase tracking-tight">Access Control Status</p>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase mt-1">
+                            Current Terminal: {giveawayUnlocked ? (
+                                <span className="text-emerald-500 font-extrabold tracking-widest bg-emerald-950/60 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">ACTIVE / UNLOCKED</span>
+                            ) : (
+                                <span className="text-red-500 font-extrabold tracking-widest bg-red-950/60 border border-red-500/20 px-2.5 py-0.5 rounded-full">INACTIVE / LOCKED</span>
+                            )}
+                        </p>
+                    </div>
+                    
+                    <button
+                        onClick={handleToggleGiveaway}
+                        disabled={isUpdatingGiveaway}
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            giveawayUnlocked
+                                ? 'bg-red-650 bg-red-600 text-white hover:bg-red-500 shadow-md shadow-red-600/10'
+                                : 'bg-amber-500 text-black hover:bg-amber-400 shadow-md shadow-amber-500/10'
+                        }`}
+                    >
+                        {isUpdatingGiveaway ? 'Updating State...' : giveawayUnlocked ? 'LOCK GIVEAWAY TERM' : 'UNLOCK GIVEAWAY TERM'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Giveaway Requests Queue */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-zinc-800 overflow-hidden">
+                <div className="p-5 bg-amber-950/20 border-b border-amber-500/15 flex items-center justify-between">
+                    <h3 className="font-extrabold text-white text-sm flex items-center space-x-2 font-mono">
+                        <Icons.Gift className="text-amber-450 text-amber-550 text-amber-400 animate-pulse" size={16} />
+                        <span className="tracking-wide">GIVEAWAY CLAIMS DECK ({giveawayRequests.length})</span>
+                    </h3>
+                </div>
+                
+                <div className="divide-y divide-zinc-800/80">
+                    {giveawayRequests.length === 0 ? (
+                        <div className="p-10 text-center text-zinc-500 text-xs font-mono font-bold py-12 uppercase tracking-wider bg-zinc-900/20">
+                            ✓ No active giveaway claim items loaded on system
+                        </div>
+                    ) : (
+                        giveawayRequests.map((req, idx) => (
+                          <GiveawayClaimRow 
+                            key={req.id || idx}
+                            req={req}
+                            onResolve={handleResolveGiveaway}
+                            onDelete={handleDeleteGiveawayRequest}
+                          />
+                        ))
+                    )}
                 </div>
             </div>
 
