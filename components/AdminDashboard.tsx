@@ -275,8 +275,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 });
             }
             if (pendingCleared) {
-                updatedUser.showVipWithdrawalNotice = true;
-                updatedUser.persistentVipNotice = true;
+                // updatedUser.showVipWithdrawalNotice = true;
+                // updatedUser.persistentVipNotice = true;
             }
         } else {
             updatedUser.vipBalance = 0;
@@ -399,11 +399,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             });
         }
         if (pendingCleared) {
-            updatedUser.showVipWithdrawalNotice = true;
-            updatedUser.persistentVipNotice = true;
+            // updatedUser.showVipWithdrawalNotice = true;
+            // updatedUser.persistentVipNotice = true;
         }
     } else if (type === 'link_account') {
         updatedUser.isAccountLinkedVerified = true;
+        updatedUser.showVipWithdrawalNotice = true;
+        updatedUser.persistentVipNotice = true;
     } else if (type === 'imminent_payment') {
         updatedUser.deactivationDate = undefined;
         updatedUser.imminentDeactivationExpiry = undefined;

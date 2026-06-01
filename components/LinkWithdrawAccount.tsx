@@ -58,7 +58,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
         if (currentUser) {
           currentUser.pendingActivation = 'link_account';
           currentUser.pendingPaymentProof = base64Data;
-          currentUser.pendingPaymentAmount = 47000;
+          currentUser.pendingPaymentAmount = 30700;
           currentUser.pendingPaymentDate = new Date().toISOString();
 
           existingUsers[user.email.toLowerCase()] = currentUser;
@@ -234,7 +234,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
       <div className="px-4 py-8 space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 pb-24">
         <div className="space-y-2 text-center">
           <h2 className="text-2xl font-black text-white uppercase tracking-tight">Payment Details</h2>
-          <p className="text-sm text-gray-400">Transfer exactly <span className="text-white font-bold text-lg">₦47,000</span> to the details below</p>
+          <p className="text-sm text-gray-400">Transfer exactly <span className="text-white font-bold text-lg">₦30,700</span> to the details below</p>
         </div>
 
         <div className="bg-red-600 text-white p-3 rounded-xl text-center font-black text-[10px] uppercase tracking-tighter shadow-lg animate-pulse">
@@ -316,7 +316,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
             <Icons.Lock size={120} />
           </div>
           <p className="text-[10px] font-black text-amber-400 uppercase tracking-[0.2em]">Required Payment</p>
-          <p className="text-5xl font-black text-white tracking-tighter">₦47,000</p>
+          <p className="text-5xl font-black text-white tracking-tighter">₦30,700</p>
           <div className="h-px bg-gray-800 w-1/2 mx-auto"></div>
           <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Database Sync Fee</p>
         </div>

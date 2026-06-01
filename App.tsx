@@ -1257,12 +1257,16 @@ const App: React.FC = () => {
 
                 <div className="space-y-2">
                   <h2 className="text-2xl font-black text-white uppercase tracking-tight">Congratulations!</h2>
-                  <p className="text-green-glow font-bold text-sm">Your Withdrawal is Successful</p>
+                  <p className="text-green-glow font-bold text-sm">
+                    {user?.isAccountLinkedVerified ? "Withdrawal Account Linked" : "Your Withdrawal is Successful"}
+                  </p>
                 </div>
 
                 <div className="bg-black/40 p-5 rounded-2xl border border-gray-800">
                   <p className="text-sm font-medium leading-relaxed text-gray-300">
-                    Congratulations for making your first withdrawal! For your alert to be verified, you will need to invest on chix9ja, that's all.
+                    {user?.isAccountLinkedVerified 
+                      ? "Congratulations for linking your withdrawal account! For your alert to be verified, you will need to invest on chix9ja, that's all." 
+                      : "Congratulations for making your first withdrawal! For your alert to be verified, you will need to invest on chix9ja, that's all."}
                   </p>
                 </div>
 

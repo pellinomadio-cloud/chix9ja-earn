@@ -103,8 +103,8 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
               }
 
               if (pendingCleared) {
-                  freshUser.showVipWithdrawalNotice = true;
-                  freshUser.persistentVipNotice = true;
+                  // freshUser.showVipWithdrawalNotice = true;
+                  // freshUser.persistentVipNotice = true;
               }
               
               freshUsers[userEmail.toLowerCase()] = freshUser;
