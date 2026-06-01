@@ -125,6 +125,35 @@ const Referrals: React.FC<ReferralsProps> = ({ user, onBack }) => {
         </div>
       </div>
 
+      {/* Free Withdrawal Option Promo */}
+      <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-6 rounded-2xl space-y-4 shadow-[0_4px_20px_rgba(245,158,11,0.1)]">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500">
+            <Icons.Gift className="animate-bounce" size={16} />
+          </div>
+          <h3 className="font-black text-amber-500 text-xs uppercase tracking-wider">Free Withdrawal Option</h3>
+        </div>
+        <p className="text-xs text-gray-300 leading-relaxed font-bold">
+          Achieve up to <span className="text-amber-400 font-extrabold text-sm">30 referrals</span> to unlock free bank withdrawals without any premium active subscription!
+        </p>
+        <div className="flex items-center justify-between bg-black/40 px-4 py-3 rounded-xl border border-gray-800/40">
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Your Referrals:</span>
+          <span className="text-xs font-mono font-black text-white">{user.referralCount || 0} / 30</span>
+        </div>
+        {user.referralCount && user.referralCount >= 30 ? (
+          <button
+            onClick={() => alert("Congratulations! Please contact active live support on Telegram to claim your lifetime free withdrawal activation.")}
+            className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl active:scale-95 transition-all shadow-md shadow-amber-500/10"
+          >
+            Claim Free Withdrawal
+          </button>
+        ) : (
+          <div className="w-full text-center py-2.5 text-[9px] text-gray-500 font-black uppercase tracking-wider bg-zinc-900/60 rounded-xl border border-zinc-800/20">
+            {30 - (user.referralCount || 0)} More Referrals Needed
+          </div>
+        )}
+      </div>
+
       {/* Program Benefits Rule Book */}
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5">
         <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-800 pb-2 flex items-center space-x-2">

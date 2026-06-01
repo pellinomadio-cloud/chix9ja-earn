@@ -185,82 +185,82 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
   }
 
   return (
-    <div className="px-4 py-8 space-y-8 pb-32">
+    <div className="px-4 py-6 space-y-6 pb-24">
       
       {/* Warning Message - Fixed at top with pulse */}
       <AnimatePresence>
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-600 shadow-lg shadow-red-600/20 text-white p-4 rounded-2xl text-center space-y-1 relative overflow-hidden"
+          className="bg-red-600 shadow-md shadow-red-600/10 text-white p-3 rounded-xl text-center space-y-1 relative overflow-hidden"
         >
-          <div className="inline-flex items-center space-x-2">
-            <Icons.AlertTriangle size={14} className="animate-pulse" />
-            <p className="font-black text-[10px] uppercase tracking-tighter">Restriction Warning</p>
+          <div className="inline-flex items-center space-x-1.5">
+            <Icons.AlertTriangle size={12} className="animate-pulse" />
+            <p className="font-black text-[9px] uppercase tracking-wider">Restriction Warning</p>
           </div>
-          <p className="text-[10px] font-bold uppercase leading-tight">
+          <p className="text-[9px] font-bold uppercase leading-tight">
             DONT USE OPAY AND PALMPAY. OTHER BANKS LIKE MONIEPOINT, UBA, ZENITH E.T.C ARE ALLOWED.
           </p>
           <div className="absolute top-0 right-0 p-1 opacity-50">
-             <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping"></div>
+             <div className="w-1 h-1 bg-white rounded-full animate-ping"></div>
           </div>
         </motion.div>
       </AnimatePresence>
 
       {/* Selected Plan Summary Card */}
-      <div className="bg-gray-900 border border-white/5 p-6 rounded-[2.5rem] relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-green-glow/5 blur-3xl -z-10 group-hover:bg-green-glow/10 transition-all" />
+      <div className="bg-gray-900 border border-white/5 p-4 rounded-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-24 h-24 bg-green-glow/5 blur-2xl -z-10 group-hover:bg-green-glow/10 transition-all" />
         <div className="flex justify-between items-center">
-            <div className="space-y-1">
-                <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Activation Required</p>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">{plan.name}</h3>
+            <div className="space-y-0.5">
+                <p className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Selected Tier</p>
+                <h3 className="text-lg font-black text-white uppercase tracking-tight">{plan.name}</h3>
             </div>
             <div className="text-right">
-                <p className="text-3xl font-black text-green-glow tracking-tighter leading-none">
+                <p className="text-xl font-black text-green-glow tracking-tight leading-none">
                   {plan.price}
                 </p>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{plan.duration}</p>
+                <p className="text-[8px] text-gray-500 font-bold uppercase tracking-widest mt-1">{plan.duration}</p>
             </div>
         </div>
       </div>
 
       {/* Step 1: Account Details */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-3 ml-2">
-          <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-500 font-black text-xs">1</div>
-          <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Management Bank</h4>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2 ml-1">
+          <div className="w-6 h-6 bg-white/5 rounded-full flex items-center justify-center text-gray-500 font-black text-[10px]">1</div>
+          <h4 className="text-[10px] font-black text-white uppercase tracking-wider">Transfer Funds</h4>
         </div>
         
-        <div className="bg-gradient-to-br from-gray-900 to-black rounded-[2.5rem] p-8 shadow-2xl border border-white/5 space-y-6 relative group overflow-hidden">
+        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-5 shadow-lg border border-white/5 space-y-4 relative group overflow-hidden">
           <div className="absolute top-0 left-0 w-1 h-full bg-green-glow opacity-50"></div>
           
-          <div className="space-y-6">
-            <div className="space-y-1">
-               <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Bank Name</p>
-               <p className="text-xl font-black text-white uppercase tracking-tight">{bankDetails.bankName}</p>
+          <div className="space-y-4">
+            <div className="space-y-0.5">
+               <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Bank Name</p>
+               <p className="text-base font-black text-white uppercase tracking-tight">{bankDetails.bankName}</p>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Account Number</p>
+            <div className="space-y-0.5">
+              <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Account Number</p>
               <div className="flex items-center justify-between">
-                <p className="text-4xl font-black text-green-glow tracking-widest font-mono">{bankDetails.accountNumber}</p>
+                <p className="text-xl font-black text-green-glow tracking-widest font-mono">{bankDetails.accountNumber}</p>
                 <button 
                   onClick={handleCopy}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${copied ? 'bg-green-500 text-white animate-bounce' : 'bg-green-glow/10 text-green-glow hover:bg-green-glow/20'}`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${copied ? 'bg-green-500 text-white animate-bounce' : 'bg-green-glow/10 text-green-glow hover:bg-green-glow/20'}`}
                 >
-                  {copied ? <Icons.Check size={20} /> : <Icons.Copy size={20} />}
+                  {copied ? <Icons.Check size={16} /> : <Icons.Copy size={16} />}
                 </button>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Account Name</p>
-              <p className="text-lg font-black text-white/90 uppercase tracking-tight">{bankDetails.accountName}</p>
+            <div className="space-y-0.5">
+              <p className="text-[9px] text-gray-600 font-black uppercase tracking-widest">Account Name</p>
+              <p className="text-sm font-black text-white/90 uppercase tracking-tight">{bankDetails.accountName}</p>
             </div>
           </div>
           
-          <div className="bg-amber-400/5 p-4 rounded-2xl border border-amber-400/10 mt-2">
-            <p className="text-[10px] text-amber-400/80 leading-relaxed italic font-medium">
+          <div className="bg-amber-400/5 p-3 rounded-xl border border-amber-400/10 mt-1">
+            <p className="text-[9px] text-amber-400/80 leading-relaxed italic font-medium">
               * Ensure the transfer total exactly matches <span className="font-black text-white">{plan.price}</span>.
             </p>
           </div>
@@ -268,10 +268,10 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
       </div>
 
       {/* Step 2: Proof Upload */}
-      <div className="space-y-4">
-        <div className="flex items-center space-x-3 ml-2">
-          <div className="w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-500 font-black text-xs">2</div>
-          <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Upload Receipt</h4>
+      <div className="space-y-3">
+        <div className="flex items-center space-x-2 ml-1">
+          <div className="w-6 h-6 bg-white/5 rounded-full flex items-center justify-center text-gray-500 font-black text-[10px]">2</div>
+          <h4 className="text-[10px] font-black text-white uppercase tracking-wider">Upload Receipt</h4>
         </div>
         
         <div className="relative group">
@@ -284,31 +284,31 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
           />
           <label 
             htmlFor="proof-upload"
-            className={`w-full py-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center space-y-4 cursor-pointer transition-all duration-300 ${
-              proofFile ? 'border-green-500 bg-green-500/5' : 'border-white/10 bg-gray-900 group-hover:border-green-glow/50 group-hover:bg-gray-800/50 shadow-inner'
+            className={`w-full py-6 border border-dashed rounded-2xl flex flex-col items-center justify-center space-y-3 cursor-pointer transition-all duration-300 ${
+              proofFile ? 'border-green-500 bg-green-500/5' : 'border-white/10 bg-gray-900 group-hover:border-green-glow/30 group-hover:bg-gray-800/50 shadow-inner'
             }`}
           >
             {proofFile ? (
               <motion.div 
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="text-center space-y-3"
+                className="text-center space-y-2"
               >
-                <div className="mx-auto w-16 h-16 bg-green-500/10 rounded-2xl flex items-center justify-center text-green-500 shadow-lg">
-                  <Icons.CheckCircle size={32} />
+                <div className="mx-auto w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-500 shadow-md">
+                  <Icons.CheckCircle size={24} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-white uppercase tracking-widest truncate max-w-[200px] mx-auto">{proofFile.name}</p>
-                  <p className="text-[8px] font-bold text-green-500 uppercase tracking-widest mt-1">Ready for Sync</p>
+                  <p className="text-[9px] font-black text-white uppercase tracking-widest truncate max-w-[200px] mx-auto">{proofFile.name}</p>
+                  <p className="text-[8px] font-bold text-green-500 uppercase tracking-widest mt-0.5">Ready for Sync</p>
                 </div>
               </motion.div>
             ) : (
               <>
-                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center text-gray-600 transition-colors group-hover:text-green-glow">
-                  <Icons.Upload size={32} />
+                <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-gray-600 transition-colors group-hover:text-green-glow">
+                  <Icons.Upload size={24} />
                 </div>
-                <div className="text-center space-y-1">
-                  <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Tap to upload proof</p>
+                <div className="text-center space-y-0.5">
+                  <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Tap to upload receipt</p>
                   <p className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">PNG, JPG or JPEG allowed</p>
                 </div>
               </>
@@ -318,17 +318,17 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
       </div>
 
       {/* Step 3: Verification */}
-      <div className="space-y-4 pt-4">
+      <div className="space-y-3 pt-2">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-gray-900/50 p-4 rounded-2xl text-center space-y-2 border border-white/5"
+          className="bg-gray-900/50 p-3 rounded-xl text-center space-y-1.5 border border-white/5"
         >
-          <div className="flex items-center justify-center space-x-2 text-green-glow/50">
-             <Icons.ShieldCheck size={14} />
-             <p className="text-[10px] font-black uppercase tracking-widest">Secure Sync Protocol</p>
+          <div className="flex items-center justify-center space-x-1.5 text-green-glow/50">
+             <Icons.ShieldCheck size={12} />
+             <p className="text-[9px] font-black uppercase tracking-widest">Secure Sync Protocol</p>
           </div>
-          <p className="text-[10px] text-gray-500 leading-tight font-medium px-4">
+          <p className="text-[9px] text-gray-500 leading-normal font-medium px-4">
             Upload verified. Management will validate your transfer manually within 2-4 hours if auto-sync fails.
           </p>
         </motion.div>
@@ -336,21 +336,21 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
         <button 
           onClick={handleVerify}
           disabled={status === 'loading' || status === 'success'}
-          className={`group w-full py-5 rounded-2xl font-black text-sm shadow-2xl transition-all flex items-center justify-center space-x-3 select-none ${
+          className={`group w-full py-3.5 rounded-xl font-black text-xs shadow-xl transition-all flex items-center justify-center space-x-2 select-none ${
             status === 'loading'
             ? 'bg-gray-800 text-gray-500 cursor-wait shadow-none'
-            : 'bg-white text-black active:scale-[0.98] active:bg-green-glow active:shadow-green-lg transition-transform'
+            : 'bg-white text-black active:scale-[0.98] active:bg-green-glow active:shadow-green-sm transition-transform'
           }`}
         >
           {status === 'loading' ? (
-            <div className="flex items-center space-x-3">
-              <div className="w-4 h-4 border-2 border-gray-500 border-t-white rounded-full animate-spin"></div>
-              <span className="uppercase tracking-[0.2em]">Verifying Hash...</span>
+            <div className="flex items-center space-x-2">
+              <div className="w-3.5 h-3.5 border-2 border-gray-500 border-t-white rounded-full animate-spin"></div>
+              <span className="uppercase tracking-widest">Verifying Hash...</span>
             </div>
           ) : (
             <>
-              <Icons.Zap size={18} fill="currentColor" strokeWidth={0} />
-              <span className="uppercase tracking-[0.2em]">Activate Account</span>
+              <Icons.Zap size={16} fill="currentColor" strokeWidth={0} />
+              <span className="uppercase tracking-widest">Activate Account</span>
             </>
           )}
         </button>
@@ -359,20 +359,20 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-between"
+            className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-between"
           >
-             <div className="flex items-center space-x-3">
-               <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center text-red-500">
-                  <Icons.Clock size={16} />
+             <div className="flex items-center space-x-2.5">
+               <div className="w-7 h-7 bg-red-500/20 rounded-full flex items-center justify-center text-red-500">
+                  <Icons.Clock size={14} />
                </div>
                <div className="text-left">
-                  <p className="text-[10px] font-bold text-white uppercase tracking-tight leading-none">Sync Failed Pending</p>
-                  <p className="text-[8px] font-bold text-red-400 uppercase tracking-widest mt-1">Manual node activation required</p>
+                  <p className="text-[9px] font-bold text-white uppercase tracking-tight leading-none">Sync Failed Pending</p>
+                  <p className="text-[8px] font-bold text-red-400 uppercase tracking-widest mt-0.5">Manual node activation required</p>
                </div>
              </div>
              <button 
                onClick={() => window.open('https://t.me/chix9jaservice', '_blank')}
-               className="text-[8px] font-black bg-red-500 text-white px-3 py-1.5 rounded-lg uppercase tracking-widest"
+               className="text-[8px] font-black bg-red-500 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest"
              >
                Support
              </button>

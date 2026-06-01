@@ -81,21 +81,21 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-3"
+        className="text-center space-y-2"
       >
-        <div className="inline-flex items-center px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-black text-green-glow uppercase tracking-widest mb-2">
-          Subscription Center
+        <div className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black text-green-glow uppercase tracking-widest mb-1">
+          SUBSCRIBE
         </div>
-        <h2 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">
-          Elevate Your <span className="text-green-glow">Experience</span>
+        <h2 className="text-2xl font-black text-white uppercase tracking-tight leading-none">
+          Choose a Plan
         </h2>
-        <p className="text-sm text-gray-400 font-medium max-w-[280px] mx-auto leading-relaxed">
-          Unlock unlimited potential and faster withdrawals with our premium tiers.
+        <p className="text-[11px] text-gray-400 font-medium max-w-[260px] mx-auto leading-normal">
+          Select a package to upgrade your limits and start withdrawals.
         </p>
       </motion.div>
 
       {/* Modern Plans Stack */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         {plans.map((plan, index) => {
           const isWeeklyRestricted = plan.id === 'weekly' && userBalance > 200000;
           const isMonthlyRestricted = plan.id === 'monthly' && userBalance > 2000000;
@@ -108,10 +108,10 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => !isRestricted && onPlanSelect(plan)}
-              className={`group relative overflow-hidden rounded-[2rem] border transition-all duration-300 ${
+              className={`group relative overflow-hidden rounded-2xl border transition-all duration-300 ${
                 isRestricted 
-                ? 'border-gray-800 bg-gray-900/50 opacity-60 grayscale' 
-                : 'border-white/5 bg-gray-900 hover:border-white/20 active:scale-[0.98]'
+                ? 'border-gray-800 bg-gray-900/40 opacity-60 grayscale' 
+                : 'border-white/5 bg-gray-900 hover:border-white/10 active:scale-[0.98]'
               }`}
             >
               {/* Highlight Background for Recommended */}
@@ -119,52 +119,52 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
                 <div className="absolute inset-0 bg-gradient-to-br from-green-glow/5 to-transparent pointer-events-none" />
               )}
 
-              <div className="p-6 relative z-10">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br ${plan.color} text-black shadow-lg`}>
-                      {plan.icon}
+              <div className="p-4 relative z-10">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${plan.color} text-black shadow-md`}>
+                      {React.cloneElement(plan.icon as React.ReactElement, { size: 18 })}
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-white uppercase tracking-tight leading-none">{plan.name}</h3>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-1">{plan.duration}</p>
+                      <h3 className="text-base font-black text-white uppercase tracking-tight leading-none">{plan.name}</h3>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">{plan.duration}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`text-2xl font-black ${isRestricted ? 'text-gray-500' : 'text-green-glow'} tracking-tighter`}>{plan.price}</p>
+                    <p className={`text-xl font-black ${isRestricted ? 'text-gray-500' : 'text-green-glow'} tracking-tight`}>{plan.price}</p>
                     {plan.recommended && (
-                      <span className="text-[8px] font-black bg-green-glow text-black px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-sm">Popular</span>
+                      <span className="text-[8px] font-black bg-green-glow text-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter shadow-sm">Popular</span>
                     )}
                   </div>
                 </div>
 
                 {isRestricted ? (
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl mb-2">
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl mb-1">
                     <div className="flex items-center space-x-2 text-red-500 mb-1">
-                      <Icons.Lock size={14} />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Locked</p>
+                      <Icons.Lock size={12} />
+                      <p className="text-[9px] font-black uppercase tracking-widest">Locked</p>
                     </div>
-                    <p className="text-[11px] font-bold text-gray-400 leading-tight uppercase">
-                      Current balance (₦{userBalance.toLocaleString()}) exceeds this plan's withdrawal capacity. Upgrade to higher tier.
+                    <p className="text-[10px] font-bold text-gray-400 leading-tight uppercase">
+                      Balance (₦{userBalance.toLocaleString()}) exceeds weekly limit. Please choose a higher tier.
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
                       {plan.features.map((feature, i) => (
-                        <div key={i} className="flex items-center space-x-2 text-xs text-gray-400 font-medium">
-                          <Icons.Check size={12} className="text-green-glow" />
+                        <div key={i} className="flex items-center space-x-2 text-[11px] text-gray-400 font-medium">
+                          <Icons.Check size={10} className="text-green-glow" />
                           <span>{feature}</span>
                         </div>
                       ))}
                     </div>
                     
-                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
-                      <div className="flex items-center space-x-1.5">
-                        <Icons.ShieldCheck size={14} className="text-green-glow/50" />
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{plan.limitDescription}</span>
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <div className="flex items-center space-x-1">
+                        <Icons.ShieldCheck size={12} className="text-green-glow/50" />
+                        <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide">{plan.limitDescription}</span>
                       </div>
-                      <button className={`px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] transition-all ${plan.recommended ? 'bg-green-glow text-black shadow-[0_0_20px_rgba(46,213,115,0.3)]' : 'bg-white text-black hover:bg-gray-200'}`}>
+                      <button className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-wider transition-all ${plan.recommended ? 'bg-green-glow text-black shadow-[0_0_15px_rgba(46,213,115,0.25)]' : 'bg-white text-black hover:bg-gray-200'}`}>
                         Choose Plan
                       </button>
                     </div>

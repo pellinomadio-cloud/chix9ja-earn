@@ -164,23 +164,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
                 </p>
             </div>
             
-            {onRequestFreeWithdrawal && (
-             <div className="w-full max-w-sm bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-6 rounded-3xl space-y-4 shadow-[0_4px_20px_rgba(245,158,11,0.1)]">
-                 <div className="flex items-center justify-center space-x-2">
-                     <Icons.Gift className="text-amber-500 animate-bounce" size={20} />
-                     <h3 className="font-black text-amber-500 text-xs uppercase tracking-widest animate-pulse">Referrals Promo</h3>
-                 </div>
-                 <p className="text-xs text-gray-300 leading-relaxed font-bold">
-                     Need free withdrawal? Get up to 30 referrals and withdraw freely!
-                 </p>
-                 <button
-                     onClick={onRequestFreeWithdrawal}
-                     className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs uppercase tracking-wider rounded-2xl active:scale-95 transition-all shadow-md shadow-amber-500/10"
-                 >
-                     Claim Free Withdrawal Option
-                 </button>
-             </div>
-            )}
+
 
             <button 
                 onClick={onSubscribeRedirect}
