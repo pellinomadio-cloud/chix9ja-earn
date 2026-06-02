@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Icons } from './Icons';
 import { Plan } from '../types';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 
 interface SubscribeProps {
   onPlanSelect: (plan: Plan) => void;
@@ -17,8 +17,6 @@ interface PlanDisplay extends Plan {
 }
 
 const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
-  const [showAdvert, setShowAdvert] = useState(false);
-
   const plans: PlanDisplay[] = [
     { 
       id: 'weekly', 
@@ -55,22 +53,6 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
       color: 'from-fuchsia-600 to-pink-500'
     },
   ];
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowAdvert(true), 1500);
-    const interval = setInterval(() => {
-      setShowAdvert(prev => !prev);
-    }, 6000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const handleSupportClick = () => {
-    window.open('https://t.me/chix9jaservice', '_blank');
-  };
 
   return (
     <div className="px-4 py-8 space-y-10 relative pb-32 overflow-hidden">
@@ -201,34 +183,6 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
              <span className="text-[8px] font-black uppercase text-gray-500 tracking-widest">{badge.label}</span>
           </div>
         ))}
-      </motion.div>
-
-      {/* Technical Support Card - Styled Inline to Prevent Bottom Overlapping/Clashing */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="pt-2"
-      >
-        <button 
-          type="button"
-          onClick={handleSupportClick}
-          className="w-full bg-white text-black rounded-2xl p-4 shadow-xl flex items-center justify-between group active:scale-[0.99] transition-all border border-white/20 overflow-hidden relative"
-        >
-          <div className="absolute inset-0 bg-green-glow/5 group-hover:bg-green-glow/10 transition-colors pointer-events-none" />
-          <div className="flex items-center space-x-3.5 relative z-10">
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:rotate-3">
-              <Icons.MessageCircle size={18} />
-            </div>
-            <div className="text-left">
-              <p className="font-black text-xs uppercase tracking-tight">Technical Support</p>
-              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Instant Telegram Access</p>
-            </div>
-          </div>
-          <div className="bg-black text-white px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest group-hover:bg-green-glow group-hover:text-black transition-colors relative z-10">
-            Connect
-          </div>
-        </button>
       </motion.div>
     </div>
   );
