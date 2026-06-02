@@ -164,7 +164,16 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
                         <Icons.ShieldCheck size={12} className="text-green-glow/50" />
                         <span className="text-[9px] font-bold text-gray-500 uppercase tracking-wide">{plan.limitDescription}</span>
                       </div>
-                      <button className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-wider transition-all ${plan.recommended ? 'bg-green-glow text-black shadow-[0_0_15px_rgba(46,213,115,0.25)]' : 'bg-white text-black hover:bg-gray-200'}`}>
+                      <button 
+                        type="button" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!isRestricted) {
+                            onPlanSelect(plan);
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-wider transition-all ${plan.recommended ? 'bg-green-glow text-black shadow-[0_0_15px_rgba(46,213,115,0.25)]' : 'bg-white text-black hover:bg-gray-200'}`}
+                      >
                         Choose Plan
                       </button>
                     </div>
@@ -194,36 +203,33 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
         ))}
       </motion.div>
 
-      {/* Floating Support Button - Clean & Minimal */}
-      <AnimatePresence>
-        {showAdvert && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-24 left-4 right-4 z-[100]"
-          >
-            <button 
-              onClick={handleSupportClick}
-              className="w-full bg-white text-black rounded-3xl p-5 shadow-2xl flex items-center justify-between group active:scale-95 transition-all border border-white/20 overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-green-glow/5 group-hover:bg-green-glow/10 transition-colors" />
-              <div className="flex items-center space-x-4 relative z-10">
-                <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-transform">
-                  <Icons.MessageCircle size={22} />
-                </div>
-                <div className="text-left">
-                  <p className="font-black text-sm uppercase tracking-tight">Technical Support</p>
-                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.1em]">Instant Telegram Access</p>
-                </div>
-              </div>
-              <div className="bg-black text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest group-hover:bg-green-glow group-hover:text-black transition-colors relative z-10">
-                Connect
-              </div>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Technical Support Card - Styled Inline to Prevent Bottom Overlapping/Clashing */}
+      <motion.div 
+        initial={{ opacity: 0, y: 15 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="pt-2"
+      >
+        <button 
+          type="button"
+          onClick={handleSupportClick}
+          className="w-full bg-white text-black rounded-2xl p-4 shadow-xl flex items-center justify-between group active:scale-[0.99] transition-all border border-white/20 overflow-hidden relative"
+        >
+          <div className="absolute inset-0 bg-green-glow/5 group-hover:bg-green-glow/10 transition-colors pointer-events-none" />
+          <div className="flex items-center space-x-3.5 relative z-10">
+            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:rotate-3">
+              <Icons.MessageCircle size={18} />
+            </div>
+            <div className="text-left">
+              <p className="font-black text-xs uppercase tracking-tight">Technical Support</p>
+              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Instant Telegram Access</p>
+            </div>
+          </div>
+          <div className="bg-black text-white px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest group-hover:bg-green-glow group-hover:text-black transition-colors relative z-10">
+            Connect
+          </div>
+        </button>
+      </motion.div>
     </div>
   );
 };

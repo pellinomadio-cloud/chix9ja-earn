@@ -279,7 +279,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
             type="file" 
             accept="image/*"
             onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-            className="hidden" 
+            className="sr-only" 
             id="proof-upload"
           />
           <label 

@@ -82,7 +82,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountC
             ref={fileInputRef} 
             onChange={handleImageUpload} 
             accept="image/*" 
-            className="hidden" 
+            className="sr-only" 
           />
         </div>
         

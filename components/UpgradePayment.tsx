@@ -258,7 +258,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
             type="file" 
             accept="image/*"
             onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-            className="hidden" 
+            className="sr-only" 
             id="proof-upload"
           />
           <label 

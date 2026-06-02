@@ -155,7 +155,7 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
                 type="file" 
                 accept="image/*" 
                 onChange={handleFileUpload}
-                className="hidden" 
+                className="sr-only" 
                 id="imminent-proof-upload"
               />
               <label 

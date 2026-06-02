@@ -188,7 +188,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
                 <input 
                   type="file" 
                   accept="image/*" 
-                  className="hidden" 
+                  className="sr-only" 
                   onChange={(e) => e.target.files && setProofFile(e.target.files[0])}
                 />
                 <div className="mx-auto w-20 h-20 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-400">

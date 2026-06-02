@@ -197,7 +197,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
                   reader.readAsDataURL(file);
                 }
               }}
-              className="hidden" 
+              className="sr-only" 
               id="invest-proof-upload"
             />
             <label 
