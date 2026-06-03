@@ -1238,12 +1238,12 @@ const App: React.FC = () => {
                 </main>
               )}
           </div>
-          {currentView === 'dashboard' && user?.notificationPreferences && <LiveNotifications preferences={user.notificationPreferences} />}
-          {currentView === 'dashboard' && !user?.isSubscribed && <SystemNotification />}
+          {currentView === 'dashboard' && activeTab !== 'ux-trade' && activeTab !== 'loan' && user?.notificationPreferences && <LiveNotifications preferences={user.notificationPreferences} />}
+          {currentView === 'dashboard' && activeTab !== 'ux-trade' && activeTab !== 'loan' && !user?.isSubscribed && <SystemNotification />}
           {activeTab !== 'admin' && activeTab !== 'imminent_payment' && activeTab !== 'task_dashboard' && activeTab !== 'notifications' && activeTab !== 'receipt' && (
             <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} user={user} />
           )}
-          {showVipNotice && (
+          {showVipNotice && activeTab !== 'ux-trade' && activeTab !== 'loan' && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center px-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
               <div className="bg-gray-900 border border-green-glow/30 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_50px_rgba(0,255,127,0.2)] relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-green-glow to-transparent"></div>
@@ -1283,10 +1283,10 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          {showWelcomeAd && (
+          {showWelcomeAd && activeTab !== 'ux-trade' && activeTab !== 'loan' && (
             <TelegramAd onJoin={() => window.open('https://t.me/chix9ja', '_blank')} onContinue={() => setShowWelcomeAd(false)} />
           )}
-          {showWithdrawReferralAdvert && (
+          {showWithdrawReferralAdvert && activeTab !== 'ux-trade' && activeTab !== 'loan' && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center px-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-300">
               <div className="bg-gray-900 border border-amber-500/30 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_50px_rgba(245,158,11,0.25)] relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
@@ -1328,7 +1328,7 @@ const App: React.FC = () => {
                   >
                     Or Subscribe to Premium
                   </button>
-
+                  
                   <button 
                     onClick={() => setShowWithdrawReferralAdvert(false)}
                     className="text-gray-500 hover:text-gray-300 text-xs font-semibold py-1 transition-colors font-sans"
@@ -1344,7 +1344,7 @@ const App: React.FC = () => {
               </div>
             </div>
           )}
-          {showQuizAd && !showWelcomeAd && activeTab !== 'ux-trade' && activeTab !== 'imminent_payment' && (
+          {showQuizAd && !showWelcomeAd && activeTab !== 'ux-trade' && activeTab !== 'loan' && activeTab !== 'imminent_payment' && (
              <QuizAd onStart={() => { setShowQuizAd(false); setActiveTab('ux-trade'); }} onClose={() => setShowQuizAd(false)} />
           )}
         </div>
