@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
 import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface ImminentPaymentProps {
   user: User;
@@ -12,6 +13,7 @@ interface ImminentPaymentProps {
 const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const [showOpayWarning, setShowOpayWarning] = useState(false);
   const { bankDetails } = useBankDetails();
 
   const isDeactivated = user.deactivationDate ? Date.now() > user.deactivationDate : false;
@@ -19,14 +21,7 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
 
   const handlePayNow = () => {
     navigator.clipboard.writeText(bankDetails.accountNumber);
-    alert(
-       `ACTIVATION DETAILS\n\n` +
-       `Bank: ${bankDetails.bankName}\n` +
-       `Account Number: ${bankDetails.accountNumber}\n` +
-       `Account Name: ${bankDetails.accountName}\n\n` +
-       `AMOUNT: ₦${amount.toLocaleString()}\n\n` +
-       `Account number copied! Make payment and click "Verify" below.`
-    );
+    setShowOpayWarning(true);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +113,7 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
               <button 
                 onClick={() => {
                   navigator.clipboard.writeText(bankDetails.accountNumber);
-                  alert("Account number copied to clipboard!");
+                  setShowOpayWarning(true);
                 }}
                 className="p-2 bg-green-glow/10 text-green-glow rounded-lg active:scale-90 transition-transform"
               >
@@ -212,6 +207,71 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
             </p>
           </div>
       </div>
+
+      {/* Beautiful OPay & PalmPay warning modal overlay */}
+      <AnimatePresence>
+        {showOpayWarning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowOpayWarning(false)}
+            className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-[24px] p-6 border border-emerald-500/20 text-center space-y-5 bg-gradient-to-b from-gray-950 via-zinc-950 to-black shadow-[0_0_50px_rgba(239,68,68,0.25)] relative overflow-hidden"
+            >
+              {/* Top Accent Bar */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-red-550 via-amber-500 to-red-500" />
+              
+              {/* Outer Glowing Circle around Warning Icon */}
+              <div className="mx-auto w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 animate-bounce">
+                <Icons.AlertTriangle size={36} className="text-red-500 text-glow-red" />
+              </div>
+
+              {/* Header Titles */}
+              <div className="space-y-1">
+                <div className="inline-flex items-center space-x-1 px-2.5 py-1 bg-red-500/10 rounded-full border border-red-500/10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
+                  <span className="text-[9px] font-black uppercase text-red-500 tracking-widest font-mono">CRITICAL WARNING</span>
+                </div>
+                <h3 className="text-sm font-black text-white uppercase tracking-tight">Do Not Use OPay or PalmPay</h3>
+              </div>
+
+              {/* Informative Text block */}
+              <p className="text-[11px] text-gray-400 font-sans leading-relaxed">
+                Payments made through <strong className="text-red-405">OPay</strong> or <strong className="text-red-405">PalmPay</strong> accounts are <strong className="text-white">NOT supported</strong> by our automatic bank synchronization nodes. Transferring via these platforms can cause automatic activation timeouts or lost funds.
+              </p>
+
+              {/* Allowed Alternatives Box */}
+              <div className="bg-emerald-950/20 border border-emerald-500/25 rounded-xl p-3 space-y-2 text-left">
+                <p className="text-[8px] font-black uppercase text-emerald-400 tracking-wider font-mono font-bold">SUPPORTED PAYMENT CHANNELS</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['GTBank', 'Zenith Bank', 'Access Bank', 'Moniepoint', 'UBA', 'Kuda', 'Wema'].map(bName => (
+                    <span key={bName} className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/15 text-emerald-300 font-mono text-[8.5px] font-bold">
+                      ✓ {bName}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={() => setShowOpayWarning(false)}
+                className="w-full py-3 bg-red-500 hover:bg-red-605 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-[0_4px_16px_rgba(239,68,68,0.2)] active:scale-95"
+              >
+                I Understand, Proceed
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };
