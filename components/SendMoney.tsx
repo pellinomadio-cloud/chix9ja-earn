@@ -58,10 +58,10 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
     // Determine limits based on plan name
     // Matches names set in AdminDashboard and Subscribe component
     if (planName === 'Weekly Plan') {
-        limit = 500000;
+        limit = user.customWeeklyLimit ?? 500000;
         periodMs = 7 * 24 * 60 * 60 * 1000; // 7 days
     } else if (planName === 'Monthly Plan') {
-        limit = 2000000;
+        limit = user.customMonthlyLimit ?? 2000000;
         periodMs = 30 * 24 * 60 * 60 * 1000; // 30 days
     } else if (planName === 'Yearly Plan') {
         return null; // Unlimited

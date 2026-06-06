@@ -27,6 +27,8 @@
         "vipBalance": { "type": "number" },
         "loanBalance": { "type": "number" },
         "loanExpiry": { "type": "number" },
+        "customWeeklyLimit": { "type": "number" },
+        "customMonthlyLimit": { "type": "number" },
         "isPMode": { "type": "boolean" },
         "isVMode": { "type": "boolean" },
         "vModeSubscriptionUsed": { "type": "boolean" },

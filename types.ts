@@ -55,6 +55,8 @@ export interface User {
   vipBalance?: number;
   loanBalance?: number;
   loanExpiry?: number;
+  customWeeklyLimit?: number;
+  customMonthlyLimit?: number;
   isPMode?: boolean;
   isVMode?: boolean; // Verification mode for subscriptions
   vModeSubscriptionUsed?: boolean;

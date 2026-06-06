@@ -112,6 +112,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [editBalance, setEditBalance] = useState('');
   const [editVipBalance, setEditVipBalance] = useState('');
   const [editLoanBalance, setEditLoanBalance] = useState('');
+  const [editCustomWeeklyLimit, setEditCustomWeeklyLimit] = useState('');
+  const [editCustomMonthlyLimit, setEditCustomMonthlyLimit] = useState('');
 
   // Transaction injector states
   const [injectTxType, setInjectTxType] = useState<'credit' | 'debit'>('credit');
@@ -678,6 +680,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         setEditBalance(targetUser.balance.toString());
         setEditVipBalance((targetUser.vipBalance || 0).toString());
         setEditLoanBalance((targetUser.loanBalance || 0).toString());
+        setEditCustomWeeklyLimit((targetUser.customWeeklyLimit ?? 500000).toString());
+        setEditCustomMonthlyLimit((targetUser.customMonthlyLimit ?? 2000000).toString());
         setInjectTxAmount('');
         setInjectTxDesc('');
         setInjectTxType('credit');
@@ -691,9 +695,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         balance: parseFloat(editBalance) || 0,
         vipBalance: parseFloat(editVipBalance) || 0,
         loanBalance: parseFloat(editLoanBalance) || 0,
+        customWeeklyLimit: parseFloat(editCustomWeeklyLimit) || 500000,
+        customMonthlyLimit: parseFloat(editCustomMonthlyLimit) || 2000000,
     };
     await saveUserDocument(userObj.email, updatedUser);
-    alert(`Balances successfully updated for ${userObj.name}!`);
+    alert(`Account override details (including withdrawal limits) successfully updated for ${userObj.name}!`);
   };
 
   const handleToggleRestriction = async (userObj: User) => {
@@ -1458,6 +1464,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                                 value={editLoanBalance}
                                                                 onChange={(e) => setEditLoanBalance(e.target.value)}
                                                             />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="border-t border-zinc-800/80 pt-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest flex items-center">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mr-1.5" /> Weekly Withdraw Limit (₦)
+                                                            </label>
+                                                            <input 
+                                                                type="number"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none font-mono"
+                                                                value={editCustomWeeklyLimit}
+                                                                onChange={(e) => setEditCustomWeeklyLimit(e.target.value)}
+                                                                placeholder="500000"
+                                                            />
+                                                            <span className="text-[8px] text-zinc-500 font-mono">Current sub limit override (Default: ₦500,000)</span>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest flex items-center">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mr-1.5" /> Monthly Withdraw Limit (₦)
+                                                            </label>
+                                                            <input 
+                                                                type="number"
+                                                                className="w-full text-xs p-2.5 rounded-lg bg-black text-white border border-zinc-800 focus:border-emerald-500 outline-none font-mono"
+                                                                value={editCustomMonthlyLimit}
+                                                                onChange={(e) => setEditCustomMonthlyLimit(e.target.value)}
+                                                                placeholder="2000000"
+                                                            />
+                                                            <span className="text-[8px] text-zinc-500 font-mono">Current sub limit override (Default: ₦2,000,000)</span>
                                                         </div>
                                                     </div>
                                                     
