@@ -1082,7 +1082,7 @@ const App: React.FC = () => {
               ) : activeTab === 'notifications' ? (
                 <NotificationFeed user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
               ) : activeTab === 'promo' ? (
-                <PromoPage user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} />
+                <PromoPage user={user!} onUpdateUser={handleUpdateProfile} onBack={handleBack} onGoToSubscribe={() => setActiveTab('subscribe')} />
               ) : activeTab === 'send_money' ? (
                 <SendMoney 
                   user={user!} 

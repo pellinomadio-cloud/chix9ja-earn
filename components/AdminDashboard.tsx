@@ -512,7 +512,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     const type = userObj.pendingActivation;
     const updatedUser = { ...userObj };
     
-    if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly') {
+    if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly' || type === 'subscription_promo') {
         let durationDays = 30; 
         let planName = 'Monthly Pro';
         if (type === 'subscription_weekly') {
@@ -522,6 +522,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         if (type === 'subscription_yearly') {
             durationDays = 365;
             planName = 'Premium Elite';
+        }
+        if (type === 'subscription_promo') {
+            durationDays = 1;
+            planName = 'Promo Subscription';
         }
         
         const expiryTimestamp = Date.now() + (durationDays * 24 * 60 * 60 * 1000);
@@ -1173,6 +1177,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                 pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
                                                 pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
                                                 pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
+                                                pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
                                                 pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
                                                 pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
                                                 pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :

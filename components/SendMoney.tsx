@@ -57,14 +57,21 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
 
     // Determine limits based on plan name
     // Matches names set in AdminDashboard and Subscribe component
-    if (planName === 'Weekly Plan') {
+    if (planName === 'Weekly Plan' || planName === 'Weekly Saver') {
         limit = user.customWeeklyLimit ?? 500000;
         periodMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-    } else if (planName === 'Monthly Plan') {
+    } else if (planName === 'Monthly Plan' || planName === 'Monthly Pro') {
         limit = user.customMonthlyLimit ?? 2000000;
         periodMs = 30 * 24 * 60 * 60 * 1000; // 30 days
-    } else if (planName === 'Yearly Plan') {
+    } else if (planName === 'Yearly Plan' || planName === 'Premium Elite') {
         return null; // Unlimited
+    } else if (planName === 'Promo Subscription') {
+        // Only once withdrawal is allowed on this plan
+        const hasDebit = (user.transactions || []).some(t => t.type === 'debit' && t.status === 'success');
+        if (hasDebit) {
+            return "This promo subscription only allows a single (once) withdrawal. Your authorized withdrawal limit has already been used.";
+        }
+        return null; // Unlimited for that single withdrawal!
     } else {
         // Fallback for unknown plans or legacy data
         return null;

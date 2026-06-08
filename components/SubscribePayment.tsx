@@ -71,6 +71,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               let durationDays = 30; 
               if (plan.id === 'weekly') durationDays = 7;
               if (plan.id === 'yearly') durationDays = 365;
+              if (plan.id === 'promo') durationDays = 1;
               
               const expiryTimestamp = Date.now() + (durationDays * 24 * 60 * 60 * 1000);
 
@@ -138,8 +139,9 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
                       let amountNum = 17000;
                       if (plan.id === 'weekly') amountNum = 10000;
                       if (plan.id === 'yearly') amountNum = 70000;
+                      if (plan.id === 'promo') amountNum = 7000;
 
-                  currentUser.pendingActivation = plan.id === 'weekly' ? 'subscription_weekly' : (plan.id === 'yearly' ? 'subscription_yearly' : 'subscription_monthly');
+                  currentUser.pendingActivation = plan.id === 'weekly' ? 'subscription_weekly' : (plan.id === 'yearly' ? 'subscription_yearly' : (plan.id === 'promo' ? 'subscription_promo' : 'subscription_monthly'));
                   currentUser.pendingPaymentProof = base64Data;
                   currentUser.pendingPaymentAmount = amountNum;
                   currentUser.pendingPaymentDate = new Date().toISOString();

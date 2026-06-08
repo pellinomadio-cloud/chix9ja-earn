@@ -19,6 +19,17 @@ interface PlanDisplay extends Plan {
 const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
   const plans: PlanDisplay[] = [
     { 
+      id: 'promo', 
+      name: 'Promo Subscription', 
+      price: '₦7,000', 
+      amount: '7,000 Naira', 
+      duration: 'Once Withdrawal Access',
+      limitDescription: 'Single Withdrawal Session',
+      features: ['Once Withdrawal Allowed', 'Immediate Desk Activator', 'Standard Support'],
+      icon: <Icons.Star size={24} />,
+      color: 'from-amber-500 to-orange-450'
+    },
+    { 
       id: 'weekly', 
       name: 'Weekly Saver', 
       price: '₦10,000', 
