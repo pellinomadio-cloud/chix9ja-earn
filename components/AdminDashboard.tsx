@@ -387,15 +387,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             updatedTransactions = [newTx, ...updatedTransactions];
         }
 
-        const emailNotif = {
-            id: 'email_' + Math.random().toString(36).substring(2, 9),
-            sender: "Chix9ja Validation <noreply@chix9ja.com>",
-            subject: `Subscription Approved: ${plan} Active! 🚀`,
-            message: `Dear ${targetUser.name},\n\nWe are pleased to inform you that your manual payment transfer has been verified! Your ${plan} subscription is now fully ACTIVE on our system.\n\nEnjoy lightning-fast withdrawals, custom limits, and automatic transaction validation on Chix9ja.\n\nThank you for choosing us!\n\nBest regards,\nThe Chix9ja Security & Treasury Department`,
-            date: new Date().toISOString(),
-            read: false,
-            isEmail: true
-        };
         const updatedUser = {
             ...targetUser,
             isSubscribed: true,
@@ -407,7 +398,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             pendingPaymentProof: undefined,
             pendingPaymentAmount: undefined,
             pendingPaymentDate: undefined,
-            adminNotifications: [emailNotif, ...(targetUser.adminNotifications || [])]
+            adminNotifications: targetUser.adminNotifications || []
         };
         saveUserDocument(email, updatedUser);
         let alertMsg = `Subscription approved for ${targetUser.name} with ${plan}.`;
@@ -621,17 +612,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         mailBody = `Dear ${updatedUser.name},\n\nWe have received your validation transfer. Your Investment Validation process has completed and all account restrictions have been cleared.\n\nYou can now seamlessly access and trade high-yielding investment instruments across the central Chix9ja exchange.\n\nHappy earning!\n\nBest regards,\nThe Chix9ja Global Asset Management Team`;
     }
 
-    const emailNotif = {
-        id: 'email_act_' + Math.random().toString(36).substring(2, 9),
-        sender: "Chix9ja Validation <noreply@chix9ja.com>",
-        subject: mailSubject,
-        message: mailBody,
-        date: new Date().toISOString(),
-        read: false,
-        isEmail: true
-    };
-
-    updatedUser.adminNotifications = [emailNotif, ...(updatedUser.adminNotifications || [])];
     updatedUser.pendingActivation = null;
     updatedUser.pendingPaymentProof = undefined;
     updatedUser.pendingPaymentAmount = undefined;

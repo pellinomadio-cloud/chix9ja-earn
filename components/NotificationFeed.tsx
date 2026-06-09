@@ -83,59 +83,24 @@ const NotificationFeed: React.FC<NotificationFeedProps> = ({ onBack, user, onUpd
             <span>Official Inbox Alerts & System Messages</span>
         </h3>
 
-        {user?.adminNotifications && user.adminNotifications.length > 0 ? (
+        {user?.adminNotifications && user.adminNotifications.filter(n => !n.isEmail).length > 0 ? (
             <div className="space-y-3">
-                {user.adminNotifications.map((notif) => {
-                    if (notif.isEmail) {
-                        return (
-                            <div key={notif.id} className="bg-zinc-950 border border-green-500/20 rounded-[24px] p-5 space-y-4 shadow-[0_4px_20px_rgba(34,197,94,0.05)] relative overflow-hidden animate-in fade-in duration-300">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-green-500/5 -mr-8 -mt-8 rounded-full blur-xl"></div>
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center space-x-2.5">
-                                        <div className="bg-green-600/15 border border-green-500/30 w-10 h-10 rounded-xl flex items-center justify-center text-green-400">
-                                            <Icons.Mail size={18} className="animate-pulse" />
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center space-x-1.5">
-                                                <span className="text-[9px] font-extrabold text-green-400 uppercase tracking-widest bg-emerald-950/45 px-2 py-0.5 rounded-md border border-emerald-500/10 font-mono">Official Email</span>
-                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                            </div>
-                                            <p className="text-[10px] text-gray-400 font-extrabold">{notif.sender || 'Chix9ja Team <noreply@chix9ja.com>'}</p>
-                                        </div>
-                                    </div>
-                                    <span className="text-[9px] font-mono text-gray-500 font-semibold bg-zinc-905 border border-zinc-800 px-2 py-0.5 rounded">
-                                        {new Date(notif.date).toLocaleDateString()}
-                                    </span>
-                                </div>
-                                
-                                <div className="space-y-2 border-t border-zinc-900 pt-3">
-                                    <p className="text-xs font-black text-white uppercase tracking-tight leading-snug">
-                                        Subject: {notif.subject || 'Official Channel Activation Notice'}
-                                    </p>
-                                    <div className="bg-zinc-900/60 border border-zinc-800 p-4 rounded-xl text-xs text-zinc-350 whitespace-pre-wrap leading-relaxed font-sans font-medium">
-                                        {notif.message}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    }
-                    return (
-                        <div key={notif.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-start space-x-3 shadow-lg relative overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
-                            <div className="bg-green-glow/10 border border-green-glow/20 p-2.5 rounded-full flex-shrink-0 text-green-glow mt-0.5 animate-pulse">
-                                <Icons.Notification size={16} />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] font-bold text-green-glow uppercase tracking-widest">Office Broadcast</span>
-                                    <span className="text-[9px] font-mono text-gray-500 font-bold">{new Date(notif.date).toLocaleDateString()} {new Date(notif.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                </div>
-                                <p className="text-xs text-white leading-relaxed font-semibold">
-                                    {notif.message}
-                                </p>
-                            </div>
+                {user.adminNotifications.filter(n => !n.isEmail).map((notif) => (
+                    <div key={notif.id} className="bg-gray-900 border border-gray-800 rounded-2xl p-4 flex items-start space-x-3 shadow-lg relative overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="bg-green-glow/10 border border-green-glow/20 p-2.5 rounded-full flex-shrink-0 text-green-glow mt-0.5 animate-pulse">
+                            <Icons.Notification size={16} />
                         </div>
-                    );
-                })}
+                        <div className="flex-1 space-y-1">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-green-glow uppercase tracking-widest">Office Broadcast</span>
+                                <span className="text-[9px] font-mono text-gray-500 font-bold">{new Date(notif.date).toLocaleDateString()} {new Date(notif.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            </div>
+                            <p className="text-xs text-white leading-relaxed font-semibold">
+                                {notif.message}
+                            </p>
+                        </div>
+                    </div>
+                ))}
             </div>
         ) : (
             <div className="bg-gray-950 rounded-2xl p-6 border border-gray-900 text-center space-y-2">
