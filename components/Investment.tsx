@@ -32,6 +32,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
   const [step, setStep] = useState<'plans' | 'payment' | 'account_details' | 'verification_payment'>(initialStep);
   const [investProof, setInvestProof] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     if (user.isInvestmentIdUsed && step === 'plans') {
@@ -242,7 +243,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
                 pendingPaymentAmount: 22000,
                 pendingPaymentDate: new Date().toISOString()
               });
-              alert("Verification payment submitted. Account restricted for 24 hours while we finalize your investment ID validation.");
+              setShowSuccessModal(true);
             }}
             className="w-full py-4 bg-amber-500 text-black font-black rounded-xl uppercase tracking-widest shadow-xl active:scale-95 transition-all text-center"
           >
@@ -521,6 +522,60 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
                 className="w-full py-3 bg-red-500 hover:bg-red-605 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-[0_4px_16px_rgba(239,68,68,0.2)] active:scale-95"
               >
                 I Understand, Proceed
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Beautiful payment success check-in popup */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="w-full max-w-sm rounded-[24px] p-6 border border-green-500/20 text-center space-y-5 bg-gradient-to-b from-gray-950 via-zinc-950 to-black shadow-[0_0_50px_rgba(34,197,94,0.25)] relative overflow-hidden"
+            >
+              {/* Top Custom Border bar */}
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-emerald-500 via-green-glow to-teal-500" />
+              
+              <div className="mx-auto w-16 h-16 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-500 animate-pulse">
+                <Icons.CheckCircle size={36} className="text-green-400 text-glow-green" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="inline-flex items-center space-x-1 px-2.5 py-1 bg-green-500/10 rounded-full border border-green-500/10">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
+                  <span className="text-[9px] font-black uppercase text-green-400 tracking-widest font-mono">SUBMITTED SUCCESSFULLY</span>
+                </div>
+                <h3 className="text-base font-black text-white uppercase tracking-tight">Payment Upload Received</h3>
+              </div>
+
+              <div className="text-xs text-gray-300 leading-relaxed font-sans space-y-3 px-1">
+                <p>
+                  Your activation files have been successfully uploaded to the central chix9ja database nodes for instant review.
+                </p>
+                <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 text-[11px] text-green-glow font-bold leading-relaxed">
+                  📧 You will receive an email within <span className="font-extrabold text-white">5 minutes</span> notifying you if your activation has been approved!
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  onBack();
+                }}
+                className="w-full py-3.5 bg-green-glow text-black font-extrabold text-[11px] uppercase tracking-widest rounded-xl transition-all shadow-[0_4px_16px_rgba(34,197,94,0.2)] active:scale-95 hover:bg-emerald-400"
+              >
+                Return to Dashboard
               </button>
             </motion.div>
           </motion.div>

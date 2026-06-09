@@ -387,6 +387,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             updatedTransactions = [newTx, ...updatedTransactions];
         }
 
+        const emailNotif = {
+            id: 'email_' + Math.random().toString(36).substring(2, 9),
+            sender: "Chix9ja Validation <noreply@chix9ja.com>",
+            subject: `Subscription Approved: ${plan} Active! 🚀`,
+            message: `Dear ${targetUser.name},\n\nWe are pleased to inform you that your manual payment transfer has been verified! Your ${plan} subscription is now fully ACTIVE on our system.\n\nEnjoy lightning-fast withdrawals, custom limits, and automatic transaction validation on Chix9ja.\n\nThank you for choosing us!\n\nBest regards,\nThe Chix9ja Security & Treasury Department`,
+            date: new Date().toISOString(),
+            read: false,
+            isEmail: true
+        };
         const updatedUser = {
             ...targetUser,
             isSubscribed: true,
@@ -397,7 +406,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             pendingActivation: null,
             pendingPaymentProof: undefined,
             pendingPaymentAmount: undefined,
-            pendingPaymentDate: undefined
+            pendingPaymentDate: undefined,
+            adminNotifications: [emailNotif, ...(targetUser.adminNotifications || [])]
         };
         saveUserDocument(email, updatedUser);
         let alertMsg = `Subscription approved for ${targetUser.name} with ${plan}.`;
@@ -586,6 +596,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         updatedUser.pendingInvestmentStep = null;
     }
     
+    let mailSubject = "Account Update Alert";
+    let mailBody = `Dear ${updatedUser.name},\n\nYour recent request has been evaluated and officially approved by the Chix9ja Admin Team!\n\nAll security systems configured successfully.`;
+
+    if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly' || type === 'subscription_promo') {
+        let planLabel = 'Monthly Pro';
+        if (type === 'subscription_weekly') planLabel = 'Weekly Saver';
+        if (type === 'subscription_yearly') planLabel = 'Premium Elite';
+        if (type === 'subscription_promo') planLabel = 'Promo Subscription';
+        
+        mailSubject = `Subscription Approved: ${planLabel} Active! 🚀`;
+        mailBody = `Dear ${updatedUser.name},\n\nWe are pleased to inform you that your manual payment transfer has been verified! Your ${planLabel} subscription is now fully ACTIVE on our system.\n\nEnjoy lightning-fast withdrawals, custom limits, and automatic transaction validation on Chix9ja.\n\nThank you for choosing us!\n\nBest regards,\nThe Chix9ja Security & Treasury Department`;
+    } else if (type === 'vip') {
+        mailSubject = "💎 Life-time VIP Membership Activated Successfully!";
+        mailBody = `Dear ${updatedUser.name},\n\nCongratulations! Your VIP Membership payment has been verified and fully cleared on the Chix9ja network.\n\nYour account is now endowed with a ₦1,000,000 Life-time VIP Business Fund, and your specialized VIP withdrawal credentials have been loaded onto the network node. You may now withdraw unlimited sums securely.\n\nThank you for choosing luxury and excellence.\n\nBest regards,\nThe Chix9ja Executive Board`;
+    } else if (type === 'link_account') {
+        mailSubject = "🔒 Withdrawal bank account integrated successfully!";
+        mailBody = `Dear ${updatedUser.name},\n\nWe are pleased to notify you that your Bank Account Integration fee has been verified and your custom withdrawal node is now online and active.\n\nYou can initiate secure, automated transfers directly to your linked bank account. All network ports have been updated accordingly.\n\nWarm regards,\nThe Chix9ja Engineering Team`;
+    } else if (type === 'imminent_payment') {
+        mailSubject = "🛡️ Security Incident Cleared: Network Node Secure";
+        mailBody = `Dear ${updatedUser.name},\n\nWe have received your payment proof regarding the recent imminent deactivation. Your file check is positive.\n\nAll restrictions on your profile have been automatically revoked and cancelled. Your digital node is once again fully compliant and healthy.\n\nBest regards,\nThe Chix9ja Central Security Grid`;
+    } else if (type === 'investment') {
+        mailSubject = "📈 Investment Profile Activated Successfully!";
+        mailBody = `Dear ${updatedUser.name},\n\nWe have received your validation transfer. Your Investment Validation process has completed and all account restrictions have been cleared.\n\nYou can now seamlessly access and trade high-yielding investment instruments across the central Chix9ja exchange.\n\nHappy earning!\n\nBest regards,\nThe Chix9ja Global Asset Management Team`;
+    }
+
+    const emailNotif = {
+        id: 'email_act_' + Math.random().toString(36).substring(2, 9),
+        sender: "Chix9ja Validation <noreply@chix9ja.com>",
+        subject: mailSubject,
+        message: mailBody,
+        date: new Date().toISOString(),
+        read: false,
+        isEmail: true
+    };
+
+    updatedUser.adminNotifications = [emailNotif, ...(updatedUser.adminNotifications || [])];
     updatedUser.pendingActivation = null;
     updatedUser.pendingPaymentProof = undefined;
     updatedUser.pendingPaymentAmount = undefined;

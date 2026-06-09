@@ -3,6 +3,7 @@ import React from 'react';
 import { Icons } from './Icons';
 import { Plan } from '../types';
 import { motion } from 'motion/react';
+import { useGiveawayStatus } from '../firebase';
 
 interface SubscribeProps {
   onPlanSelect: (plan: Plan) => void;
@@ -17,6 +18,8 @@ interface PlanDisplay extends Plan {
 }
 
 const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
+  const { unlocked: giveawayUnlocked } = useGiveawayStatus();
+
   const plans: PlanDisplay[] = [
     { 
       id: 'promo', 
@@ -65,6 +68,8 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     },
   ];
 
+  const visiblePlans = plans.filter(p => p.id !== 'promo' || giveawayUnlocked);
+
   return (
     <div className="px-4 py-8 space-y-10 relative pb-32 overflow-hidden">
       {/* Background Decorative Glow */}
@@ -72,7 +77,7 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
       
       {/* Header section with better typography */}
       <motion.div 
-        initial={{ opacity: 0, y: -20 }}
+         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center space-y-2"
       >
@@ -89,7 +94,7 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
 
       {/* Modern Plans Stack */}
       <div className="space-y-3">
-        {plans.map((plan, index) => {
+        {visiblePlans.map((plan, index) => {
           const isWeeklyRestricted = plan.id === 'weekly' && userBalance > 200000;
           const isMonthlyRestricted = plan.id === 'monthly' && userBalance > 2000000;
           const isRestricted = isWeeklyRestricted || isMonthlyRestricted;

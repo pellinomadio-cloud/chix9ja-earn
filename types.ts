@@ -30,6 +30,9 @@ export interface SystemNotificationItem {
   message: string;
   date: string; // ISO string
   read?: boolean;
+  subject?: string;
+  sender?: string;
+  isEmail?: boolean;
 }
 
 export interface NotificationPreferences {
