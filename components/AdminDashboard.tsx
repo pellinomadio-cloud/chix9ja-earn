@@ -630,6 +630,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     updatedUser.pendingPaymentProof = undefined;
     updatedUser.pendingPaymentAmount = undefined;
     updatedUser.pendingPaymentDate = undefined;
+    updatedUser.hasDeclinedReceiptWarning = true;
     
     await saveUserDocument(email, updatedUser);
     alert(`Declined activation for ${updatedUser.name}. Proof removed.`);
@@ -734,13 +735,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   const handleToggleRestriction = async (userObj: User) => {
     const isNowRestricted = !userObj.isRestricted;
+    let code: string | undefined = undefined;
+    if (isNowRestricted) {
+      code = prompt(`Enter a custom recovery code for ${userObj.name} to unlock their account:`, "CHI999") || "CHI999";
+    }
     const updatedUser = {
         ...userObj,
         isRestricted: isNowRestricted,
-        restrictionType: isNowRestricted ? 'verification' as const : undefined,
+        restrictionType: isNowRestricted ? 'ban' as const : undefined,
+        banRecoveryCode: isNowRestricted ? code : undefined,
     };
     await saveUserDocument(userObj.email, updatedUser);
-    alert(`User restrict status is now: ${isNowRestricted ? 'RESTRICTED / BLOCKED' : 'UNRESTRICTED / ACTIVE'}`);
+    alert(`User restrict status is now: ${isNowRestricted ? 'RESTRICTED / BLOCKED' : 'UNRESTRICTED / ACTIVE'}. Recovery code specified: ${code || 'None'}`);
   };
 
   const handleToggleAccountLinkedVerified = async (userObj: User) => {
@@ -1663,18 +1669,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         />
                     </div>
                     
-                    <div className="flex space-x-2 pt-1">
+                    <div className="flex flex-col space-y-2 pt-1">
+                        <div className="flex space-x-2">
+                            <button 
+                                onClick={async () => { await handleApproveActivation(activeReceiptUser); setActiveReceiptUser(null); }}
+                                className="flex-grow py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
+                            >
+                                Authorize Act
+                            </button>
+                            <button 
+                                onClick={async () => { await handleDeclineActivation(activeReceiptUser); setActiveReceiptUser(null); }}
+                                className="flex-grow py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all"
+                            >
+                                Decline Proof
+                            </button>
+                        </div>
                         <button 
-                            onClick={async () => { await handleApproveActivation(activeReceiptUser); setActiveReceiptUser(null); }}
-                            className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-md transition-all active:scale-[0.98]"
+                            onClick={async () => { 
+                                const code = prompt(`Enter a custom recovery code to ban ${activeReceiptUser.name}:`, "CHI999") || "CHI999";
+                                const email = activeReceiptUser.email.toLowerCase();
+                                const updatedUser = { 
+                                    ...activeReceiptUser,
+                                    isRestricted: true,
+                                    restrictionType: 'ban' as const,
+                                    banRecoveryCode: code,
+                                    pendingActivation: null,
+                                    pendingPaymentProof: undefined,
+                                    pendingPaymentAmount: undefined,
+                                    pendingPaymentDate: undefined,
+                                    hasDeclinedReceiptWarning: true
+                                };
+                                await saveUserDocument(email, updatedUser);
+                                alert(`Successfully banned ${updatedUser.name} and cleared pending state. Recovery code set to: ${code}`);
+                                setActiveReceiptUser(null); 
+                            }}
+                            className="w-full py-3 px-4 bg-rose-950 hover:bg-rose-900 border border-rose-500/30 text-rose-500 font-bold uppercase tracking-widest text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                         >
-                            Authorize Act
-                        </button>
-                        <button 
-                            onClick={async () => { await handleDeclineActivation(activeReceiptUser); setActiveReceiptUser(null); }}
-                            className="flex-1 py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all"
-                        >
-                            Decline Proof
+                            <Icons.Ban size={12} />
+                            <span>Ban Account (Assign Recovery Code)</span>
                         </button>
                     </div>
                 </div>

@@ -228,6 +228,16 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
         <div className="space-y-3">
           <button 
             onClick={() => {
+              if (user && user.pendingPaymentProof) {
+                alert("You already have a pending payment proof awaiting administrator verification. You cannot upload another receipt until it is approved or declined.");
+                return;
+              }
+              const oneHour = 60 * 60 * 1000;
+              if (user && user.lastUploadTimestamp && (Date.now() - user.lastUploadTimestamp < oneHour)) {
+                const remainingMinutes = Math.ceil((oneHour - (Date.now() - user.lastUploadTimestamp)) / (60 * 1000));
+                alert(`You can only upload a receipt once every hour. Please wait ${remainingMinutes} minutes before attempting another upload.`);
+                return;
+              }
               if (!investProof) {
                 alert("Please upload a receipt photo of your payment first.");
                 return;
@@ -241,7 +251,8 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
                 pendingActivation: 'investment',
                 pendingPaymentProof: investProof,
                 pendingPaymentAmount: 22000,
-                pendingPaymentDate: new Date().toISOString()
+                pendingPaymentDate: new Date().toISOString(),
+                lastUploadTimestamp: Date.now()
               });
               setShowSuccessModal(true);
             }}

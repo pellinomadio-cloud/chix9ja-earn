@@ -37,6 +37,22 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
   };
 
   const handleSubmit = () => {
+    const existingUsersStr = localStorage.getItem('chix9ja_users');
+    const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+    const currentUser: User = existingUsers[user.email.toLowerCase()];
+
+    if (currentUser && currentUser.pendingPaymentProof) {
+      alert("You already have a pending payment proof awaiting administrator verification. You cannot upload another receipt until it is approved or declined.");
+      return;
+    }
+
+    const oneHour = 60 * 60 * 1000;
+    if (currentUser && currentUser.lastUploadTimestamp && (Date.now() - currentUser.lastUploadTimestamp < oneHour)) {
+      const remainingMinutes = Math.ceil((oneHour - (Date.now() - currentUser.lastUploadTimestamp)) / (60 * 1000));
+      alert(`You can only upload a receipt once every hour. Please wait ${remainingMinutes} minutes before attempting another upload.`);
+      return;
+    }
+
     if (!paymentProof) {
       alert("Please upload payment proof before verifying.");
       return;
@@ -44,18 +60,19 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
     setStatus('loading');
     
     setTimeout(() => {
-      const existingUsersStr = localStorage.getItem('chix9ja_users');
-      const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
-      const currentUser: User = existingUsers[user.email.toLowerCase()];
+      const freshUsersStr = localStorage.getItem('chix9ja_users');
+      const freshUsers = freshUsersStr ? JSON.parse(freshUsersStr) : {};
+      const freshUser: User = freshUsers[user.email.toLowerCase()];
 
-      if (currentUser) {
-        currentUser.pendingActivation = 'imminent_payment';
-        currentUser.pendingPaymentProof = paymentProof;
-        currentUser.pendingPaymentAmount = amount;
-        currentUser.pendingPaymentDate = new Date().toISOString();
+      if (freshUser) {
+        freshUser.pendingActivation = 'imminent_payment';
+        freshUser.pendingPaymentProof = paymentProof;
+        freshUser.pendingPaymentAmount = amount;
+        freshUser.pendingPaymentDate = new Date().toISOString();
+        freshUser.lastUploadTimestamp = Date.now();
 
-        existingUsers[user.email.toLowerCase()] = currentUser;
-        localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+        freshUsers[user.email.toLowerCase()] = freshUser;
+        localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
 
         syncUserFromLocalToFirestore(user.email).then(() => {
           setStatus('failed');

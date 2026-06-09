@@ -47,6 +47,22 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
   }, []);
 
   const handleVerify = async () => {
+    const existingUsersStr = localStorage.getItem('chix9ja_users');
+    const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+    const currentUser: User = existingUsers[userEmail.toLowerCase()];
+
+    if (currentUser && currentUser.pendingPaymentProof) {
+      alert("You already have a pending payment proof awaiting administrator verification. You cannot upload another receipt until it is approved or declined.");
+      return;
+    }
+
+    const oneHour = 60 * 60 * 1000;
+    if (currentUser && currentUser.lastUploadTimestamp && (Date.now() - currentUser.lastUploadTimestamp < oneHour)) {
+      const remainingMinutes = Math.ceil((oneHour - (Date.now() - currentUser.lastUploadTimestamp)) / (60 * 1000));
+      alert(`You can only upload a receipt once every hour. Please wait ${remainingMinutes} minutes before attempting another upload.`);
+      return;
+    }
+
     if (!proofFile) {
       alert("Please upload payment proof first.");
       return;
@@ -146,6 +162,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
                   currentUser.pendingPaymentProof = base64Data;
                   currentUser.pendingPaymentAmount = amountNum;
                   currentUser.pendingPaymentDate = new Date().toISOString();
+                  currentUser.lastUploadTimestamp = Date.now();
 
                   existingUsers[userEmail.toLowerCase()] = currentUser;
                   localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));

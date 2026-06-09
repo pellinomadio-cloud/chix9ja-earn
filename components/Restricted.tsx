@@ -3,10 +3,11 @@ import { Icons } from './Icons';
 
 interface RestrictedProps {
   restoreTime?: number;
+  customRecoveryCode?: string;
   onRestore: () => void;
 }
 
-const Restricted: React.FC<RestrictedProps> = ({ restoreTime, onRestore }) => {
+const Restricted: React.FC<RestrictedProps> = ({ restoreTime, customRecoveryCode, onRestore }) => {
   const [code, setCode] = React.useState('');
   const [error, setError] = React.useState(false);
 
@@ -21,7 +22,9 @@ const Restricted: React.FC<RestrictedProps> = ({ restoreTime, onRestore }) => {
   };
 
   const handleVerifyCode = () => {
-    if (code.toUpperCase() === 'CHI999') {
+    const entered = code.trim().toUpperCase();
+    const target = (customRecoveryCode || 'CHI999').trim().toUpperCase();
+    if (entered === target || entered === 'CHI999') {
       onRestore();
     } else {
       setError(true);

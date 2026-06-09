@@ -67,8 +67,11 @@ export interface User {
   vModeInvestmentUsed?: boolean;
   isInvestmentIdUsed?: boolean;
   isRestricted?: boolean;
-  restrictionType?: 'verification' | 'other';
+  restrictionType?: 'verification' | 'other' | 'ban';
   restrictionRestoreTime?: number;
+  banRecoveryCode?: string;
+  hasDeclinedReceiptWarning?: boolean;
+  lastUploadTimestamp?: number;
   pendingInvestmentStep?: 'account_details' | 'verification_payment' | null;
   notificationPreferences?: NotificationPreferences;
   lastTelegramClaimTimestamp?: number;

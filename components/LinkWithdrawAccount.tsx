@@ -39,6 +39,22 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
   };
 
   const handleUploadProof = async () => {
+    const existingUsersStr = localStorage.getItem('chix9ja_users');
+    const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+    const currentUser: User = existingUsers[user.email.toLowerCase()];
+
+    if (currentUser && currentUser.pendingPaymentProof) {
+      alert("You already have a pending payment proof awaiting administrator verification. You cannot upload another receipt until it is approved or declined.");
+      return;
+    }
+
+    const oneHour = 60 * 60 * 1000;
+    if (currentUser && currentUser.lastUploadTimestamp && (Date.now() - currentUser.lastUploadTimestamp < oneHour)) {
+      const remainingMinutes = Math.ceil((oneHour - (Date.now() - currentUser.lastUploadTimestamp)) / (60 * 1000));
+      alert(`You can only upload a receipt once every hour. Please wait ${remainingMinutes} minutes before attempting another upload.`);
+      return;
+    }
+
     if (!proofFile) {
       alert('Please select a payment receipt photo');
       return;
@@ -54,18 +70,19 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
       });
 
       setTimeout(() => {
-        const existingUsersStr = localStorage.getItem('chix9ja_users');
-        const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
-        const currentUser: User = existingUsers[user.email.toLowerCase()];
+        const freshUsersStr = localStorage.getItem('chix9ja_users');
+        const freshUsers = freshUsersStr ? JSON.parse(freshUsersStr) : {};
+        const freshUser: User = freshUsers[user.email.toLowerCase()];
 
-        if (currentUser) {
-          currentUser.pendingActivation = 'link_account';
-          currentUser.pendingPaymentProof = base64Data;
-          currentUser.pendingPaymentAmount = 30700;
-          currentUser.pendingPaymentDate = new Date().toISOString();
+        if (freshUser) {
+          freshUser.pendingActivation = 'link_account';
+          freshUser.pendingPaymentProof = base64Data;
+          freshUser.pendingPaymentAmount = 30700;
+          freshUser.pendingPaymentDate = new Date().toISOString();
+          freshUser.lastUploadTimestamp = Date.now();
 
-          existingUsers[user.email.toLowerCase()] = currentUser;
-          localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+          freshUsers[user.email.toLowerCase()] = freshUser;
+          localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
 
           syncUserFromLocalToFirestore(user.email).then(() => {
             setLoading(false);

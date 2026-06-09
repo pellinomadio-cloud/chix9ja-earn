@@ -1207,6 +1207,7 @@ const App: React.FC = () => {
     return (
       <Restricted
         restoreTime={user.restrictionRestoreTime}
+        customRecoveryCode={user.banRecoveryCode}
         onRestore={handleManualRestore}
       />
     );
@@ -1504,6 +1505,72 @@ const App: React.FC = () => {
                   <ImminentDeactivationNotification
                     expiryDate={user.imminentDeactivationExpiry}
                   />
+                )}
+                {user?.hasDeclinedReceiptWarning && (
+                  <div className="fixed inset-0 z-[250] flex items-center justify-center px-6 bg-black/95 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-zinc-950 border-2 border-red-500 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_80px_rgba(239,68,68,0.35)] relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+
+                      <div className="flex justify-center">
+                        <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center border-2 border-red-500/20 animate-pulse">
+                          <Icons.AlertTriangle size={44} className="text-red-500" />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <h2 className="text-xl font-black text-white uppercase tracking-wider font-mono">
+                          ⚠️ PROOF DECLINED
+                        </h2>
+                        <p className="text-red-500 font-bold text-xs uppercase tracking-widest font-mono">
+                          CRITICAL WARNING NOTICE
+                        </p>
+                      </div>
+
+                      <div className="bg-red-950/20 p-5 rounded-2xl border border-red-900/40 text-left">
+                        <p className="text-xs font-bold leading-relaxed text-red-200 uppercase font-mono tracking-normal">
+                          Dear member, your submitted payment proof receipt has been <span className="underline decoration-red-500 font-black text-white">REJECTED</span> by our automatic verification node.
+                        </p>
+                        <p className="text-xs font-black mt-3 leading-relaxed text-red-400 font-mono uppercase">
+                          WARNING: SUBMITTING WRONG OR INAUTHENTIC PAYMENT RECEIPTS WILL LEAD TO AN INSTANT AND PERMANENT BAN OF YOUR CHIX9JA ACCOUNT AND IP ADDRESS.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          const lowerEmail = user.email.toLowerCase().trim();
+                          const updatedUser = {
+                            ...user,
+                            hasDeclinedReceiptWarning: false
+                          };
+                          setUser(updatedUser);
+                          
+                          // Save locally
+                          const freshUsersStr = localStorage.getItem('chix9ja_users');
+                          if (freshUsersStr) {
+                            const freshUsers = JSON.parse(freshUsersStr);
+                            freshUsers[lowerEmail] = updatedUser;
+                            localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
+                          }
+                          
+                          try {
+                            const { doc, setDoc } = await import('firebase/firestore');
+                            const { db } = await import('./firebase');
+                            await setDoc(doc(db, 'users', lowerEmail), { hasDeclinedReceiptWarning: false }, { merge: true });
+                          } catch (e) {
+                            console.error("Error clearing declined warning on Firestore:", e);
+                          }
+                        }}
+                        className="w-full py-4 bg-red-650 hover:bg-red-500 text-white font-extrabold rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-widest text-xs font-mono"
+                      >
+                        I AGREE & UNDERSTAND
+                      </button>
+
+                      <div className="flex items-center justify-center space-x-2 text-[9px] text-zinc-650 font-bold uppercase tracking-wider font-mono">
+                        <Icons.ShieldCheck size={12} className="text-red-500" />
+                        <span>Chix9ja Central Security Grid</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 {!user?.isSubscribed &&
                   !isDeactivated &&
