@@ -67,7 +67,10 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
         return null; // Unlimited
     } else if (planName === 'Promo Subscription') {
         // Only once withdrawal is allowed on this plan
-        const hasDebit = (user.transactions || []).some(t => t.type === 'debit' && t.status === 'success');
+        const hasDebit = (user.transactions || []).some(t => {
+            const isUxTradeFunding = t.id?.startsWith('trx-trade-fund-') || t.description?.toLowerCase().includes('ux-trade') || t.description?.toLowerCase().includes('funded ux-trade');
+            return t.type === 'debit' && !isUxTradeFunding && t.status === 'success';
+        });
         if (hasDebit) {
             return "This promo subscription only allows a single (once) withdrawal. Your authorized withdrawal limit has already been used.";
         }
@@ -82,7 +85,10 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
     const startTime = now - periodMs;
     
     const recentWithdrawals = (user.transactions || [])
-        .filter(t => t.type === 'debit' && new Date(t.date).getTime() > startTime)
+        .filter(t => {
+            const isUxTradeFunding = t.id?.startsWith('trx-trade-fund-') || t.description?.toLowerCase().includes('ux-trade') || t.description?.toLowerCase().includes('funded ux-trade');
+            return t.type === 'debit' && !isUxTradeFunding && new Date(t.date).getTime() > startTime;
+        })
         .reduce((sum, t) => sum + t.amount, 0);
 
     if (recentWithdrawals + transferAmount > limit) {
