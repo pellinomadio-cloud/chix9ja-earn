@@ -96,6 +96,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               currentUser.subscriptionPlan = plan.name;
               currentUser.subscriptionExpiryDate = expiryTimestamp;
               currentUser.vModeSubscriptionUsed = true;
+              currentUser.isPMode = true;
               
               let bonusAmount = 0;
               let bonusDescription = "";

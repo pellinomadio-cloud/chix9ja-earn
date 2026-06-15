@@ -390,6 +390,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         const updatedUser = {
             ...targetUser,
             isSubscribed: true,
+            isPMode: true,
             subscriptionPlan: plan,
             subscriptionExpiryDate: expiryTimestamp,
             balance: newBalance,
@@ -533,6 +534,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         updatedUser.isSubscribed = true;
         updatedUser.subscriptionPlan = planName;
         updatedUser.subscriptionExpiryDate = expiryTimestamp;
+        updatedUser.isPMode = true;
 
         let bonusAmount = 0;
         let bonusDescription = "";
