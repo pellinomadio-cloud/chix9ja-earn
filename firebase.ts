@@ -315,3 +315,55 @@ export async function updateGiveawayStatus(unlocked: boolean): Promise<void> {
   await setDoc(docRef, { unlocked });
 }
 
+// Global App Socials & Channels Config Manager
+export interface AppChannels {
+  telegramChannel: string;
+  whatsappChannel: string;
+  supportTelegram: string;
+}
+
+export const DEFAULT_APP_CHANNELS: AppChannels = {
+  telegramChannel: "https://t.me/chix9ja",
+  whatsappChannel: "https://whatsapp.com/channel/0029Vb8arfH59PwbSshxov1M",
+  supportTelegram: "https://t.me/chix9jaservice"
+};
+
+export function useAppChannels() {
+  const [channels, setChannels] = useState<AppChannels>(DEFAULT_APP_CHANNELS);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const docRef = doc(db, 'settings', 'channels');
+    const unsub = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setChannels({
+          telegramChannel: data.telegramChannel || DEFAULT_APP_CHANNELS.telegramChannel,
+          whatsappChannel: data.whatsappChannel || DEFAULT_APP_CHANNELS.whatsappChannel,
+          supportTelegram: data.supportTelegram || DEFAULT_APP_CHANNELS.supportTelegram,
+        });
+      } else {
+        setChannels(DEFAULT_APP_CHANNELS);
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Error reading channel settings from Firestore:", error);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
+
+  return { channels, loading };
+}
+
+export async function updateAppChannels(channels: AppChannels): Promise<void> {
+  const docRef = doc(db, 'settings', 'channels');
+  await setDoc(docRef, {
+    telegramChannel: channels.telegramChannel,
+    whatsappChannel: channels.whatsappChannel,
+    supportTelegram: channels.supportTelegram
+  });
+}
+
+

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { Plan, User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
+import { syncUserFromLocalToFirestore, useBankDetails, useAppChannels } from '../firebase';
 
 
 interface SubscribePaymentProps {
@@ -22,6 +22,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const { bankDetails } = useBankDetails();
+  const { channels } = useAppChannels();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(bankDetails.accountNumber);
@@ -397,7 +398,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
                </div>
              </div>
              <button 
-               onClick={() => window.open('https://t.me/chix9jaservice', '_blank')}
+               onClick={() => window.open(channels.supportTelegram, '_blank')}
                className="text-[8px] font-black bg-red-500 text-white px-2.5 py-1 rounded-lg uppercase tracking-widest"
              >
                Support

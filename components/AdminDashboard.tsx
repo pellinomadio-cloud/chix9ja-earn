@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus } from '../firebase';
+import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
 import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -133,6 +133,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [isUpdatingBank, setIsUpdatingBank] = useState(false);
   const [bankSuccessMsg, setBankSuccessMsg] = useState('');
 
+  // Dynamic App Channels setup states
+  const { channels: appChannels } = useAppChannels();
+  const [editTelegramChannel, setEditTelegramChannel] = useState('');
+  const [editWhatsappChannel, setEditWhatsappChannel] = useState('');
+  const [editSupportTelegram, setEditSupportTelegram] = useState('');
+  const [isUpdatingChannels, setIsUpdatingChannels] = useState(false);
+  const [channelsSuccessMsg, setChannelsSuccessMsg] = useState('');
+
   useEffect(() => {
     if (bankDetails) {
       setEditBankName(bankDetails.bankName);
@@ -140,6 +148,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setEditAccountName(bankDetails.accountName);
     }
   }, [bankDetails]);
+
+  useEffect(() => {
+    if (appChannels) {
+      setEditTelegramChannel(appChannels.telegramChannel);
+      setEditWhatsappChannel(appChannels.whatsappChannel);
+      setEditSupportTelegram(appChannels.supportTelegram);
+    }
+  }, [appChannels]);
 
   const handleUpdateBankSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,6 +178,30 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       alert("Failed to update bank configuration: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsUpdatingBank(false);
+    }
+  };
+
+  const handleUpdateChannelsSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTelegramChannel.trim() || !editWhatsappChannel.trim() || !editSupportTelegram.trim()) {
+      alert("All channel fields are required to update settings!");
+      return;
+    }
+    setIsUpdatingChannels(true);
+    setChannelsSuccessMsg('');
+    try {
+      await updateAppChannels({
+        telegramChannel: editTelegramChannel.trim(),
+        whatsappChannel: editWhatsappChannel.trim(),
+        supportTelegram: editSupportTelegram.trim()
+      });
+      setChannelsSuccessMsg('Channels/Support links updated successfully and synchronized to cloud!');
+      setTimeout(() => setChannelsSuccessMsg(''), 5000);
+    } catch (err) {
+      console.error("Error updating channels in Firestore settings:", err);
+      alert("Failed to update channels configuration: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsUpdatingChannels(false);
     }
   };
 
@@ -1115,6 +1155,74 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         </button>
                     </form>
                 </div>
+            </div>
+
+            {/* Dynamic Community Socials & Support Channels Administration Card */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-zinc-800 overflow-hidden">
+                <div className="p-4 bg-zinc-900/80 border-b border-zinc-800/80 flex items-center space-x-2">
+                    <Settings className="text-emerald-400 stroke-[2.2]" size={15} />
+                    <h3 className="font-black text-white text-xs uppercase tracking-wider font-mono">Dynamic Community & Customer Support Channels Config</h3>
+                </div>
+                
+                <form onSubmit={handleUpdateChannelsSettings} className="p-5 space-y-4">
+                    <p className="text-[10px] text-zinc-400 font-medium font-mono leading-relaxed uppercase">
+                        Configure official communication hubs and back-end support team channels. These propagate live to client tasks & interactive views across the platform.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Official Telegram Channel</label>
+                            <input
+                                type="text"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 transition-all font-medium font-mono"
+                                value={editTelegramChannel}
+                                onChange={(e) => setEditTelegramChannel(e.target.value)}
+                                placeholder="https://t.me/yourchannel"
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Official WhatsApp Channel</label>
+                            <input
+                                type="text"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 transition-all font-medium font-mono"
+                                value={editWhatsappChannel}
+                                onChange={(e) => setEditWhatsappChannel(e.target.value)}
+                                placeholder="https://whatsapp.com/channel/..."
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Customer Support (Telegram Link)</label>
+                            <input
+                                type="text"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 transition-all font-medium font-mono"
+                                value={editSupportTelegram}
+                                onChange={(e) => setEditSupportTelegram(e.target.value)}
+                                placeholder="https://t.me/your_support"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    {channelsSuccessMsg && (
+                        <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] uppercase font-bold tracking-tight rounded-xl text-center font-mono">
+                            ✓ {channelsSuccessMsg}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end pt-1">
+                        <button 
+                            type="submit" 
+                            disabled={isUpdatingChannels}
+                            className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-600/10 disabled:opacity-40 active:scale-[0.98]"
+                        >
+                            {isUpdatingChannels ? 'Updating Channels...' : 'Synchronize Channels & Support'}
+                        </button>
+                    </div>
+                </form>
             </div>
 
             {/* Giveaway Desk Controls Panel */}

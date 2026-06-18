@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
 import { quizQuestions, QuizQuestion } from './quizQuestions';
+import { useAppChannels } from '../firebase';
 
 interface TaskPageProps {
   user: User;
@@ -27,6 +28,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
   onBack, 
   mode = 'all' 
 }) => {
+  const { channels } = useAppChannels();
   const [gameStep, setGameStep] = useState<'intro' | 'playing' | 'result'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -136,7 +138,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
           <div className="space-y-3 pt-2">
               <button 
                   onClick={() => {
-                      window.open('https://t.me/chix9ja', '_blank');
+                      window.open(channels.telegramChannel, '_blank');
                       onTelegramClaim();
                   }}
                   disabled={!canClaimTelegram()}
@@ -167,7 +169,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
           <div className="space-y-3 pt-2">
               <button 
                   onClick={() => {
-                      window.open('https://whatsapp.com/channel/0029Vb8arfH59PwbSshxov1M', '_blank');
+                      window.open(channels.whatsappChannel, '_blank');
                       onWhatsAppClaim();
                   }}
                   disabled={!canClaimWhatsApp()}

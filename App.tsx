@@ -40,7 +40,7 @@ import { Icons } from "./components/Icons";
 import { User, Plan, Transaction, RewardStatus } from "./types";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { doc, onSnapshot, setDoc, getDoc } from "firebase/firestore";
-import { db, auth } from "./firebase";
+import { db, auth, useAppChannels } from "./firebase";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
@@ -52,6 +52,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
 };
 
 const App: React.FC = () => {
+  const { channels } = useAppChannels();
   const [initialRefCode] = useState(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -777,7 +778,7 @@ const App: React.FC = () => {
     } else if (id === "loan" || id === "ux-trade") {
       setActiveTab("ux-trade");
     } else if (id === "support") {
-      window.open("https://t.me/chix9jaservice", "_blank");
+      window.open(channels.supportTelegram, "_blank");
     } else if (id === "airtime" || id === "data") {
       if (user && user.isSubscribed) {
         setServiceType(id);
@@ -1694,7 +1695,7 @@ const App: React.FC = () => {
             activeTab !== "ux-trade" &&
             activeTab !== "loan" && (
               <TelegramAd
-                onJoin={() => window.open("https://t.me/chix9ja", "_blank")}
+                onJoin={() => window.open(channels.telegramChannel, "_blank")}
                 onContinue={() => setShowWelcomeAd(false)}
               />
             )}
