@@ -73,13 +73,6 @@ const TaskPage: React.FC<TaskPageProps> = ({
     return nowTs - lastClaim >= twentyFourHours;
   };
 
-  const canClaimTelegram2 = () => {
-    const nowTs = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    const lastClaim = user.lastTelegramClaim2Timestamp || 0;
-    return nowTs - lastClaim >= twentyFourHours;
-  };
-
   const canClaimWhatsApp = () => {
     const nowTs = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
@@ -182,37 +175,6 @@ const TaskPage: React.FC<TaskPageProps> = ({
               >
                   <Icons.MessageCircle size={18} />
                   <span>{canClaimWhatsApp() ? 'Join & Claim ₦9,600' : 'Already Claimed Today'}</span>
-              </button>
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-2xl p-5 shadow-sm border border-gray-800 space-y-4">
-          <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400">
-                  <Icons.Send size={24} />
-              </div>
-              <div className="flex-1">
-                  <h3 className="font-bold text-white">Join Telegram Channel 2</h3>
-                  <p className="text-xs text-gray-400">Earn ₦18,085 daily just for being a member.</p>
-              </div>
-              {canClaimTelegram2() ? (
-                  <span className="text-[10px] font-bold bg-green-500/20 text-green-400 px-2 py-1 rounded uppercase">Available</span>
-              ) : (
-                  <span className="text-[10px] font-bold bg-gray-500/20 text-gray-400 px-2 py-1 rounded uppercase">Claimed</span>
-              )}
-          </div>
-
-          <div className="space-y-3 pt-2">
-              <button 
-                  onClick={() => {
-                      window.open('https://t.me/flex9jaup', '_blank');
-                      onTelegramClaim2();
-                  }}
-                  disabled={!canClaimTelegram2()}
-                  className={`w-full py-3.5 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95 ${canClaimTelegram2() ? 'bg-green-glow text-black hover:bg-green-dark' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
-              >
-                  <Icons.Send size={18} />
-                  <span>{canClaimTelegram2() ? 'Join & Claim ₦18,085' : 'Already Claimed Today'}</span>
               </button>
           </div>
         </div>
