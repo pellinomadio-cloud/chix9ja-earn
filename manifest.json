@@ -1,0 +1,21 @@
+{
+  "short_name": "chix9ja",
+  "name": "chix9ja Instant Settlements",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%22192%22 height=%22192%22><rect width=%22100%%22 height=%22100%%22 fill=%22%2300ffa3%22/><text y=%2250%%22 x=%2250%%22 fill=%22black%22 font-family=%22system-ui, sans-serif%22 font-weight=%22black%22 font-style=%22italic%22 font-size=%2290%22 text-anchor=%22middle%22 dominant-baseline=%22central%22>Cx</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22 width=%22512%22 height=%22512%22><rect width=%22100%%22 height=%22100%%22 fill=%22%2300ffa3%22/><text y=%2250%%22 x=%2250%%22 fill=%22black%22 font-family=%22system-ui, sans-serif%22 font-weight=%22black%22 font-style=%22italic%22 font-size=%22240%22 text-anchor=%22middle%22 dominant-baseline=%22central%22>Cx</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "display": "standalone",
+  "orientation": "portrait"
+}
