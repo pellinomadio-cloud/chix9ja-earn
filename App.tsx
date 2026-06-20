@@ -1716,6 +1716,35 @@ const App: React.FC = () => {
                   onActionClick={handleGridAction}
                   balance={user?.balance || 0}
                 />
+
+                {/* Dynamic App Installation Action Card */}
+                <div 
+                  onClick={() => setShowInstallPopup(true)}
+                  className="bg-zinc-950 border border-zinc-800 p-4 rounded-3xl flex items-center justify-between cursor-pointer hover:border-green-glow/50 transition-all group relative overflow-hidden shadow-lg"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-green-glow/5 rounded-full blur-2xl pointer-events-none group-hover:bg-green-glow/10 transition-all" />
+                  <div className="flex items-center space-x-3.5 z-10">
+                    <div className="w-11 h-11 bg-green-glow/10 border border-green-glow/20 rounded-2xl flex items-center justify-center text-green-glow group-hover:scale-105 transition-transform">
+                      <Icons.Download size={20} className="stroke-[2.2]" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-extrabold text-white text-xs uppercase tracking-wider flex items-center space-x-2">
+                        <span>Install chix9ja App</span>
+                        <span className="flex h-1.5 w-1.5 relative">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-glow opacity-80"></span>
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-glow"></span>
+                        </span>
+                      </h3>
+                      <p className="text-[10px] text-gray-400 mt-0.5 font-bold uppercase tracking-tight leading-none font-mono">
+                        Instant Settlements & Fast Android Access
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-1 bg-zinc-900 border border-zinc-800 rounded-lg text-gray-400 group-hover:text-green-glow group-hover:border-green-glow/30 transition-all z-10">
+                    <Icons.ChevronRight size={15} />
+                  </div>
+                </div>
+
                 <Banner />
               </main>
             )}
@@ -1868,11 +1897,24 @@ const App: React.FC = () => {
                 {!isInstalling ? (
                   <>
                     <div className="flex justify-center">
-                      <div className="w-20 h-20 bg-green-glow/10 border-2 border-green-glow/30 rounded-3xl flex items-center justify-center animate-pulse relative">
-                        <Icons.Download size={42} className="text-green-glow" />
-                        <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                      <div className="w-24 h-24 rounded-full bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-600 p-[3px] shadow-[0_0_25px_rgba(0,255,163,0.3)] animate-pulse relative">
+                        {/* Green Polished interior of the coin */}
+                        <div className="w-full h-full rounded-full bg-gradient-to-tr from-emerald-950 via-emerald-900 to-teal-950 flex items-center justify-center border border-yellow-500/30 overflow-hidden relative">
+                          {/* Inner gold circular rim line */}
+                          <div className="absolute inset-2.5 rounded-full border border-dashed border-yellow-500/40" />
+                          
+                          {/* ₦ Naira Symbol inside */}
+                          <span className="text-4xl font-black font-sans bg-clip-text text-transparent bg-gradient-to-b from-amber-100 via-yellow-400 to-amber-500 drop-shadow-[0_3px_6px_rgba(0,0,0,0.6)] select-none">
+                            ₦
+                          </span>
+                        </div>
+                        
+                        {/* Verified Badge / Notification dot */}
+                        <span className="absolute -bottom-1 -right-1 flex h-6 w-6">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-glow opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-6 w-6 bg-green-glow border-2 border-gray-900 flex items-center justify-center text-[10px] text-black font-black">
+                            ✓
+                          </span>
                         </span>
                       </div>
                     </div>
