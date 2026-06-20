@@ -5,6 +5,17 @@
   --color-green-light: #39FF14;
   --color-green-dark: #008F11;
   
+  /* Overrides to transform the entire app's dark theme into a luxury golden-bronze aesthetic */
+  --color-black: #130f04;
+  --color-gray-950: #1a1406;
+  --color-zinc-950: #1b1506;
+  --color-zinc-900: #261e09;
+  --color-zinc-800: #3c2f0f;
+  --color-zinc-700: #554215;
+  --color-gray-900: #201808;
+  --color-gray-800: #36290b;
+  --color-gray-700: #503d12;
+  
   --shadow-green: 0 0 15px rgba(0, 255, 65, 0.4);
   --shadow-green-lg: 0 0 25px rgba(0, 255, 65, 0.6);
   
@@ -69,7 +80,7 @@
 }
 
 @keyframes green-shimmer {
-  0% { background-position: -200% 0; }
+  0 { background-position: -200% 0; }
   100% { background-position: 200% 0; }
 }
 
@@ -85,6 +96,10 @@
 }
 
 body {
-  background-color: #000000;
+  background-color: #130f04;
+  background-image: 
+    radial-gradient(circle at 50% 25%, #2a1f09 0%, #130f04 100%),
+    linear-gradient(to bottom, #130f04, #0b0802);
+  background-attachment: fixed;
   color: #ffffff;
 }
