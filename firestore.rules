@@ -29,5 +29,9 @@ service cloud.firestore {
     match /settings/{id} {
       allow read, write: if isSignedIn();
     }
+
+    match /withdrawals/{id} {
+      allow read, write: if isSignedIn();
+    }
   }
 }
