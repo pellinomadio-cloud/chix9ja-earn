@@ -57,59 +57,6 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
   const [showOpayWarning, setShowOpayWarning] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
-  const [verificationError, setVerificationError] = useState('');
-
-  // Auto verify account number
-  useEffect(() => {
-    if (bankName && accountNumber.trim().length === 10) {
-      const verifyAccount = async () => {
-        setVerificationStatus('verifying');
-        setVerificationError('');
-        setAccountName('');
-        
-        const bankCode = BANK_CODES_MAP[bankName];
-        if (!bankCode) {
-          // If custom bank name, we can't do auto-verify
-          setVerificationStatus('failed');
-          setVerificationError('Press standard bank custom lookup to verify.');
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/verify-account', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              accountNumber: accountNumber.trim(),
-              bankCode,
-            }),
-          });
-
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.error || 'Unable to verify account details.');
-          }
-
-          setAccountName(data.accountName);
-          setVerificationStatus('success');
-        } catch (err: any) {
-          console.error(err);
-          setVerificationStatus('failed');
-          setVerificationError(err.message || 'Auto-verification failed. Please enter name manually if needed.');
-        }
-      };
-
-      verifyAccount();
-    } else {
-      setVerificationStatus('idle');
-      if (accountNumber.trim().length !== 10) {
-        setAccountName('');
-      }
-    }
-  }, [bankName, accountNumber]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!accountName || !bankName || !accountNumber) {
@@ -517,30 +464,10 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
                 type="text"
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
-                placeholder="Will auto-resolve after putting bank & account number"
-                className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm disabled:opacity-80 disabled:cursor-not-allowed"
-                disabled={verificationStatus === 'verifying'}
+                placeholder="Enter Account Name"
+                className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm"
               />
             </div>
-            {/* Inline verification statuses */}
-            {verificationStatus === 'verifying' && (
-              <div className="text-xs text-amber-500 flex items-center space-x-1.5 mt-1 ml-1 animate-pulse">
-                <div className="w-3.5 h-3.5 border border-amber-500 border-t-transparent rounded-full animate-spin" />
-                <span>Resolving account details via secure core network...</span>
-              </div>
-            )}
-            {verificationStatus === 'success' && (
-              <div className="text-xs text-green-500 flex items-center space-x-1.5 mt-1 ml-1 font-bold">
-                <Icons.CheckCircle size={14} className="text-green-500" />
-                <span>Verified: <strong className="text-white tracking-wide">{accountName}</strong></span>
-              </div>
-            )}
-            {verificationStatus === 'failed' && (
-              <div className="text-xs text-gray-500 flex items-center space-x-1.5 mt-1 ml-1 italic font-medium">
-                <Icons.Info size={14} />
-                <span>Manual input fallback: {verificationError || 'Could not verify account name.'}</span>
-              </div>
-            )}
           </div>
         </div>
 

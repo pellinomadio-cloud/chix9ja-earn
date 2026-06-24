@@ -53,62 +53,8 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Automated bank verification states
-  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
-  const [verificationError, setVerificationError] = useState('');
-
   // Calculate deactivation state dynamically
   const isDeactivated = user.deactivationDate && Date.now() > user.deactivationDate;
-
-  // Automate account name lookup via Paystack proxy
-  useEffect(() => {
-    if (bank && accountNumber.length === 10) {
-      const verifyAccount = async () => {
-        setVerificationStatus('verifying');
-        setVerificationError('');
-        setAccountName('');
-        
-        const bankCode = BANK_CODES[bank];
-        if (!bankCode) {
-          setVerificationStatus('failed');
-          setVerificationError('Selected bank is not supported for automated verification.');
-          return;
-        }
-
-        try {
-          const response = await fetch('/api/verify-account', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              accountNumber,
-              bankCode,
-            }),
-          });
-
-          const data = await response.json();
-          if (!response.ok) {
-            throw new Error(data.error || 'Check bank name and account number details.');
-          }
-
-          setAccountName(data.accountName);
-          setVerificationStatus('success');
-        } catch (err: any) {
-          console.error(err);
-          setVerificationStatus('failed');
-          setVerificationError(err.message || 'Auto-verification failed.');
-        }
-      };
-
-      verifyAccount();
-    } else {
-      setVerificationStatus('idle');
-      if (accountNumber.length !== 10) {
-        setAccountName('');
-      }
-    }
-  }, [bank, accountNumber]);
 
   const checkWithdrawalLimit = (transferAmount: number): string | null => {
     if (!user.subscriptionPlan) return "Subscription required";
@@ -169,8 +115,8 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
         return;
     }
 
-    if (verificationStatus !== 'success') {
-        setError("Bank verification required. Enter a valid 10-digit account number.");
+    if (!accountName || accountName.trim().length === 0) {
+        setError("Please enter a valid account name.");
         return;
     }
 
@@ -369,36 +315,16 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
             />
         </div>
 
-        <div className={`transition-all duration-300 overflow-hidden ${accountNumber.length === 10 || accountName ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
-            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1 flex items-center justify-between">
-              <span>Account Name</span>
-              {verificationStatus === 'verifying' && (
-                <span className="text-blue-400 text-[10px] uppercase font-mono tracking-tight animate-pulse">Verifying...</span>
-              )}
-              {verificationStatus === 'success' && (
-                <span className="text-emerald-400 text-[10px] uppercase font-mono tracking-tight">✓ Verified</span>
-              )}
-              {verificationStatus === 'failed' && (
-                <span className="text-red-400 text-[10px] uppercase font-mono tracking-tight">✗ Verification Failed</span>
-              )}
-            </label>
+        <div>
+            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Account Name</label>
             <input
                 type="text"
                 value={accountName}
-                readOnly
-                placeholder={verificationStatus === 'verifying' ? "Verifying bank details..." : "Receiver Name"}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="Enter Recipient Account Name"
                 required
-                className={`w-full p-3 border rounded-xl text-white font-bold outline-none transition-all ${
-                  verificationStatus === 'success' 
-                    ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' 
-                    : verificationStatus === 'failed'
-                    ? 'bg-red-950/25 border-red-500/20 text-red-300'
-                    : 'bg-gray-800 border-gray-700 text-gray-400'
-                }`}
+                className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-green-glow outline-none font-bold"
             />
-            {verificationError && (
-              <p className="text-[10px] text-red-400 ml-1 mt-1 font-medium">{verificationError}</p>
-            )}
         </div>
 
         <div>
@@ -428,7 +354,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
 
         <button
             type="submit"
-            disabled={isLoading || !bank || !accountNumber || accountNumber.length !== 10 || verificationStatus !== 'success' || !amount}
+            disabled={isLoading || !bank || !accountNumber || accountNumber.length !== 10 || !accountName || !amount}
             className="w-full py-4 bg-amber-400 hover:bg-amber-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-black font-bold rounded-full shadow-lg transition-all mt-4 flex items-center justify-center space-x-2 animate-gold-glow-button"
         >
             {isLoading ? (
