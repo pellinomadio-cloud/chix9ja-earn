@@ -5,6 +5,38 @@ import { User } from '../types';
 import { useBankDetails } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
+const banksList = [
+  "OPAY",
+  "PALMPAY",
+  "KUDA",
+  "MONIEPOINT",
+  "Access Bank",
+  "GTBank",
+  "Zenith Bank",
+  "UBA",
+  "First Bank",
+  "Fidelity Bank",
+  "Union Bank",
+  "FCMB",
+  "Sterling Bank"
+];
+
+const BANK_CODES_MAP: Record<string, string> = {
+  "OPAY": "999992",
+  "PALMPAY": "999991",
+  "KUDA": "50211",
+  "MONIEPOINT": "50515",
+  "Access Bank": "044",
+  "GTBank": "058",
+  "Zenith Bank": "057",
+  "UBA": "033",
+  "First Bank": "011",
+  "Fidelity Bank": "070",
+  "Union Bank": "032",
+  "FCMB": "214",
+  "Sterling Bank": "050"
+};
+
 interface InvestmentPlan {
   id: string;
   name: string;
@@ -33,7 +65,6 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
   const [step, setStep] = useState<'plans' | 'payment' | 'account_details' | 'verification_payment'>(initialStep);
   const [investProof, setInvestProof] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
   useEffect(() => {
     if (user.isInvestmentIdUsed && step === 'plans') {
       setStep(user.pendingInvestmentStep || 'account_details');
@@ -52,6 +83,59 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
     bankName: '',
     accountName: ''
   });
+
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
+  const [verificationError, setVerificationError] = useState('');
+
+  // Auto verify investment withdrawal account
+  useEffect(() => {
+    if (withdrawalAccount.bankName && withdrawalAccount.accountNumber.trim().length === 10) {
+      const verifyAccount = async () => {
+        setVerificationStatus('verifying');
+        setVerificationError('');
+        setWithdrawalAccount(prev => ({ ...prev, accountName: '' }));
+        
+        const bankCode = BANK_CODES_MAP[withdrawalAccount.bankName];
+        if (!bankCode) {
+          setVerificationStatus('failed');
+          setVerificationError('Manual input fallback.');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/verify-account', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accountNumber: withdrawalAccount.accountNumber.trim(),
+              bankCode,
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Unable to verify account details.');
+          }
+
+          setWithdrawalAccount(prev => ({ ...prev, accountName: data.accountName }));
+          setVerificationStatus('success');
+        } catch (err: any) {
+          console.error(err);
+          setVerificationStatus('failed');
+          setVerificationError(err.message || 'Auto-verification failed.');
+        }
+      };
+
+      verifyAccount();
+    } else {
+      setVerificationStatus('idle');
+      if (withdrawalAccount.accountNumber.trim().length !== 10) {
+        setWithdrawalAccount(prev => ({ ...prev, accountName: '' }));
+      }
+    }
+  }, [withdrawalAccount.bankName, withdrawalAccount.accountNumber]);
 
   const { bankDetails } = useBankDetails();
   const accountNumber = bankDetails.accountNumber;
@@ -184,6 +268,8 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
           </div>
         </div>
 
+
+
         {/* Payment Proof Upload */}
         <div className="space-y-3">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1 text-center">Step 2: Upload Payment Proof</p>
@@ -284,34 +370,59 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
         <div className="bg-gray-900 border border-amber-500/20 p-6 rounded-2xl space-y-4">
           <div className="space-y-1">
+            <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Bank Name</label>
+            <select
+              value={withdrawalAccount.bankName}
+              onChange={(e) => setWithdrawalAccount({...withdrawalAccount, bankName: e.target.value})}
+              className="w-full bg-black border border-gray-800 p-4 rounded-xl text-white outline-none focus:border-amber-500 transition-all font-bold appearance-none cursor-pointer"
+            >
+              <option value="" disabled className="text-gray-500">Select Bank</option>
+              {banksList.map((b) => (
+                <option key={b} value={b} className="bg-black text-white">{b}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Account Number</label>
             <input 
               type="text" 
-              placeholder="Enter Account Number"
+              placeholder="Enter 10-Digit Account Number"
               value={withdrawalAccount.accountNumber}
               onChange={(e) => setWithdrawalAccount({...withdrawalAccount, accountNumber: e.target.value})}
-              className="w-full bg-black border border-gray-800 p-4 rounded-xl text-white outline-none focus:border-amber-500 transition-all font-bold"
+              className="w-full bg-black border border-gray-800 p-4 rounded-xl text-white outline-none focus:border-amber-500 transition-all font-bold tracking-widest"
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Bank Name</label>
-            <input 
-              type="text" 
-              placeholder="Enter Bank Name"
-              value={withdrawalAccount.bankName}
-              onChange={(e) => setWithdrawalAccount({...withdrawalAccount, bankName: e.target.value})}
-              className="w-full bg-black border border-gray-800 p-4 rounded-xl text-white outline-none focus:border-amber-500 transition-all font-bold"
-            />
-          </div>
+
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Account Name</label>
             <input 
               type="text" 
-              placeholder="Enter Account Name"
+              placeholder="Will auto-resolve..."
               value={withdrawalAccount.accountName}
               onChange={(e) => setWithdrawalAccount({...withdrawalAccount, accountName: e.target.value})}
               className="w-full bg-black border border-gray-800 p-4 rounded-xl text-white outline-none focus:border-amber-500 transition-all font-bold"
+              disabled={verificationStatus === 'verifying'}
             />
+            {/* Inline verification feedback */}
+            {verificationStatus === 'verifying' && (
+              <div className="text-xs text-amber-500 flex items-center space-x-1.5 mt-1 ml-1 animate-pulse">
+                <div className="w-3.5 h-3.5 border border-amber-500 border-t-transparent rounded-full animate-spin" />
+                <span>Resolving recipient name on central nodes...</span>
+              </div>
+            )}
+            {verificationStatus === 'success' && (
+              <div className="text-xs text-green-500 flex items-center space-x-1.5 mt-1 ml-1 font-bold">
+                <Icons.CheckCircle size={14} className="text-green-500" />
+                <span>Verified: <strong className="text-white tracking-wide">{withdrawalAccount.accountName}</strong></span>
+              </div>
+            )}
+            {verificationStatus === 'failed' && (
+              <div className="text-xs text-gray-500 flex items-center space-x-1.5 mt-1 ml-1 italic font-medium">
+                <Icons.Info size={14} />
+                <span>Manual input fallback: {verificationError || 'Could not verify account name.'}</span>
+              </div>
+            )}
           </div>
         </div>
 

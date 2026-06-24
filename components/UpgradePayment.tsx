@@ -19,7 +19,6 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
   const [copied, setCopied] = useState(false);
   const [showOpayWarning, setShowOpayWarning] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
   const { bankDetails } = useBankDetails();
 
   const handleCopy = () => {
@@ -226,6 +225,8 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({ userEmail, onPaymentCom
             <p className="text-xs text-gray-500">Lifetime</p>
         </div>
       </div>
+
+
 
       {/* Account Details Section */}
       <div className="space-y-4">

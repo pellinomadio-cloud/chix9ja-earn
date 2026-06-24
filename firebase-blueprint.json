@@ -64,7 +64,7 @@
         "userId": { "type": "string", "description": "Email or Auth UID of the user requesting withdrawal" },
         "bankName": { "type": "string", "description": "Bank selected by the user" },
         "accountNumber": { "type": "string", "description": "10-digit bank account number" },
-        "accountName": { "type": "string", "description": "Verified account name returned from Paystack resolution" },
+        "accountName": { "type": "string", "description": "Verified account name returned from Flutterwave resolution" },
         "amount": { "type": "number", "description": "Withdrawal amount in Naira" },
         "timestamp": { "type": "string", "description": "ISO 8601 string of request creation" },
         "status": { "type": "string", "description": "Current status of the withdrawal (e.g. pending)" }

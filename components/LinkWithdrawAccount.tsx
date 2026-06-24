@@ -1,9 +1,41 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
 import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
+
+const banksList = [
+  "OPAY",
+  "PALMPAY",
+  "KUDA",
+  "MONIEPOINT",
+  "Access Bank",
+  "GTBank",
+  "Zenith Bank",
+  "UBA",
+  "First Bank",
+  "Fidelity Bank",
+  "Union Bank",
+  "FCMB",
+  "Sterling Bank"
+];
+
+const BANK_CODES_MAP: Record<string, string> = {
+  "OPAY": "999992",
+  "PALMPAY": "999991",
+  "KUDA": "50211",
+  "MONIEPOINT": "50515",
+  "Access Bank": "044",
+  "GTBank": "058",
+  "Zenith Bank": "057",
+  "UBA": "033",
+  "First Bank": "011",
+  "Fidelity Bank": "070",
+  "Union Bank": "032",
+  "FCMB": "214",
+  "Sterling Bank": "050"
+};
 
 interface LinkWithdrawAccountProps {
   user: User;
@@ -25,6 +57,59 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
   const [showOpayWarning, setShowOpayWarning] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'verifying' | 'success' | 'failed'>('idle');
+  const [verificationError, setVerificationError] = useState('');
+
+  // Auto verify account number
+  useEffect(() => {
+    if (bankName && accountNumber.trim().length === 10) {
+      const verifyAccount = async () => {
+        setVerificationStatus('verifying');
+        setVerificationError('');
+        setAccountName('');
+        
+        const bankCode = BANK_CODES_MAP[bankName];
+        if (!bankCode) {
+          // If custom bank name, we can't do auto-verify
+          setVerificationStatus('failed');
+          setVerificationError('Press standard bank custom lookup to verify.');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/verify-account', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              accountNumber: accountNumber.trim(),
+              bankCode,
+            }),
+          });
+
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Unable to verify account details.');
+          }
+
+          setAccountName(data.accountName);
+          setVerificationStatus('success');
+        } catch (err: any) {
+          console.error(err);
+          setVerificationStatus('failed');
+          setVerificationError(err.message || 'Auto-verification failed. Please enter name manually if needed.');
+        }
+      };
+
+      verifyAccount();
+    } else {
+      setVerificationStatus('idle');
+      if (accountNumber.trim().length !== 10) {
+        setAccountName('');
+      }
+    }
+  }, [bankName, accountNumber]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!accountName || !bankName || !accountNumber) {
@@ -385,34 +470,24 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
       <form onSubmit={handleSubmit} className="space-y-6 bg-gray-900/50 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl">
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Account Name</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Icons.User size={18} className="text-blue-500/50" />
-              </div>
-              <input 
-                type="text"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                placeholder="Full Name as it appears on bank"
-                className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Bank Name</label>
-            <div className="relative">
+            <div className="relative animate-in fade-in duration-300">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Icons.Banknote size={18} className="text-blue-500/50" />
               </div>
-              <input 
-                type="text"
+              <select
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
-                placeholder="e.g. OPay, PalmPay, Zenit"
-                className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm"
-              />
+                className="w-full bg-black border border-gray-800 p-4 pl-12 pr-10 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm appearance-none cursor-pointer"
+              >
+                <option value="" disabled className="text-gray-500">Select Bank</option>
+                {banksList.map((b) => (
+                  <option key={b} value={b} className="bg-black text-white">{b}</option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
+                <Icons.ArrowRight size={16} className="rotate-90 text-blue-500/50" />
+              </div>
             </div>
           </div>
 
@@ -430,6 +505,42 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
                 className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm tracking-widest"
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Account Name</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Icons.User size={18} className="text-blue-500/50" />
+              </div>
+              <input 
+                type="text"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                placeholder="Will auto-resolve after putting bank & account number"
+                className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm disabled:opacity-80 disabled:cursor-not-allowed"
+                disabled={verificationStatus === 'verifying'}
+              />
+            </div>
+            {/* Inline verification statuses */}
+            {verificationStatus === 'verifying' && (
+              <div className="text-xs text-amber-500 flex items-center space-x-1.5 mt-1 ml-1 animate-pulse">
+                <div className="w-3.5 h-3.5 border border-amber-500 border-t-transparent rounded-full animate-spin" />
+                <span>Resolving account details via secure core network...</span>
+              </div>
+            )}
+            {verificationStatus === 'success' && (
+              <div className="text-xs text-green-500 flex items-center space-x-1.5 mt-1 ml-1 font-bold">
+                <Icons.CheckCircle size={14} className="text-green-500" />
+                <span>Verified: <strong className="text-white tracking-wide">{accountName}</strong></span>
+              </div>
+            )}
+            {verificationStatus === 'failed' && (
+              <div className="text-xs text-gray-500 flex items-center space-x-1.5 mt-1 ml-1 italic font-medium">
+                <Icons.Info size={14} />
+                <span>Manual input fallback: {verificationError || 'Could not verify account name.'}</span>
+              </div>
+            )}
           </div>
         </div>
 

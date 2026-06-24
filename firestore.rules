@@ -33,5 +33,9 @@ service cloud.firestore {
     match /withdrawals/{id} {
       allow read, write: if isSignedIn();
     }
+
+    match /flutterwave_payments/{id} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

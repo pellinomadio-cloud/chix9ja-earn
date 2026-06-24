@@ -97,7 +97,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
         } catch (err: any) {
           console.error(err);
           setVerificationStatus('failed');
-          setVerificationError(err.message || 'Auto-verification failed with Paystack.');
+          setVerificationError(err.message || 'Auto-verification failed.');
         }
       };
 
@@ -386,7 +386,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
                 type="text"
                 value={accountName}
                 readOnly
-                placeholder={verificationStatus === 'verifying' ? "Verifying with Paystack..." : "Receiver Name"}
+                placeholder={verificationStatus === 'verifying' ? "Verifying bank details..." : "Receiver Name"}
                 required
                 className={`w-full p-3 border rounded-xl text-white font-bold outline-none transition-all ${
                   verificationStatus === 'success' 

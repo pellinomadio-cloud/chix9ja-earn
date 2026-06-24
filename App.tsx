@@ -10,6 +10,7 @@ import Profile from "./components/Profile";
 import Rewards from "./components/Rewards";
 import Subscribe from "./components/Subscribe";
 import SubscribePayment from "./components/SubscribePayment";
+import PaymentCallback from "./components/PaymentCallback";
 import SendMoney from "./components/SendMoney";
 import SyncAccount from "./components/SyncAccount";
 import AdminDashboard from "./components/AdminDashboard";
@@ -421,8 +422,14 @@ const App: React.FC = () => {
   );
 
   const [currentView, setCurrentView] = useState<
-    "login" | "register" | "dashboard"
+    "login" | "register" | "dashboard" | "payment-callback"
   >(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if ((params.get("transaction_id") || params.get("id")) && params.get("status")) {
+        return "payment-callback";
+      }
+    } catch {}
     const activeEmail = localStorage.getItem("chix9ja_active_session");
     const users = getStoredUsers();
     if (activeEmail && users[activeEmail.toLowerCase()]) {
@@ -1262,6 +1269,21 @@ const App: React.FC = () => {
           onSwitchToRegister={() => setCurrentView("register")}
         />
       </div>
+    );
+  if (currentView === "payment-callback")
+    return (
+      <PaymentCallback
+        onVerificationComplete={() => {
+          const activeEmail = localStorage.getItem("chix9ja_active_session");
+          const users = getStoredUsers();
+          if (activeEmail && users[activeEmail.toLowerCase()]) {
+            setUser(users[activeEmail.toLowerCase()]);
+            setCurrentView("dashboard");
+          } else {
+            setCurrentView("login");
+          }
+        }}
+      />
     );
 
   const nowTs = Date.now();

@@ -160,6 +160,8 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
         </div>
       </div>
 
+
+
       <div className="space-y-4 pt-2 border-t border-gray-800">
           {/* Payment Proof Upload */}
           <div className="space-y-3">

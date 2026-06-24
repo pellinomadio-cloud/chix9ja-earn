@@ -20,7 +20,6 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
   const [copied, setCopied] = useState(false);
   const [showOpayWarning, setShowOpayWarning] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
   const { bankDetails } = useBankDetails();
   const { channels } = useAppChannels();
 
@@ -250,6 +249,8 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
             </div>
         </div>
       </div>
+
+
 
       {/* Step 1: Account Details */}
       <div className="space-y-3">
