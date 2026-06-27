@@ -15,8 +15,8 @@ const SystemNotification: React.FC = () => {
     // Initial trigger
     const initialTimer = setTimeout(triggerNotification, 2000);
 
-    // Repeat every 7 seconds
-    const interval = setInterval(triggerNotification, 7000);
+    // Repeat every 15 seconds
+    const interval = setInterval(triggerNotification, 15000);
 
     return () => {
       clearTimeout(initialTimer);
