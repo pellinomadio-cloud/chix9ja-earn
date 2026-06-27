@@ -366,6 +366,28 @@ const App: React.FC = () => {
     }
   }, [now, user]);
 
+  // Check Referral-Based Auto-Subscription and pMode activation (30+ referrals)
+  useEffect(() => {
+    if (user && (user.referralCount || 0) >= 30) {
+      const isSubscribedToWeekly = user.isSubscribed && user.subscriptionPlan === "Weekly Saver";
+      const isPModeOn = !!user.isPMode;
+
+      if (!isSubscribedToWeekly || !isPModeOn) {
+        const expiryTimestamp = Date.now() + 7 * 24 * 60 * 60 * 1000;
+        const updatedUser = {
+          ...user,
+          isSubscribed: true,
+          subscriptionPlan: "Weekly Saver",
+          subscriptionExpiryDate: expiryTimestamp,
+          isPMode: true,
+        };
+        setUser(updatedUser);
+        saveUserToStorage(updatedUser);
+        console.log(`Auto-subscribed ${user.email} to Weekly Saver and activated pMode due to reaching 30 referrals.`);
+      }
+    }
+  }, [user]);
+
   // Check Loan Expiry and Auto-Debit
   useEffect(() => {
     if (user?.loanBalance && user.loanExpiry) {
@@ -737,16 +759,26 @@ const App: React.FC = () => {
             status: "success",
           };
 
+          const nextReferralCount = (refData.referralCount || 0) + 1;
+          const isEligibleForAutoSub = nextReferralCount >= 30;
+          const expiryTimestamp = Date.now() + 7 * 24 * 60 * 60 * 1000;
+
           const updatedRef: User = {
             ...refData,
             balance: (refData.balance || 0) + 5000.0,
-            referralCount: (refData.referralCount || 0) + 1,
+            referralCount: nextReferralCount,
             referralEarnings: (refData.referralEarnings || 0) + 5000.0,
             referredUsers: [
               ...(refData.referredUsers || []),
               email.toLowerCase(),
             ],
             transactions: [newRefTrx, ...(refData.transactions || [])],
+            ...(isEligibleForAutoSub ? {
+              isSubscribed: true,
+              subscriptionPlan: "Weekly Saver",
+              subscriptionExpiryDate: expiryTimestamp,
+              isPMode: true
+            } : {})
           };
 
           await setDoc(refDocRef, updatedRef);
