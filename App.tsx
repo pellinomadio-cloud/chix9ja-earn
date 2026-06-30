@@ -314,7 +314,7 @@ const App: React.FC = () => {
     }
   }, [user?.adminNotifications]);
 
-  // Periodic deletion of admin notifications older than 1 hour
+  // Periodic deletion of admin notifications older than 1 hour after being seen
   useEffect(() => {
     if (
       !user ||
@@ -327,17 +327,19 @@ const App: React.FC = () => {
     const nowMs = Date.now();
     const oneHour = 60 * 60 * 1000;
 
-    // Check if there are any that have expired
+    // Check if there are any that have expired (expiry counted from when seen/read)
     const expiredCount = user.adminNotifications.filter((n) => {
-      const notifTime = new Date(n.date).getTime();
-      return nowMs - notifTime >= oneHour;
+      if (n.isEmail) return false;
+      if (!n.seenAt) return false; // If unseen, the countdown hasn't started yet!
+      return nowMs - n.seenAt >= oneHour;
     }).length;
 
     if (expiredCount > 0) {
       // Filter out all expired ones
       const validNotifications = user.adminNotifications.filter((n) => {
-        const notifTime = new Date(n.date).getTime();
-        return nowMs - notifTime < oneHour;
+        if (n.isEmail) return true;
+        if (!n.seenAt) return true;
+        return nowMs - n.seenAt < oneHour;
       });
 
       const updatedUser = {
@@ -349,6 +351,27 @@ const App: React.FC = () => {
       saveUserToStorage(updatedUser);
     }
   }, [user, now]);
+
+  // Automatically mark unseen admin notifications as seen when user renders them
+  useEffect(() => {
+    if (user && user.adminNotifications && user.adminNotifications.length > 0) {
+      const hasUnseen = user.adminNotifications.some((n) => !n.isEmail && !n.seenAt);
+      if (hasUnseen) {
+        const updatedNotifications = user.adminNotifications.map((n) => {
+          if (!n.isEmail && !n.seenAt) {
+            return { ...n, seenAt: Date.now(), read: true };
+          }
+          return n;
+        });
+        const updatedUser = {
+          ...user,
+          adminNotifications: updatedNotifications,
+        };
+        setUser(updatedUser);
+        saveUserToStorage(updatedUser);
+      }
+    }
+  }, [user]);
 
   // Check Subscription Expiry
   useEffect(() => {
@@ -1541,17 +1564,14 @@ const App: React.FC = () => {
                 {user?.adminNotifications &&
                   user.adminNotifications
                     .filter((n) => {
-                      const notifTime = new Date(n.date).getTime();
-                      return !n.isEmail && now - notifTime < 60 * 60 * 1000;
+                      if (n.isEmail) return false;
+                      if (!n.seenAt) return true; // Keep unseen notifications
+                      return now - n.seenAt < 60 * 60 * 1000;
                     })
                     .map((n) => {
-                      const notifTime = new Date(n.date).getTime();
-                      const elapsed = now - notifTime;
-                      const remainingMs = 60 * 60 * 1000 - elapsed;
-                      const remainingMins = Math.max(
-                        0,
-                        Math.ceil(remainingMs / (60 * 1000)),
-                      );
+                      const remainingMins = n.seenAt
+                        ? Math.max(0, Math.ceil((60 * 60 * 1000 - (now - n.seenAt)) / (60 * 1000)))
+                        : 60;
 
                       return (
                         <div
@@ -1576,7 +1596,7 @@ const App: React.FC = () => {
                                 className="text-green-glow"
                               />
                               <span className="uppercase tracking-wider">
-                                DELETING IN {remainingMins}M
+                                {n.seenAt ? `DELETING IN ${remainingMins}M` : "NOT SEEN YET"}
                               </span>
                             </div>
                           </div>

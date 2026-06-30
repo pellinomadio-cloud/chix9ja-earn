@@ -33,6 +33,7 @@ export interface SystemNotificationItem {
   subject?: string;
   sender?: string;
   isEmail?: boolean;
+  seenAt?: number;
 }
 
 export interface NotificationPreferences {

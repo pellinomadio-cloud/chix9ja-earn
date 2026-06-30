@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
-import { User } from '../types';
+import { User, Transaction } from '../types';
 import { useBankDetails } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -104,8 +104,14 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
   };
 
   const handleVerify = () => {
-    if (investmentIdInput.trim().toUpperCase() !== "CHIX101") {
-      alert("Invalid Investment ID. Please enter the correct ID from management.");
+    const trimmedId = investmentIdInput.trim().toUpperCase();
+    if (!trimmedId) {
+      alert("Please enter a valid Investment ID.");
+      return;
+    }
+
+    if (trimmedId !== "CHIX101" && !trimmedId.startsWith("CHIX")) {
+      alert("Invalid Investment ID. Please enter the correct ID from management (e.g. CHIX101).");
       return;
     }
 
@@ -122,12 +128,30 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
         return;
       }
 
+      // Add the profits for that particular investment to their balance and transaction history
+      const profitAmount = selectedPlan ? selectedPlan.returnAmount : 70000;
+      const planLabel = selectedPlan ? selectedPlan.name : "Silver Investment Plan";
+      
+      const profitTransaction: Transaction = {
+        id: 'TXN-' + Math.floor(Math.random() * 1000000000),
+        type: 'credit',
+        amount: profitAmount,
+        description: `Investment Profit: ${planLabel}`,
+        date: new Date().toISOString(),
+        status: 'success'
+      };
+
+      currentUser.balance = (currentUser.balance || 0) + profitAmount;
+      currentUser.transactions = [profitTransaction, ...(currentUser.transactions || [])];
+
       // SUCCESS: Just the right code is enough
       currentUser.isInvestmentIdUsed = true;
       currentUser.pendingInvestmentStep = 'account_details';
       
       localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
       onUpdateUser({ 
+        balance: currentUser.balance,
+        transactions: currentUser.transactions,
         isInvestmentIdUsed: true,
         pendingInvestmentStep: 'account_details'
       });

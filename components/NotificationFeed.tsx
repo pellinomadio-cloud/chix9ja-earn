@@ -59,9 +59,14 @@ const NotificationFeed: React.FC<NotificationFeedProps> = ({ onBack, user, onUpd
   // Mark all unread notifications as read on mount
   useEffect(() => {
     if (user?.adminNotifications && onUpdateUser) {
-      const hasUnread = user.adminNotifications.some(n => !n.read);
-      if (hasUnread) {
-        const readNotifications = user.adminNotifications.map(n => ({ ...n, read: true }));
+      const hasUnseen = user.adminNotifications.some(n => !n.read || !n.seenAt);
+      if (hasUnseen) {
+        const readNotifications = user.adminNotifications.map(n => {
+          if (!n.read || !n.seenAt) {
+            return { ...n, read: true, seenAt: n.seenAt || Date.now() };
+          }
+          return n;
+        });
         onUpdateUser({ adminNotifications: readNotifications });
       }
     }
