@@ -43,6 +43,23 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
     setIsLoading(true);
     const securePassword = `${password}_chix9ja_secure_salt`;
 
+    // Check device registration limit (Max 2 accounts per device)
+    let deviceAccounts: string[] = [];
+    try {
+      const stored = localStorage.getItem('chix9ja_device_registered_accounts');
+      if (stored) {
+        deviceAccounts = JSON.parse(stored);
+      }
+    } catch (e) {
+      deviceAccounts = [];
+    }
+
+    if (!deviceAccounts.includes(emailKey) && deviceAccounts.length >= 2) {
+      setError('Registration limit exceeded. You cannot create more than two chix9ja accounts on this device.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // 1. Manually check if Firestore already contains this email to prevent duplicate accounts
       const docSnap = await getDoc(doc(db, 'users', emailKey));
@@ -91,6 +108,12 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
       // 3. Create User in Firebase Auth
       await createUserWithEmailAndPassword(auth, emailKey, securePassword);
       
+      // Update registered accounts list on this device
+      if (!deviceAccounts.includes(emailKey)) {
+        deviceAccounts.push(emailKey);
+        localStorage.setItem('chix9ja_device_registered_accounts', JSON.stringify(deviceAccounts));
+      }
+
       // 4. Fire callbacks with the resolved referrer email
       onRegister(name, emailKey, resolvedReferrerEmail);
       setIsLoading(false);

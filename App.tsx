@@ -145,6 +145,17 @@ const App: React.FC = () => {
   const [now, setNow] = useState(Date.now());
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
 
+  // Standalone Admin Path States
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    try {
+      return localStorage.getItem("chix9ja_admin_logged_in") === "true";
+    } catch {
+      return false;
+    }
+  });
+  const [adminPasscode, setAdminPasscode] = useState("");
+  const [adminLoginError, setAdminLoginError] = useState("");
+
   useEffect(() => {
     if (initialRefCode) {
       setCurrentView("register");
@@ -819,6 +830,37 @@ const App: React.FC = () => {
       }
     }
 
+    // Enforce device registration limit in App.tsx as well
+    let deviceAccounts: string[] = [];
+    try {
+      const stored = localStorage.getItem("chix9ja_device_registered_accounts");
+      if (stored) {
+        deviceAccounts = JSON.parse(stored);
+      }
+    } catch {}
+
+    const emailKey = email.toLowerCase().trim();
+    if (!deviceAccounts.includes(emailKey) && deviceAccounts.length >= 2) {
+      alert("Registration limit exceeded: You cannot create more than two chix9ja accounts on this device.");
+      return;
+    }
+
+    if (!deviceAccounts.includes(emailKey)) {
+      deviceAccounts.push(emailKey);
+      localStorage.setItem("chix9ja_device_registered_accounts", JSON.stringify(deviceAccounts));
+    }
+
+    let deviceId = "";
+    try {
+      deviceId = localStorage.getItem("chix9ja_device_id") || "";
+      if (!deviceId) {
+        deviceId = "dev_" + Math.random().toString(36).substring(2, 15) + "_" + Date.now();
+        localStorage.setItem("chix9ja_device_id", deviceId);
+      }
+    } catch {
+      deviceId = "dev_unknown";
+    }
+
     const newUser: User = {
       name,
       email,
@@ -836,6 +878,8 @@ const App: React.FC = () => {
       referralCount: 0,
       referralEarnings: 0,
       referredUsers: [],
+      deviceId,
+      hasJoinedTelegram: false,
     };
 
     saveUserToStorage(newUser);
@@ -1377,6 +1421,143 @@ const App: React.FC = () => {
     how_it_works: "How It Works",
   };
 
+  // Intercept and render standalone full-screen Admin Portal for /admin routes
+  const isAdminRoute = window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin/");
+
+  if (isAdminRoute) {
+    const handleAdminLogin = (e: React.FormEvent) => {
+      e.preventDefault();
+      const code = adminPasscode.trim().toUpperCase();
+      if (code === "9090" || code === "CHIX9090" || code === "ADMIN" || code === "CHIXADMIN" || code === "CHIX9JA") {
+        localStorage.setItem("chix9ja_admin_logged_in", "true");
+        setIsAdminLoggedIn(true);
+        setAdminLoginError("");
+      } else {
+        setAdminLoginError("Invalid Administrator Passcode. Please try again.");
+      }
+    };
+
+    if (!isAdminLoggedIn) {
+      return (
+        <div className="min-h-screen bg-zinc-950 font-sans text-white flex items-center justify-center p-6 relative overflow-hidden">
+          {/* Neon background decorations */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-green-glow/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="w-full max-w-md bg-zinc-900/85 backdrop-blur-xl border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10">
+            {/* Header / Brand */}
+            <div className="text-center space-y-3 mb-8">
+              <div className="w-16 h-16 bg-gradient-to-tr from-green-light to-green-glow rounded-2xl flex items-center justify-center mx-auto shadow-green-lg">
+                <Icons.Lock size={28} className="text-black stroke-[2.5]" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-wider text-white">
+                  Chix9ja Admin
+                </h1>
+                <p className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase mt-1">
+                  Secure Administrative Console
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAdminLogin} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+                  Access Code
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 font-mono text-sm font-black">
+                    #
+                  </span>
+                  <input
+                    type="password"
+                    value={adminPasscode}
+                    onChange={(e) => setAdminPasscode(e.target.value)}
+                    placeholder="Enter admin passcode"
+                    className="w-full pl-9 pr-4 py-4 bg-black/50 border border-zinc-800 focus:border-green-glow/50 rounded-2xl text-sm font-bold tracking-widest text-center text-white outline-none transition-all placeholder:text-zinc-700 uppercase"
+                    autoFocus
+                  />
+                </div>
+                {adminLoginError && (
+                  <p className="text-xs text-red-500 font-medium text-center bg-red-950/20 border border-red-900/30 p-3 rounded-xl">
+                    ⚠️ {adminLoginError}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-4 bg-green-glow text-black font-black rounded-2xl shadow-lg hover:shadow-green-glow/20 hover:scale-[1.01] active:scale-[0.99] transition-all uppercase tracking-widest text-xs"
+              >
+                Sign In to Dashboard
+              </button>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-zinc-800 text-center space-y-2">
+              <button
+                onClick={() => {
+                  window.location.href = '/';
+                }}
+                className="text-xs text-zinc-400 hover:text-white font-semibold transition-colors uppercase tracking-wider flex items-center justify-center gap-1.5 mx-auto"
+              >
+                <Icons.Home size={14} />
+                Return to main application
+              </button>
+              <p className="text-[9px] text-zinc-600 font-mono">
+                Unauthorized access to this panel is strictly monitored and logged.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-black font-sans text-white transition-colors duration-200">
+        <header className="bg-zinc-950 border-b border-zinc-900 px-6 py-4 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-tr from-green-light to-green-glow rounded-xl flex items-center justify-center shadow-md">
+                <Icons.Lock size={18} className="text-black stroke-[2.5]" />
+              </div>
+              <div>
+                <h1 className="text-lg font-black uppercase tracking-wider text-white">Chix9ja Central Management</h1>
+                <p className="text-[9px] text-green-glow font-mono tracking-widest uppercase">STANDALONE SYSTEM CONTROLS • ACTIVE ADMIN SESSION</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  window.location.href = '/';
+                }}
+                className="px-4 py-2.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 hover:border-zinc-700 text-zinc-300 text-xs font-black rounded-xl uppercase tracking-wider transition-all flex items-center gap-1.5"
+              >
+                <Icons.Home size={14} />
+                Go to Main App
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("chix9ja_admin_logged_in");
+                  setIsAdminLoggedIn(false);
+                }}
+                className="px-4 py-2.5 bg-red-950/30 hover:bg-red-900/40 border border-red-900/40 text-red-400 text-xs font-black rounded-xl uppercase tracking-wider transition-all"
+              >
+                Logout Session
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          <AdminDashboard onBack={() => {
+            window.location.href = '/';
+          }} />
+        </main>
+      </div>
+    );
+  }
+
   if (user?.isRestricted) {
     return (
       <Restricted
@@ -1890,12 +2071,22 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
-          {showWelcomeAd &&
+          {(showWelcomeAd || (user && user.hasJoinedTelegram === false)) &&
             activeTab !== "ux-trade" &&
             activeTab !== "loan" && (
               <TelegramAd
-                onJoin={() => window.open(channels.telegramChannel, "_blank")}
-                onContinue={() => setShowWelcomeAd(false)}
+                onJoin={() => {
+                  window.open(channels.telegramChannel, "_blank");
+                  if (user) {
+                    handleUpdateProfile({ hasJoinedTelegram: true });
+                  }
+                }}
+                onContinue={() => {
+                  setShowWelcomeAd(false);
+                  if (user) {
+                    handleUpdateProfile({ hasJoinedTelegram: true });
+                  }
+                }}
               />
             )}
           {showWithdrawReferralAdvert &&

@@ -98,6 +98,8 @@ export interface User {
   adminNotifications?: SystemNotificationItem[];
   tradeBalanceUsd?: number;
   tradeProfitUsd?: number;
+  deviceId?: string;
+  hasJoinedTelegram?: boolean;
 }
 
 export interface Plan {
