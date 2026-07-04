@@ -875,13 +875,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   }, [users]);
 
   const displayedUsers = useMemo(() => {
+    if (!searchEmail.trim()) {
+      return [];
+    }
     return users.filter(user => {
-      if (searchEmail.trim()) {
-        const query = searchEmail.trim().toLowerCase();
-        const emailMatch = user.email && user.email.toLowerCase().includes(query);
-        const nameMatch = user.name && user.name.toLowerCase().includes(query);
-        if (!emailMatch && !nameMatch) return false;
-      }
+      const query = searchEmail.trim().toLowerCase();
+      const emailMatch = user.email && user.email.toLowerCase().includes(query);
+      const nameMatch = user.name && user.name.toLowerCase().includes(query);
+      if (!emailMatch && !nameMatch) return false;
+      
       if (filterType === 'pending_verification') return !!user.pendingActivation;
       if (filterType === 'unsubscribed') return !user.isSubscribed;
       if (filterType === 'restricted') return user.isRestricted || !!user.deactivationDate || !!user.imminentDeactivationExpiry;
@@ -1554,7 +1556,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 
                 {/* User Cards Block List */}
                 <div className="divide-y divide-zinc-800 bg-black">
-                    {slicedDisplayedUsers.length === 0 ? (
+                    {!searchEmail.trim() ? (
+                        <div className="p-10 text-center font-mono py-16 space-y-4">
+                            <p className="text-emerald-400 text-xs font-black uppercase tracking-widest">Search Required</p>
+                            <p className="text-zinc-500 text-xs max-w-md mx-auto leading-relaxed">
+                                Enter a user's name or email address in the search box above to retrieve and manage their account details.
+                            </p>
+                            <div className="pt-2 flex justify-center">
+                                <span className="inline-flex items-center space-x-2 px-4 py-1.5 bg-zinc-900/60 border border-zinc-800/80 rounded-full text-xs font-bold">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span className="text-zinc-400">Registered Users Pool:</span>
+                                    <span className="text-white font-mono">{users.length}</span>
+                                </span>
+                            </div>
+                        </div>
+                    ) : slicedDisplayedUsers.length === 0 ? (
                         <div className="p-12 text-center text-zinc-500 font-mono font-bold text-xs uppercase tracking-widest py-16">
                             No matching operational nodes on record
                         </div>
