@@ -126,6 +126,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [searchEmail, setSearchEmail] = useState('');
   const [showPendingSubPage, setShowPendingSubPage] = useState(false);
   const [visibleUsersCount, setVisibleUsersCount] = useState(30);
+  const [inviteUserEmail, setInviteUserEmail] = useState<string | null>(null);
+  const [customInviteMsg, setCustomInviteMsg] = useState('');
 
   useEffect(() => {
     setVisibleUsersCount(30);
@@ -751,6 +753,38 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   };
 
+  const handleSendInviteMessage = async (userObj: User, customMsg: string) => {
+    if (!customMsg.trim()) {
+      alert("Please enter an invite message to send.");
+      return;
+    }
+    try {
+      const email = userObj.email.toLowerCase().trim();
+      const newNotifItem = {
+        id: 'notif_' + Math.random().toString(36).substring(2, 9),
+        subject: 'Pending Invitation Alert ✉️',
+        message: customMsg.trim(),
+        date: new Date().toISOString(),
+        read: false,
+        sender: 'Chix9ja Verification Desk'
+      };
+
+      const updatedList = [newNotifItem, ...(userObj.adminNotifications || [])];
+      const updatedUser = {
+        ...userObj,
+        adminNotifications: updatedList
+      };
+
+      await saveUserDocument(email, updatedUser);
+      alert(`Invite message successfully sent to ${userObj.name}! It has been loaded to their notification center.`);
+      setInviteUserEmail(null);
+      setCustomInviteMsg('');
+    } catch (err) {
+      console.error("Error sending invite message:", err);
+      alert("Failed to send invite message: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   const handleToggleExpandUser = (email: string, targetUser: User) => {
     if (expandedUserEmail === email) {
         setExpandedUserEmail(null);
@@ -875,14 +909,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   }, [users]);
 
   const displayedUsers = useMemo(() => {
-    if (!searchEmail.trim()) {
+    if (!searchEmail.trim() && filterType !== 'pending_verification') {
       return [];
     }
     return users.filter(user => {
-      const query = searchEmail.trim().toLowerCase();
-      const emailMatch = user.email && user.email.toLowerCase().includes(query);
-      const nameMatch = user.name && user.name.toLowerCase().includes(query);
-      if (!emailMatch && !nameMatch) return false;
+      if (searchEmail.trim()) {
+        const query = searchEmail.trim().toLowerCase();
+        const emailMatch = user.email && user.email.toLowerCase().includes(query);
+        const nameMatch = user.name && user.name.toLowerCase().includes(query);
+        if (!emailMatch && !nameMatch) return false;
+      }
       
       if (filterType === 'pending_verification') return !!user.pendingActivation;
       if (filterType === 'unsubscribed') return !user.isSubscribed;
@@ -1030,58 +1066,138 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                           </div>
                       ) : (
                           pendingUsers.map((pUser, idx) => (
-                              <div key={idx} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
-                                  <div className="space-y-2 flex-1">
-                                      <div className="flex items-center space-x-2">
-                                          <h4 className="font-bold text-white text-sm">{pUser.name}</h4>
-                                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-zinc-400 bg-zinc-800 border border-zinc-700">
-                                              {pUser.email}
-                                          </span>
+                              <div key={idx} className="p-5 flex flex-col gap-4 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
+                                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                      <div className="space-y-2 flex-1">
+                                          <div className="flex items-center space-x-2">
+                                              <h4 className="font-bold text-white text-sm">{pUser.name}</h4>
+                                              <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-zinc-400 bg-zinc-800 border border-zinc-700">
+                                                  {pUser.email}
+                                              </span>
+                                          </div>
+                                          <div className="space-y-1.5 pl-2.5 border-l-2 border-emerald-500 bg-emerald-950/20 py-1.5 pr-3 rounded-r-xl">
+                                              <p className="text-xs font-bold text-emerald-400 uppercase tracking-tight flex items-center font-mono">
+                                                  <Sparkles size={11} className="mr-1 text-emerald-400" />
+                                                  Request Type: {
+                                                      pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
+                                                      pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
+                                                      pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
+                                                      pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
+                                                      pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
+                                                      pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
+                                                      pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
+                                                      pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :
+                                                      pUser.pendingActivation
+                                                  }
+                                              </p>
+                                              <p className="text-[10px] font-mono text-zinc-400 font-bold">
+                                                  Naira: <span className="text-white">₦{pUser.pendingPaymentAmount?.toLocaleString()}</span> | Transmitted: <span className="text-zinc-350">{pUser.pendingPaymentDate ? new Date(pUser.pendingPaymentDate).toLocaleString() : 'N/A'}</span>
+                                              </p>
+                                          </div>
                                       </div>
-                                      <div className="space-y-1.5 pl-2.5 border-l-2 border-emerald-500 bg-emerald-950/20 py-1.5 pr-3 rounded-r-xl">
-                                          <p className="text-xs font-bold text-emerald-400 uppercase tracking-tight flex items-center font-mono">
-                                              <Sparkles size={11} className="mr-1 text-emerald-400" />
-                                              Request Type: {
-                                                  pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
-                                                  pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
-                                                  pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
-                                                  pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
-                                                  pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
-                                                  pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
-                                                  pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
-                                                  pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :
-                                                  pUser.pendingActivation
-                                              }
-                                          </p>
-                                          <p className="text-[10px] font-mono text-zinc-400 font-bold">
-                                              Naira: <span className="text-white">₦{pUser.pendingPaymentAmount?.toLocaleString()}</span> | Transmitted: <span className="text-zinc-350">{pUser.pendingPaymentDate ? new Date(pUser.pendingPaymentDate).toLocaleString() : 'N/A'}</span>
-                                          </p>
-                                      </div>
-                                  </div>
-                                  
-                                  <div className="flex sm:flex-row gap-2 self-start md:self-center">
-                                      {pUser.pendingPaymentProof && (
+                                      
+                                      <div className="flex flex-wrap sm:flex-row gap-2 self-start md:self-center">
+                                          {pUser.pendingPaymentProof && (
+                                              <button 
+                                                  onClick={() => setActiveReceiptUser(pUser)}
+                                                  className="px-3.5 py-2 hover:bg-zinc-800 text-white border border-zinc-800 text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center justify-center space-x-1 cursor-pointer"
+                                              >
+                                                  <Eye size={12} />
+                                                  <span>Scan Receipt</span>
+                                              </button>
+                                          )}
                                           <button 
-                                              onClick={() => setActiveReceiptUser(pUser)}
-                                              className="px-3.5 py-2 hover:bg-zinc-800 text-white border border-zinc-800 text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center justify-center space-x-1 cursor-pointer"
+                                              onClick={() => {
+                                                  if (inviteUserEmail === pUser.email) {
+                                                      setInviteUserEmail(null);
+                                                      setCustomInviteMsg('');
+                                                  } else {
+                                                      setInviteUserEmail(pUser.email);
+                                                      const readableType = pUser.pendingActivation
+                                                          ? pUser.pendingActivation.replace('subscription_', '').replace('_', ' ').toUpperCase()
+                                                          : 'verification';
+                                                      setCustomInviteMsg(`Hello ${pUser.name},\n\nWe noticed your ${readableType} activation request is pending. Kindly ensure your payment proof is valid so we can immediately upgrade your dashboard and restore full privilege operations.\n\nWarm regards,\nChix9ja Verification Team`);
+                                                  }
+                                              }}
+                                              className={`px-3.5 py-2 border text-[10px] font-mono font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer ${inviteUserEmail === pUser.email ? 'bg-amber-600 border-amber-600 text-black font-extrabold' : 'bg-zinc-900 text-amber-500 border-amber-500/20 hover:bg-zinc-800'}`}
                                           >
-                                              <Eye size={12} />
-                                              <span>Scan Receipt</span>
+                                              {inviteUserEmail === pUser.email ? 'Close' : 'Send Invite'}
                                           </button>
-                                      )}
-                                      <button 
-                                          onClick={() => handleApproveActivation(pUser)}
-                                          className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                                      >
-                                          Approve
-                                      </button>
-                                      <button 
-                                          onClick={() => handleDeclineActivation(pUser)}
-                                          className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 hover:text-rose-455 text-rose-500 border border-rose-500/20 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-                                      >
-                                          Reject
-                                      </button>
+                                          <button 
+                                              onClick={() => handleApproveActivation(pUser)}
+                                              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                          >
+                                              Approve
+                                          </button>
+                                          <button 
+                                              onClick={() => handleDeclineActivation(pUser)}
+                                              className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 hover:text-rose-455 text-rose-500 border border-rose-500/20 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                          >
+                                              Reject
+                                          </button>
+                                      </div>
                                   </div>
+
+                                  {/* Custom Invite Messaging collapsible panel */}
+                                  {inviteUserEmail === pUser.email && (
+                                      <div className="border border-zinc-800 bg-zinc-950/60 p-4 rounded-2xl space-y-3.5 animate-in slide-in-from-top-2 duration-150">
+                                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-zinc-800/60 pb-2">
+                                              <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest">Customize Invite Notification</span>
+                                              <div className="flex flex-wrap gap-1.5">
+                                                  <button
+                                                      type="button"
+                                                      onClick={() => setCustomInviteMsg(`Hello ${pUser.name},\n\nWe noticed your receipt is blurry. Please click on the subscribe button again and upload a clear, high-resolution screenshot/image of your successful bank transfer so we can activate your account immediately.\n\nWarm regards,\nChix9ja Central Treasury`)}
+                                                      className="text-[8.5px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-350 px-2 py-1 rounded-md border border-zinc-800"
+                                                  >
+                                                      Blurry Receipt
+                                                  </button>
+                                                  <button
+                                                      type="button"
+                                                      onClick={() => setCustomInviteMsg(`Hello ${pUser.name},\n\nKindly note that your transfer is pending confirmation. To speed up verification, make sure the sender name on your payment matches your profile, or reply to support with transaction references.\n\nBest regards,\nChix9ja Operations Desk`)}
+                                                      className="text-[8.5px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-350 px-2 py-1 rounded-md border border-zinc-800"
+                                                  >
+                                                      Awaiting Transfer
+                                                  </button>
+                                                  <button
+                                                      type="button"
+                                                      onClick={() => setCustomInviteMsg(`Dear ${pUser.name},\n\nYour account linkage process has started. In order to complete verification and enable unlimited automated withdrawals to your bank, please upload your verification fee receipt.\n\nWith respect,\nChix9ja Security Desk`)}
+                                                      className="text-[8.5px] font-mono bg-zinc-900 hover:bg-zinc-800 text-zinc-350 px-2 py-1 rounded-md border border-zinc-800"
+                                                  >
+                                                      Link Bank Fee
+                                                  </button>
+                                              </div>
+                                          </div>
+                                          
+                                          <textarea
+                                              value={customInviteMsg}
+                                              onChange={(e) => setCustomInviteMsg(e.target.value)}
+                                              rows={4}
+                                              className="w-full bg-black border border-zinc-850 rounded-xl p-3 text-xs text-white outline-none focus:border-amber-500 font-sans leading-relaxed"
+                                              placeholder="Write your customized invite/notification message here..."
+                                          />
+                                          
+                                          <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3 pt-1">
+                                              <div className="flex items-center space-x-2 text-zinc-500 text-[10px] font-mono">
+                                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                                  <span>User will see this message in their local Inbox/Notification feed.</span>
+                                              </div>
+                                              <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                                                  <a
+                                                      href={`mailto:${pUser.email}?subject=Chix9ja Account Notice&body=${encodeURIComponent(customInviteMsg)}`}
+                                                      className="px-3.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-350 text-[10px] font-mono rounded-lg border border-zinc-800 transition-all flex items-center space-x-1"
+                                                  >
+                                                      <span>Send Email</span>
+                                                  </a>
+                                                  <button
+                                                      onClick={() => handleSendInviteMessage(pUser, customInviteMsg)}
+                                                      className="px-4 py-1.5 bg-amber-500 hover:bg-amber-450 text-black font-black text-[10px] uppercase tracking-wider rounded-lg transition-all"
+                                                  >
+                                                      Submit Notification
+                                                  </button>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  )}
                               </div>
                           ))
                       )}
@@ -1556,7 +1672,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 
                 {/* User Cards Block List */}
                 <div className="divide-y divide-zinc-800 bg-black">
-                    {!searchEmail.trim() ? (
+                    {!searchEmail.trim() && filterType !== 'pending_verification' ? (
                         <div className="p-10 text-center font-mono py-16 space-y-4">
                             <p className="text-emerald-400 text-xs font-black uppercase tracking-widest">Search Required</p>
                             <p className="text-zinc-500 text-xs max-w-md mx-auto leading-relaxed">
