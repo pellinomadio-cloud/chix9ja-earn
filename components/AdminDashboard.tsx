@@ -124,6 +124,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   // Filter accounts state
   const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted'>('all');
   const [searchEmail, setSearchEmail] = useState('');
+  const [showPendingSubPage, setShowPendingSubPage] = useState(false);
+  const [visibleUsersCount, setVisibleUsersCount] = useState(30);
+
+  useEffect(() => {
+    setVisibleUsersCount(30);
+  }, [filterType, searchEmail]);
 
   // Bank details configuration states
   const { bankDetails } = useBankDetails();
@@ -875,9 +881,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         const emailMatch = user.email && user.email.toLowerCase().includes(query);
         const nameMatch = user.name && user.name.toLowerCase().includes(query);
         if (!emailMatch && !nameMatch) return false;
-      } else {
-        // If search query is empty, do not show any users under 'all' view
-        if (filterType === 'all') return false;
       }
       if (filterType === 'pending_verification') return !!user.pendingActivation;
       if (filterType === 'unsubscribed') return !user.isSubscribed;
@@ -885,6 +888,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       return true;
     });
   }, [users, searchEmail, filterType]);
+
+  const slicedDisplayedUsers = useMemo(() => {
+    return displayedUsers.slice(0, visibleUsersCount);
+  }, [displayedUsers, visibleUsersCount]);
 
   const stats = useMemo(() => {
     return {
@@ -964,6 +971,194 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     );
   }
 
+  if (showPendingSubPage) {
+    return (
+      <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans select-none relative overflow-wrap-normal overflow-hidden animate-in fade-in duration-200">
+          {/* Glow Effects */}
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[140px] pointer-events-none" />
+          
+          <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 relative z-10">
+              {/* Top Command Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800/80 pb-6">
+                  <div className="space-y-1">
+                      <div className="flex items-center space-x-2.5">
+                          <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
+                          <span className="text-[9px] font-mono font-black uppercase text-emerald-400 tracking-widest block bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                              Validation Desk
+                          </span>
+                          {isSyncing && (
+                              <span className="flex items-center text-[9px] text-zinc-400 font-mono tracking-wider font-bold">
+                                  <RefreshCw size={10} className="mr-1 animate-spin text-emerald-400" /> SYNCING
+                              </span>
+                          )}
+                      </div>
+                      <h2 className="text-3xl font-black text-white tracking-wider uppercase font-mono">
+                          Pending <span className="text-emerald-400">Receipts</span>
+                      </h2>
+                      <p className="text-xs text-zinc-400 font-medium">Verify manual payments, account link fees, and user subscriptions.</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2.5">
+                      <button 
+                          onClick={() => setShowPendingSubPage(false)}
+                          className="py-2.5 px-5 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-[0.97] flex items-center space-x-1.5 cursor-pointer"
+                      >
+                          <span>← Back to Main Dashboard</span>
+                      </button>
+                  </div>
+              </div>
+
+              {/* Pending Receipt Approvals Section */}
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-zinc-800 overflow-hidden">
+                  <div className="p-5 bg-emerald-950/20 border-b border-emerald-500/15 flex items-center justify-between">
+                      <h3 className="font-extrabold text-white text-sm flex items-center space-x-2 font-mono">
+                          <AlertCircle className="text-emerald-400 animate-pulse stroke-[2.2]" size={16} />
+                          <span className="tracking-wide">PENDING VERIFICATION CUES ({pendingUsers.length})</span>
+                      </h3>
+                      <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                          Validation Board
+                      </span>
+                  </div>
+                  
+                  <div className="divide-y divide-zinc-800/80">
+                      {pendingUsers.length === 0 ? (
+                          <div className="p-10 text-center text-zinc-500 text-xs font-mono font-bold py-12 uppercase tracking-wider bg-zinc-900/20">
+                              ✓ No outstanding receipt validations queue on file
+                          </div>
+                      ) : (
+                          pendingUsers.map((pUser, idx) => (
+                              <div key={idx} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
+                                  <div className="space-y-2 flex-1">
+                                      <div className="flex items-center space-x-2">
+                                          <h4 className="font-bold text-white text-sm">{pUser.name}</h4>
+                                          <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-zinc-400 bg-zinc-800 border border-zinc-700">
+                                              {pUser.email}
+                                          </span>
+                                      </div>
+                                      <div className="space-y-1.5 pl-2.5 border-l-2 border-emerald-500 bg-emerald-950/20 py-1.5 pr-3 rounded-r-xl">
+                                          <p className="text-xs font-bold text-emerald-400 uppercase tracking-tight flex items-center font-mono">
+                                              <Sparkles size={11} className="mr-1 text-emerald-400" />
+                                              Request Type: {
+                                                  pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
+                                                  pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
+                                                  pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
+                                                  pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
+                                                  pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
+                                                  pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
+                                                  pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
+                                                  pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :
+                                                  pUser.pendingActivation
+                                              }
+                                          </p>
+                                          <p className="text-[10px] font-mono text-zinc-400 font-bold">
+                                              Naira: <span className="text-white">₦{pUser.pendingPaymentAmount?.toLocaleString()}</span> | Transmitted: <span className="text-zinc-350">{pUser.pendingPaymentDate ? new Date(pUser.pendingPaymentDate).toLocaleString() : 'N/A'}</span>
+                                          </p>
+                                      </div>
+                                  </div>
+                                  
+                                  <div className="flex sm:flex-row gap-2 self-start md:self-center">
+                                      {pUser.pendingPaymentProof && (
+                                          <button 
+                                              onClick={() => setActiveReceiptUser(pUser)}
+                                              className="px-3.5 py-2 hover:bg-zinc-800 text-white border border-zinc-800 text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center justify-center space-x-1 cursor-pointer"
+                                          >
+                                              <Eye size={12} />
+                                              <span>Scan Receipt</span>
+                                          </button>
+                                      )}
+                                      <button 
+                                          onClick={() => handleApproveActivation(pUser)}
+                                          className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                      >
+                                          Approve
+                                      </button>
+                                      <button 
+                                          onClick={() => handleDeclineActivation(pUser)}
+                                          className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 hover:text-rose-455 text-rose-500 border border-rose-500/20 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+                                      >
+                                          Reject
+                                      </button>
+                                  </div>
+                              </div>
+                          ))
+                      )}
+                  </div>
+              </div>
+          </div>
+
+          {/* Modal Lightbox Screen for payment proof scanning */}
+          {activeReceiptUser && (
+              <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-150">
+                  <button 
+                      onClick={() => setActiveReceiptUser(null)}
+                      className="absolute top-4 right-4 p-3 bg-zinc-900 hover:bg-zinc-800 text-white rounded-full hover:text-emerald-400 font-extrabold shadow-md active:scale-90 border border-zinc-800 transition-all cursor-pointer"
+                  >
+                      <Icons.X size={20} />
+                  </button>
+                  
+                  <div className="max-w-md w-full bg-zinc-900 rounded-3xl p-6 shadow-2xl border border-zinc-800 text-center space-y-4 animate-in zoom-in-95 duration-150">
+                      <div className="space-y-1">
+                          <h3 className="text-lg font-black text-white uppercase tracking-wider font-mono">Receipt Authentication</h3>
+                          <p className="text-xs text-zinc-400 font-mono whitespace-nowrap overflow-hidden text-ellipsis">Reference node: {activeReceiptUser.email}</p>
+                      </div>
+                      
+                      <div className="border border-zinc-800 rounded-2xl overflow-hidden bg-black max-h-[50vh] flex items-center justify-center p-1.5 relative">
+                          <img 
+                              src={activeReceiptUser.pendingPaymentProof} 
+                              alt="Verification receipt proof file" 
+                              className="object-contain max-h-[48vh] w-full rounded-xl"
+                              referrerPolicy="no-referrer"
+                          />
+                      </div>
+                      
+                      <div className="flex flex-col space-y-2 pt-1">
+                          <div className="flex space-x-2">
+                              <button 
+                                  onClick={async () => { await handleApproveActivation(activeReceiptUser); setActiveReceiptUser(null); }}
+                                  className="flex-grow py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-black uppercase tracking-widest text-xs rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                              >
+                                  Authorize Act
+                              </button>
+                              <button 
+                                  onClick={async () => { await handleDeclineActivation(activeReceiptUser); setActiveReceiptUser(null); }}
+                                  className="flex-grow py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all cursor-pointer"
+                              >
+                                  Decline Proof
+                              </button>
+                          </div>
+                          <button 
+                              onClick={async () => { 
+                                  const code = prompt(`Enter a custom recovery code to ban ${activeReceiptUser.name}:`, "CHI999") || "CHI999";
+                                  const email = activeReceiptUser.email.toLowerCase();
+                                  const updatedUser = { 
+                                      ...activeReceiptUser,
+                                      isRestricted: true,
+                                      restrictionType: 'ban' as const,
+                                      banRecoveryCode: code,
+                                      pendingActivation: null,
+                                      pendingPaymentProof: undefined,
+                                      pendingPaymentAmount: undefined,
+                                      pendingPaymentDate: undefined,
+                                      hasDeclinedReceiptWarning: true
+                                  };
+                                  await saveUserDocument(email, updatedUser);
+                                  alert(`Successfully banned ${updatedUser.name} and cleared pending state. Recovery code set to: ${code}`);
+                                  setActiveReceiptUser(null); 
+                              }}
+                              className="w-full py-3 px-4 bg-rose-950 hover:bg-rose-900 border border-rose-500/30 text-rose-500 font-bold uppercase tracking-widest text-xs rounded-xl transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                          >
+                              <Icons.Ban size={12} />
+                              <span>Ban Account (Assign Recovery Code)</span>
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans select-none relative overflow-wrap-normal overflow-hidden">
         {/* Glow Effects */}
@@ -1009,13 +1204,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
             {/* Faster Diagnostics Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-                <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(16,185,129,0.02)] relative overflow-hidden hover:border-zinc-700 transition-all">
-                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block font-mono">Pending Receipts</span>
-                    <span className="text-2xl font-black text-white font-mono block mt-1">{pendingUsers.length}</span>
-                    <div className="absolute right-3.5 bottom-3 text-emerald-500/5">
+                <button 
+                    onClick={() => setShowPendingSubPage(true)}
+                    className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(16,185,129,0.02)] relative overflow-hidden hover:border-emerald-500/50 hover:bg-zinc-900 transition-all text-left w-full cursor-pointer group"
+                >
+                    <span className="text-[9px] font-bold text-zinc-400 group-hover:text-emerald-400 uppercase tracking-widest block font-mono">Pending Receipts</span>
+                    <span className="text-2xl font-black text-white font-mono block mt-1 flex items-center gap-1.5">
+                        {pendingUsers.length}
+                        {pendingUsers.length > 0 && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
+                    </span>
+                    <span className="text-[9.5px] text-zinc-500 font-mono mt-1 block group-hover:text-emerald-400">Click to view all →</span>
+                    <div className="absolute right-3.5 bottom-3 text-emerald-500/5 group-hover:text-emerald-500/20 transition-all">
                         <ShieldAlert size={28} />
                     </div>
-                </div>
+                </button>
 
                 <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-sm relative overflow-hidden hover:border-zinc-700 transition-all">
                     <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest block font-mono font-bold">Total Directory</span>
@@ -1285,83 +1487,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Pending Receipt Approvals Section */}
-            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-zinc-800 overflow-hidden">
-                <div className="p-5 bg-emerald-950/20 border-b border-emerald-500/15 flex items-center justify-between">
-                    <h3 className="font-extrabold text-white text-sm flex items-center space-x-2 font-mono">
-                        <AlertCircle className="text-emerald-400 animate-pulse stroke-[2.2]" size={16} />
-                        <span className="tracking-wide">PENDING VERIFICATION CUES ({pendingUsers.length})</span>
-                    </h3>
-                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/25 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                        Validation Board
-                    </span>
-                </div>
-                
-                <div className="divide-y divide-zinc-800/80">
-                    {pendingUsers.length === 0 ? (
-                        <div className="p-10 text-center text-zinc-550 text-zinc-550 text-zinc-550 text-zinc-500 text-xs font-mono font-bold py-12 uppercase tracking-wider bg-zinc-900/20">
-                            ✓ No outstanding receipt validations queue on file
-                        </div>
-                    ) : (
-                        pendingUsers.map((pUser, idx) => (
-                            <div key={idx} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-zinc-900/30 hover:bg-zinc-900/50 transition-all">
-                                <div className="space-y-2 flex-1">
-                                    <div className="flex items-center space-x-2">
-                                        <h4 className="font-bold text-white text-sm">{pUser.name}</h4>
-                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-zinc-400 bg-zinc-800 border border-zinc-700">
-                                            {pUser.email}
-                                        </span>
-                                    </div>
-                                    <div className="space-y-1.5 pl-2.5 border-l-2 border-emerald-500 bg-emerald-950/20 py-1.5 pr-3 rounded-r-xl">
-                                        <p className="text-xs font-bold text-emerald-350 text-emerald-400 uppercase tracking-tight flex items-center font-mono">
-                                            <Sparkles size={11} className="mr-1 text-emerald-450" />
-                                            Request Type: {
-                                                pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
-                                                pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
-                                                pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
-                                                pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
-                                                pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
-                                                pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
-                                                pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
-                                                pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :
-                                                pUser.pendingActivation
-                                            }
-                                        </p>
-                                        <p className="text-[10px] font-mono text-zinc-400 font-bold">
-                                            Naira: <span className="text-white">₦{pUser.pendingPaymentAmount?.toLocaleString()}</span> | Transmitted: <span className="text-zinc-350">{pUser.pendingPaymentDate ? new Date(pUser.pendingPaymentDate).toLocaleString() : 'N/A'}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex sm:flex-row gap-2 self-start md:self-center">
-                                    {pUser.pendingPaymentProof && (
-                                        <button 
-                                            onClick={() => setActiveReceiptUser(pUser)}
-                                            className="px-3.5 py-2 hover:bg-zinc-800 text-white border border-zinc-800 text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center justify-center space-x-1"
-                                        >
-                                            <Eye size={12} />
-                                            <span>Scan Receipt</span>
-                                        </button>
-                                    )}
-                                    <button 
-                                        onClick={() => handleApproveActivation(pUser)}
-                                        className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-[10px] uppercase tracking-wider rounded-xl transition-all"
-                                    >
-                                        Approve
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDeclineActivation(pUser)}
-                                        className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 hover:text-rose-450 text-rose-500 border border-rose-500/20 font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all"
-                                    >
-                                        Reject
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-
             {/* Complete Users Database & Controls */}
             <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-zinc-800 overflow-hidden">
                 <div className="p-5 border-b border-zinc-800/85 space-y-4">
@@ -1429,15 +1554,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 
                 {/* User Cards Block List */}
                 <div className="divide-y divide-zinc-800 bg-black">
-                    {displayedUsers.length === 0 ? (
+                    {slicedDisplayedUsers.length === 0 ? (
                         <div className="p-12 text-center text-zinc-500 font-mono font-bold text-xs uppercase tracking-widest py-16">
-                            {!searchEmail.trim() && filterType === 'all' 
-                                ? "Search for a user by name or email to view and control their account" 
-                                : "No matching operational nodes on record"
-                            }
+                            No matching operational nodes on record
                         </div>
                     ) : (
-                        displayedUsers.map((user, idx) => {
+                        slicedDisplayedUsers.map((user, idx) => {
                             const status = getDeactivationStatus(user);
                             const isDeactivated = status === 'Deactivated';
                             const isImminent = status.startsWith('Imminent');
@@ -1749,6 +1871,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                 </div>
                             );
                         })
+                    )}
+                    {displayedUsers.length > visibleUsersCount && (
+                        <div className="p-6 text-center border-t border-zinc-800 bg-black flex justify-center">
+                            <button 
+                                type="button"
+                                onClick={() => setVisibleUsersCount(prev => prev + 30)}
+                                className="py-2.5 px-6 bg-zinc-900 hover:bg-zinc-850 text-white border border-zinc-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-[0.97] flex items-center space-x-1.5 cursor-pointer"
+                            >
+                                <span>Load More Users ({displayedUsers.length - visibleUsersCount} remaining)</span>
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
