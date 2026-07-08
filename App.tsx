@@ -2358,161 +2358,25 @@ const App: React.FC = () => {
           {/* Interactive Floating Support Toggle Widget */}
           {currentView === "dashboard" && activeTab !== "admin" && (
             <div className="fixed bottom-22 left-1/2 -translate-x-1/2 w-full max-w-md pointer-events-none z-[100] h-0">
-              <div className="absolute bottom-0 right-4 pointer-events-auto flex flex-col items-end">
-                {/* Support Card Popup */}
-                {showSupportMenu && (
-                  <div className="mb-4 w-80 bg-zinc-950/95 border-2 border-green-glow/30 rounded-3xl p-4 shadow-[0_12px_45px_rgba(0,0,0,0.85)] backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-200 space-y-3.5 text-left border border-gray-800">
-                    {/* Header */}
-                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800/60">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-glow animate-pulse" />
-                        <span className="text-[11px] font-black uppercase tracking-widest text-white">Chix9ja Central Help Desk</span>
-                      </div>
-                      <span className="text-[9px] font-mono font-bold text-green-glow bg-green-glow/10 px-2 py-0.5 rounded border border-green-glow/20">LIVE</span>
-                    </div>
+              <div className="absolute bottom-0 right-4 pointer-events-auto flex items-center group">
+                {/* Elegant hover tooltip badge */}
+                <div className="mr-2 bg-zinc-950/90 text-green-glow text-[9px] font-mono font-black uppercase tracking-widest px-3 py-1.5 rounded-2xl border border-green-glow/20 shadow-[0_0_15px_rgba(0,255,163,0.15)] flex items-center space-x-1.5 whitespace-nowrap pointer-events-none select-none transition-all duration-300 opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100">
+                  <span>Telegram Support</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-glow animate-pulse" />
+                </div>
 
-                    {/* Core Info Alert */}
-                    <div className="bg-zinc-900/60 p-2.5 rounded-xl border border-zinc-850 space-y-1">
-                      <p className="text-[10px] font-semibold text-gray-300 leading-normal">
-                        Need immediate help with subscription, linkage validation, or withdrawal? Chat directly with our centralized nodes below.
-                      </p>
-                    </div>
-
-                    {/* Help Channels Grid */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <a 
-                        href="https://wa.me/2347045129384"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-2 p-2 bg-emerald-950/30 hover:bg-emerald-900/30 border border-emerald-500/20 rounded-xl transition-all group"
-                      >
-                        <div className="p-1.5 bg-emerald-500/10 rounded-lg text-emerald-400 group-hover:scale-105 transition-transform">
-                          <Icons.MessageCircle size={15} />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-[10px] font-black uppercase text-white tracking-wide">WhatsApp</p>
-                          <p className="text-[8px] font-mono text-emerald-400 font-bold uppercase">Immediate Node</p>
-                        </div>
-                      </a>
-
-                      <a 
-                        href="https://t.me/chix9ja_central_support"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-2 p-2 bg-blue-950/30 hover:bg-blue-900/30 border border-blue-500/20 rounded-xl transition-all group"
-                      >
-                        <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-105 transition-transform">
-                          <Icons.Send size={14} />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-[10px] font-black uppercase text-white tracking-wide">Telegram</p>
-                          <p className="text-[8px] font-mono text-blue-400 font-bold uppercase">Help Channel</p>
-                        </div>
-                      </a>
-                    </div>
-
-                    {/* Divider with Text */}
-                    <div className="flex items-center space-x-2 py-1">
-                      <div className="flex-1 h-px bg-zinc-850" />
-                      <span className="text-[8px] font-mono font-bold text-gray-500 uppercase tracking-widest">Or Submit Ticket</span>
-                      <div className="flex-1 h-px bg-zinc-850" />
-                    </div>
-
-                    {/* In-App Direct Ticket Submission Form */}
-                    {supportSuccess ? (
-                      <div className="p-4 bg-green-glow/10 border border-green-glow/30 rounded-2xl text-center space-y-2 animate-in zoom-in-95 duration-200">
-                        <div className="w-10 h-10 bg-green-glow/20 rounded-full flex items-center justify-center mx-auto">
-                          <Icons.Check className="text-green-glow" size={20} />
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-xs font-black uppercase text-white tracking-wide">Ticket Dispatched</p>
-                          <p className="text-[10px] text-gray-400 font-medium leading-relaxed">
-                            Your inquiry has been successfully transmitted to the Verification Treasury. We will update your feed soon.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2.5">
-                        <div className="flex flex-col space-y-1">
-                          <label className="text-[9px] font-mono font-bold text-gray-400 uppercase tracking-wider">Inquiry Subject</label>
-                          <div className="flex gap-1">
-                            {["General", "Withdrawal", "Activation"].map((sub) => (
-                              <button
-                                key={sub}
-                                type="button"
-                                onClick={() => setSupportSubject(`${sub} Support`)}
-                                className={`flex-1 py-1 text-[9px] font-mono font-black uppercase tracking-wider rounded-lg border transition-all ${
-                                  supportSubject.includes(sub)
-                                    ? "bg-green-glow border-green-glow text-black font-extrabold"
-                                    : "bg-zinc-900 border-zinc-800 text-gray-400 hover:bg-zinc-850"
-                                }`}
-                              >
-                                {sub}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col space-y-1">
-                          <label className="text-[9px] font-mono font-bold text-gray-400 uppercase tracking-wider">Message Description</label>
-                          <textarea
-                            value={supportMsg}
-                            onChange={(e) => setSupportMsg(e.target.value)}
-                            rows={3}
-                            className="w-full bg-black border border-zinc-850 rounded-xl p-2.5 text-xs text-white outline-none focus:border-green-glow/60 font-sans leading-relaxed resize-none"
-                            placeholder="Detail your request or issue here..."
-                          />
-                        </div>
-
-                        <button
-                          onClick={handleSendSupportTicket}
-                          disabled={isSendingSupport || !supportMsg.trim()}
-                          className="w-full py-2.5 bg-green-glow hover:bg-green-dark text-black font-black text-[10px] uppercase tracking-widest rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center space-x-1.5"
-                        >
-                          {isSendingSupport ? (
-                            <>
-                              <div className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                              <span>Transmitting Node...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Icons.FileText size={12} />
-                              <span>Dispatch Support Ticket</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Footer Credits */}
-                    <div className="flex items-center justify-center space-x-1.5 pt-1 text-[8px] font-mono text-zinc-600 font-bold uppercase tracking-widest">
-                      <Icons.ShieldCheck size={11} className="text-green-glow" />
-                      <span>Central Verification System</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Trigger Button with outstanding custom pulse/ping effects and hover animations */}
+                {/* Floating Support Button with glowing pulse/ping effect and hover animations */}
                 <button 
-                  onClick={() => setShowSupportMenu(!showSupportMenu)}
-                  aria-label="Toggle support channel"
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer shadow-lg relative ${
-                    showSupportMenu 
-                      ? "bg-zinc-900 border-2 border-zinc-700 text-white shadow-[0_0_20px_rgba(255,255,255,0.1)]" 
-                      : "bg-gradient-to-tr from-green-light to-green-glow text-black shadow-[0_0_25px_rgba(0,255,163,0.35)] hover:shadow-[0_0_35px_rgba(0,255,163,0.55)]"
-                  }`}
+                  onClick={() => window.open(channels.supportTelegram, "_blank")}
+                  aria-label="Contact Telegram Support"
+                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer shadow-lg relative bg-gradient-to-tr from-green-light to-green-glow text-black shadow-[0_0_25px_rgba(0,255,163,0.35)] hover:shadow-[0_0_35px_rgba(0,255,163,0.55)] border border-green-glow/50"
                 >
-                  {showSupportMenu ? (
-                    <Icons.X size={18} className="stroke-[2.5] transition-transform duration-300 transform rotate-0 hover:rotate-90" />
-                  ) : (
-                    <>
-                      <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-85"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-black"></span>
-                      </span>
-                      <Icons.Support size={20} className="stroke-[2.5] animate-pulse" />
-                    </>
-                  )}
+                  <span className="absolute inset-0 rounded-full bg-green-glow/30 animate-ping opacity-75"></span>
+                  <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3 z-20">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-85"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-black"></span>
+                  </span>
+                  <Icons.Support size={20} className="stroke-[2.5] relative z-10 animate-pulse text-black" />
                 </button>
               </div>
             </div>
