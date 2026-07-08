@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
-import { useBankDetails } from '../firebase';
+import { useBankDetails, useAppChannels } from '../firebase';
 import { motion, AnimatePresence } from 'motion/react';
 
 const banksList = [
@@ -53,6 +53,7 @@ interface InvestmentProps {
 }
 
 const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) => {
+  const { channels } = useAppChannels();
   const [selectedPlan, setSelectedPlan] = useState<InvestmentPlan | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'failed' | 'success'>('idle');
   const [investmentIdInput, setInvestmentIdInput] = useState('');
@@ -454,6 +455,19 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
             <p className="text-[10px] text-gray-500 font-medium text-center uppercase tracking-tight">
               Enter the ID provided after your successful transfer to verify.
             </p>
+            <div className="mt-3 bg-zinc-950/80 border border-amber-500/20 rounded-2xl p-3.5 text-center space-y-2">
+              <p className="text-[11px] text-gray-300 font-semibold leading-relaxed">
+                Need an Investment ID? Message our Verified Vendor on Telegram to get your ID immediately.
+              </p>
+              <button
+                type="button"
+                onClick={() => window.open(channels.vendorTelegram, "_blank")}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-[10px] font-black uppercase text-amber-400 tracking-wider transition-all"
+              >
+                <Icons.Send size={11} />
+                <span>Message Verified Vendor</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -528,6 +542,20 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="bg-gray-900/90 border border-amber-500/25 rounded-2xl p-4 text-center space-y-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.3)]">
+        <p className="text-xs text-gray-300 font-semibold leading-relaxed">
+          Each investment requires a validated <strong className="text-amber-400">Investment ID</strong>. If you do not have one or need to obtain yours, contact our verified vendor instantly on Telegram.
+        </p>
+        <button
+          type="button"
+          onClick={() => window.open(channels.vendorTelegram, "_blank")}
+          className="inline-flex items-center space-x-2 px-4 py-2 bg-amber-500 text-black font-black uppercase text-xs rounded-xl shadow-lg hover:bg-amber-400 active:scale-95 transition-all tracking-wider"
+        >
+          <Icons.Send size={12} />
+          <span>Message Verified Vendor</span>
+        </button>
       </div>
 
         <div className="bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 text-center">

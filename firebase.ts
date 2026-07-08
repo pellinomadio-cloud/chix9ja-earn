@@ -320,12 +320,14 @@ export interface AppChannels {
   telegramChannel: string;
   whatsappChannel: string;
   supportTelegram: string;
+  vendorTelegram: string;
 }
 
 export const DEFAULT_APP_CHANNELS: AppChannels = {
   telegramChannel: "https://t.me/chix9ja",
   whatsappChannel: "https://whatsapp.com/channel/0029Vb8arfH59PwbSshxov1M",
-  supportTelegram: "https://t.me/chix9jaservice"
+  supportTelegram: "https://t.me/chix9jaservice",
+  vendorTelegram: "https://t.me/chix9ja_vendor"
 };
 
 export function useAppChannels() {
@@ -341,6 +343,7 @@ export function useAppChannels() {
           telegramChannel: data.telegramChannel || DEFAULT_APP_CHANNELS.telegramChannel,
           whatsappChannel: data.whatsappChannel || DEFAULT_APP_CHANNELS.whatsappChannel,
           supportTelegram: data.supportTelegram || DEFAULT_APP_CHANNELS.supportTelegram,
+          vendorTelegram: data.vendorTelegram || DEFAULT_APP_CHANNELS.vendorTelegram,
         });
       } else {
         setChannels(DEFAULT_APP_CHANNELS);
@@ -362,7 +365,8 @@ export async function updateAppChannels(channels: AppChannels): Promise<void> {
   await setDoc(docRef, {
     telegramChannel: channels.telegramChannel,
     whatsappChannel: channels.whatsappChannel,
-    supportTelegram: channels.supportTelegram
+    supportTelegram: channels.supportTelegram,
+    vendorTelegram: channels.vendorTelegram
   });
 }
 

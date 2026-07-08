@@ -9,9 +9,10 @@ interface ProfileProps {
   darkMode: boolean;
   toggleDarkMode: () => void;
   onLogout: () => void;
+  vendorTelegramLink?: string;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountClick, darkMode, toggleDarkMode, onLogout }) => {
+const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountClick, darkMode, toggleDarkMode, onLogout, vendorTelegramLink }) => {
   const [name, setName] = useState(user.name);
   const [isEditing, setIsEditing] = useState(false);
   const [cvcCode, setCvcCode] = useState('');
@@ -141,6 +142,33 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountC
                 </div>
               </div>
               <Icons.ChevronRight size={18} className="text-blue-500/50" />
+            </button>
+          </div>
+        )}
+
+        {/* Message Verified Vendor - Subscribed Users Only */}
+        {user.isSubscribed && (
+          <div className="py-2 border-t border-gray-800/50 mt-1 pt-3 animate-in fade-in slide-in-from-bottom-2 duration-350">
+            <button 
+              onClick={() => {
+                if (vendorTelegramLink) {
+                  window.open(vendorTelegramLink, "_blank");
+                } else {
+                  window.open("https://t.me/chix9ja_vendor", "_blank");
+                }
+              }}
+              className="w-full p-4 bg-green-glow/10 border border-green-glow/20 rounded-2xl flex items-center justify-between group hover:bg-green-glow/20 transition-all active:scale-[0.98]"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-glow/20 rounded-xl text-green-glow group-hover:scale-110 transition-transform">
+                  <Icons.Send size={20} className="stroke-[2.5]" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-white leading-tight">Message Verified Vendor</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Instant Verified Node</p>
+                </div>
+              </div>
+              <Icons.ChevronRight size={18} className="text-green-glow/55" />
             </button>
           </div>
         )}

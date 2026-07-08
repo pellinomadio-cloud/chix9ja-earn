@@ -146,6 +146,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [editTelegramChannel, setEditTelegramChannel] = useState('');
   const [editWhatsappChannel, setEditWhatsappChannel] = useState('');
   const [editSupportTelegram, setEditSupportTelegram] = useState('');
+  const [editVendorTelegram, setEditVendorTelegram] = useState('');
   const [isUpdatingChannels, setIsUpdatingChannels] = useState(false);
   const [channelsSuccessMsg, setChannelsSuccessMsg] = useState('');
 
@@ -162,6 +163,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       setEditTelegramChannel(appChannels.telegramChannel);
       setEditWhatsappChannel(appChannels.whatsappChannel);
       setEditSupportTelegram(appChannels.supportTelegram);
+      setEditVendorTelegram(appChannels.vendorTelegram || '');
     }
   }, [appChannels]);
 
@@ -191,7 +193,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   const handleUpdateChannelsSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTelegramChannel.trim() || !editWhatsappChannel.trim() || !editSupportTelegram.trim()) {
+    if (!editTelegramChannel.trim() || !editWhatsappChannel.trim() || !editSupportTelegram.trim() || !editVendorTelegram.trim()) {
       alert("All channel fields are required to update settings!");
       return;
     }
@@ -201,7 +203,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       await updateAppChannels({
         telegramChannel: editTelegramChannel.trim(),
         whatsappChannel: editWhatsappChannel.trim(),
-        supportTelegram: editSupportTelegram.trim()
+        supportTelegram: editSupportTelegram.trim(),
+        vendorTelegram: editVendorTelegram.trim()
       });
       setChannelsSuccessMsg('Channels/Support links updated successfully and synchronized to cloud!');
       setTimeout(() => setChannelsSuccessMsg(''), 5000);
@@ -1489,7 +1492,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         Configure official communication hubs and back-end support team channels. These propagate live to client tasks & interactive views across the platform.
                     </p>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Official Telegram Channel</label>
                             <input
@@ -1522,6 +1525,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                 value={editSupportTelegram}
                                 onChange={(e) => setEditSupportTelegram(e.target.value)}
                                 placeholder="https://t.me/your_support"
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Verified Vendor (Telegram Link)</label>
+                            <input
+                                type="text"
+                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-emerald-500 transition-all font-medium font-mono"
+                                value={editVendorTelegram}
+                                onChange={(e) => setEditVendorTelegram(e.target.value)}
+                                placeholder="https://t.me/your_vendor"
                                 required
                             />
                         </div>

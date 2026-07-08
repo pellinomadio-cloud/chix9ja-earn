@@ -1655,6 +1655,7 @@ const App: React.FC = () => {
                 darkMode={darkMode}
                 toggleDarkMode={toggleDarkMode}
                 onLogout={handleLogout}
+                vendorTelegramLink={channels.vendorTelegram}
               />
             ) : activeTab === "referrals" && user ? (
               <Referrals user={user} onBack={handleBack} />
