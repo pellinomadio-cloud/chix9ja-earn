@@ -100,6 +100,7 @@ export interface User {
   tradeProfitUsd?: number;
   deviceId?: string;
   hasJoinedTelegram?: boolean;
+  supportTickets?: { id: string; subject: string; message: string; date: string; status: string; reply?: string }[];
 }
 
 export interface Plan {
