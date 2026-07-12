@@ -8,7 +8,7 @@ interface SendMoneyProps {
   user: User;
   onTransfer: (amount: number, recipientInfo: string) => void;
   onSubscribeRedirect: () => void;
-  onGoHome: () => void;
+  onGoHome: (showFailedMessage?: boolean) => void;
   onRequestFreeWithdrawal?: () => void;
 }
 
@@ -33,6 +33,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
   const [amount, setAmount] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSubscribePopup, setShowSubscribePopup] = useState(false);
 
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationError, setVerificationError] = useState('');
@@ -167,11 +168,6 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
         return;
     }
 
-    if (!user.isSubscribed) {
-        setError("Subscription Required");
-        return;
-    }
-
     if (!accountName || accountName.trim().length === 0) {
         setError("Please enter a valid account name.");
         return;
@@ -185,6 +181,15 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
 
     if (transferAmount > user.balance) {
         setError("Insufficient funds");
+        return;
+    }
+
+    if (!user.isSubscribed) {
+        setIsLoading(true);
+        setTimeout(() => {
+            setIsLoading(false);
+            setShowSubscribePopup(true);
+        }, 5000);
         return;
     }
 
@@ -245,34 +250,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
     );
   }
 
-  if (!user.isSubscribed && step === 'form') {
-      return (
-        <div className="px-4 py-8 flex flex-col items-center justify-center text-center space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="w-20 h-20 bg-green-glow/10 rounded-full flex items-center justify-center mb-2">
-                <Icons.Lock size={40} className="text-green-glow" />
-            </div>
-            <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Feature Locked</h2>
-                <p className="text-gray-500 max-w-xs mx-auto">
-                    You must subscribe to a premium plan to perform bank withdrawals.
-                </p>
-            </div>
-
-            <button 
-                onClick={onSubscribeRedirect}
-                className="w-full max-w-sm bg-white hover:bg-gray-100 text-black font-bold py-3 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.6)] transition-all animate-white-glow-button"
-            >
-                Subscribe Now
-            </button>
-             <button 
-                onClick={onGoHome}
-                className="text-gray-500 text-sm font-medium hover:text-green-glow transition-colors"
-            >
-                Go Back Home
-            </button>
-        </div>
-      );
-  }
+  // Subscription block bypassed - form stays open!
 
   if (step === 'success') {
     return (
@@ -493,6 +471,52 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
             )}
         </button>
       </form>
+      {showSubscribePopup && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center px-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-gray-900 border-2 border-amber-500/30 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_50px_rgba(245,158,11,0.25)] relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
+            
+            <div className="flex justify-center">
+              <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-bounce">
+                <Icons.Star size={36} className="fill-amber-400" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">
+                Subscription Required
+              </h3>
+              <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                Kindly subscribe to access fast withdrawal.
+              </p>
+            </div>
+
+            <div className="pt-2 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubscribePopup(false);
+                  onSubscribeRedirect();
+                }}
+                className="w-full py-3 bg-white hover:bg-gray-100 text-black font-extrabold rounded-full text-xs shadow-md transition-all active:scale-95"
+              >
+                Go to Subscription
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSubscribePopup(false);
+                  onGoHome(true);
+                }}
+                className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white font-bold rounded-full text-xs transition-all border border-gray-800"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes gold-glow-button {
           0% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.4); }

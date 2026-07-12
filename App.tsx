@@ -509,6 +509,8 @@ const App: React.FC = () => {
   const [showVipNotice, setShowVipNotice] = useState(false);
   const [showWithdrawReferralAdvert, setShowWithdrawReferralAdvert] =
     useState(false);
+  const [showWithdrawFailedPopup, setShowWithdrawFailedPopup] =
+    useState(false);
   const [showSupportMenu, setShowSupportMenu] = useState(false);
   const [supportSubject, setSupportSubject] = useState("General Support");
   const [supportMsg, setSupportMsg] = useState("");
@@ -1740,7 +1742,12 @@ const App: React.FC = () => {
                 user={user!}
                 onTransfer={handleTransfer}
                 onSubscribeRedirect={() => setActiveTab("subscribe")}
-                onGoHome={() => setActiveTab("home")}
+                onGoHome={(showFailedMessage) => {
+                  setActiveTab("home");
+                  if (showFailedMessage) {
+                    setShowWithdrawFailedPopup(true);
+                  }
+                }}
                 onRequestFreeWithdrawal={() =>
                   setShowWithdrawReferralAdvert(true)
                 }
@@ -2201,6 +2208,46 @@ const App: React.FC = () => {
                 </div>
               </div>
             )}
+          {showWithdrawFailedPopup && (
+            <div className="fixed inset-0 z-[260] flex items-center justify-center px-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+              <div className="bg-gray-950 border border-red-800/40 rounded-3xl p-6 w-full max-w-sm text-center space-y-4 shadow-[0_0_50px_rgba(239,68,68,0.25)] relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent"></div>
+                
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 rounded-full bg-red-950/40 border border-red-500/30 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse">
+                    <Icons.AlertTriangle size={32} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-lg font-black text-white uppercase tracking-tight">
+                    Withdrawal Failed
+                  </h3>
+                  <p className="text-xs text-gray-400 leading-relaxed font-medium">
+                    withdraw failed because user is not a subscribed member
+                  </p>
+                </div>
+
+                <div className="pt-2 space-y-2">
+                  <button
+                    onClick={() => {
+                      setShowWithdrawFailedPopup(false);
+                      setActiveTab("subscribe");
+                    }}
+                    className="w-full py-3 bg-amber-400 hover:bg-amber-500 text-black font-extrabold rounded-full text-xs shadow-md transition-all active:scale-95"
+                  >
+                    Subscribe Now
+                  </button>
+                  <button
+                    onClick={() => setShowWithdrawFailedPopup(false)}
+                    className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white font-bold rounded-full text-xs transition-all border border-gray-800"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {showInstallPopup && (
             <div className="fixed inset-0 z-[250] flex items-center justify-center px-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-300">
               <div className="bg-gray-900 border-2 border-green-glow/40 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_60px_rgba(0,255,163,0.3)] relative overflow-hidden">
