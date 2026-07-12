@@ -95,6 +95,9 @@ export interface User {
   pendingPaymentDate?: string; // ISO String of when proof was uploaded
   pendingPaymentAmount?: number; // The amount paid
   isAccountLinkedVerified?: boolean;
+  linkedBankName?: string;
+  linkedAccountNumber?: string;
+  linkedAccountName?: string;
   adminNotifications?: SystemNotificationItem[];
   tradeBalanceUsd?: number;
   tradeProfitUsd?: number;
