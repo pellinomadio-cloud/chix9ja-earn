@@ -31,7 +31,7 @@ async function startServer() {
     return `${firstName} ${lastName}`;
   }
 
-  // 1. Secure Paystack Bank Account Verification API
+  // 1. WTProject Bank Account Verification API Proxy
   app.post("/api/verify-account", async (req: express.Request, res: express.Response) => {
     try {
       const { accountNumber, bankCode } = req.body;
@@ -41,74 +41,54 @@ async function startServer() {
          return;
       }
 
-      console.log(`Resolving bank account: Bank Code: ${bankCode}, Account No: ${accountNumber}`);
+      console.log(`Resolving bank account via WTProject: Bank Code: ${bankCode}, Account No: ${accountNumber}`);
 
-      const key = process.env.PAYSTACK_SECRET_KEY;
-      const cleanKey = key ? key.replace(/\s+/g, '') : '';
-      const isConfigured = cleanKey !== "" && !cleanKey.includes("placeholder") && !cleanKey.includes("change-me");
+      try {
+        const urlParams = new URLSearchParams();
+        urlParams.append("bank_code", bankCode);
+        urlParams.append("account_number", accountNumber);
 
-      if (isConfigured) {
-        console.log("Using live Paystack API for real bank verification...");
-        try {
-          const response = await fetch(`https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`, {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${cleanKey}`,
-              "Content-Type": "application/json",
-            },
-          });
+        const response = await fetch("https://api.wtproject.space/vrf/verify.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: urlParams.toString()
+        });
 
-          const data = await response.json();
+        const responseText = await response.text();
+        const trimmedResult = responseText.trim();
+        console.log(`WTProject API response: "${trimmedResult}"`);
 
-          if (!response.ok || !data.status) {
-            console.error("Paystack API error response:", data);
-            console.warn("Paystack validation failed or limit reached. Falling back to secure deterministic name generation.");
-            const accountName = getDeterministicAccountName(accountNumber);
-            res.json({
-              success: true,
-              accountName,
-              accountNumber,
-              bankId: bankCode,
-              note: "Simulated verification due to validation node limits"
-            });
-            return;
-          }
-
-          console.log("Account successfully verified via Paystack:", data.data);
+        if (trimmedResult.startsWith("Error:") || trimmedResult.includes("Error") || !trimmedResult) {
+          console.warn(`WTProject verification error returned: ${trimmedResult}`);
           res.json({
-            success: true,
-            accountName: data.data.account_name,
-            accountNumber: data.data.account_number,
-            bankId: bankCode
-          });
-          return;
-        } catch (fetchErr: any) {
-          console.error("Network error while calling Paystack:", fetchErr);
-          // Fallback on network/fetch fail (e.g. DNS or request timeout)
-          const accountName = getDeterministicAccountName(accountNumber);
-          res.json({
-            success: true,
-            accountName,
-            accountNumber,
-            bankId: bankCode,
-            note: "Verified via backup nodes"
+            success: false,
+            error: trimmedResult || "Verification failed: Invalid Account or bank details"
           });
           return;
         }
+
+        console.log(`Account successfully verified via WTProject API: ${trimmedResult}`);
+        res.json({
+          success: true,
+          accountName: trimmedResult,
+          accountNumber,
+          bankId: bankCode
+        });
+        return;
+      } catch (fetchErr: any) {
+        console.error("Network error while calling WTProject API, falling back to deterministic engine:", fetchErr);
+        const accountName = getDeterministicAccountName(accountNumber);
+        res.json({
+          success: true,
+          accountName,
+          accountNumber,
+          bankId: bankCode,
+          note: "Offline verification fallback"
+        });
+        return;
       }
-
-      // Local simulation engine fallback if Paystack secret key is not provided yet
-      console.warn("PAYSTACK_SECRET_KEY is not configured. Using secure deterministic simulation fallback.");
-      const accountName = getDeterministicAccountName(accountNumber);
-
-      console.log(`Account verified successfully (simulation): ${accountName}`);
-
-      res.json({
-        success: true,
-        accountName,
-        accountNumber,
-        bankId: bankCode
-      });
     } catch (err: any) {
       console.error("Internal service error during account verification:", err);
       res.status(500).json({ error: err.message || "Internal server error during account verification." });

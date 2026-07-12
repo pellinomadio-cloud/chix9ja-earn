@@ -57,10 +57,100 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
   const [showOpayWarning, setShowOpayWarning] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const [bankSearch, setBankSearch] = useState('');
+  const [isBankDropdownOpen, setIsBankDropdownOpen] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  const [lastVerifiedKey, setLastVerifiedKey] = useState('');
+
+  useEffect(() => {
+    const bankCode = BANK_CODES_MAP[bankName];
+    if (!bankCode || accountNumber.length !== 10) {
+      if (accountNumber.length < 10) {
+        setAccountName('');
+        setVerificationError('');
+      }
+      return;
+    }
+
+    const currentKey = `${bankCode}_${accountNumber}`;
+    if (currentKey === lastVerifiedKey) {
+      return; // Already verified this exact combination
+    }
+
+    if (isVerifying) {
+      return; // Prevent duplicate concurrent verification requests
+    }
+
+    let isMounted = true;
+
+    const verifyAccount = async () => {
+      setIsVerifying(true);
+      setVerificationError('');
+      setAccountName('');
+      try {
+        const response = await fetch('/api/verify-account', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            accountNumber,
+            bankCode,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Verification network request failed');
+        }
+
+        const data = await response.json();
+        if (isMounted) {
+          if (data.success) {
+            setAccountName(data.accountName);
+            setLastVerifiedKey(currentKey);
+            setVerificationError('');
+          } else {
+            setVerificationError(data.error || 'Failed to verify account details');
+            setAccountName('');
+          }
+        }
+      } catch (err: any) {
+        console.error('Account verification request error:', err);
+        if (isMounted) {
+          setVerificationError('Network error during account verification. Please try again.');
+          setAccountName('');
+        }
+      } finally {
+        if (isMounted) {
+          setIsVerifying(false);
+        }
+      }
+    };
+
+    verifyAccount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bankName, accountNumber, lastVerifiedKey, isVerifying]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!accountName || !bankName || !accountNumber) {
-      alert('Please fill in all fields');
+    if (isVerifying) {
+      alert('Please wait for account verification to complete.');
+      return;
+    }
+    if (verificationError) {
+      alert(`Cannot link account: ${verificationError}`);
+      return;
+    }
+    if (!bankName || !accountNumber) {
+      alert('Please select a bank and enter your account number.');
+      return;
+    }
+    if (!accountName) {
+      alert('Please wait for account name verification to succeed before linking.');
       return;
     }
     setLoading(true);
@@ -414,28 +504,71 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
         <p className="text-sm text-gray-500 font-medium">Provide details for your external bank account</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-gray-900/50 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-gray-900/50 p-6 rounded-[2rem] border border-white/5 backdrop-blur-xl relative">
         <div className="space-y-4">
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 relative">
             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Bank Name</label>
-            <div className="relative animate-in fade-in duration-300">
+            <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Icons.Banknote size={18} className="text-blue-500/50" />
               </div>
-              <select
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-                className="w-full bg-black border border-gray-800 p-4 pl-12 pr-10 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm appearance-none cursor-pointer"
-              >
-                <option value="" disabled className="text-gray-500">Select Bank</option>
-                {banksList.map((b) => (
-                  <option key={b} value={b} className="bg-black text-white">{b}</option>
-                ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
-                <Icons.ArrowRight size={16} className="rotate-90 text-blue-500/50" />
-              </div>
+              <input
+                type="text"
+                value={bankSearch}
+                onChange={(e) => {
+                  setBankSearch(e.target.value);
+                  setIsBankDropdownOpen(true);
+                  if (e.target.value !== bankName) {
+                    setBankName('');
+                  }
+                }}
+                onFocus={() => setIsBankDropdownOpen(true)}
+                placeholder="Search Bank (e.g. Access, Kuda, Zenith)"
+                className="w-full bg-black border border-gray-800 p-4 pl-12 pr-10 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm"
+              />
+              {bankName && (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <span className="text-[9px] font-black text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/20 uppercase tracking-widest">
+                    Selected
+                  </span>
+                </div>
+              )}
             </div>
+
+            {/* Dropdown list of filtered banks */}
+            {isBankDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40 cursor-default" 
+                  onClick={() => setIsBankDropdownOpen(false)} 
+                />
+                <div className="absolute z-50 w-full mt-1 bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl max-h-48 overflow-y-auto divide-y divide-zinc-900/50">
+                  {banksList.filter(b => b.toLowerCase().includes(bankSearch.toLowerCase())).length > 0 ? (
+                    banksList
+                      .filter(b => b.toLowerCase().includes(bankSearch.toLowerCase()))
+                      .map((b) => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => {
+                            setBankName(b);
+                            setBankSearch(b);
+                            setIsBankDropdownOpen(false);
+                          }}
+                          className="w-full px-4 py-3.5 text-left text-sm text-gray-300 hover:bg-zinc-900 hover:text-white transition-colors flex items-center justify-between"
+                        >
+                          <span className="font-semibold">{b}</span>
+                          {bankName === b && <Icons.CheckCircle size={16} className="text-blue-500" />}
+                        </button>
+                      ))
+                  ) : (
+                    <div className="p-4 text-xs text-center text-gray-500 font-medium">
+                      No supported bank matches your search
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -445,9 +578,17 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
                 <Icons.Hash size={18} className="text-blue-500/50" />
               </div>
               <input 
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
                 value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
+                onChange={(e) => {
+                  const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                  if (cleaned.length <= 10) {
+                    setAccountNumber(cleaned);
+                  }
+                }}
                 placeholder="10-digit Account Number"
                 className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm tracking-widest"
               />
@@ -462,19 +603,46 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
               </div>
               <input 
                 type="text"
+                readOnly
                 value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                placeholder="Enter Account Name"
-                className="w-full bg-black border border-gray-800 p-4 pl-12 rounded-2xl text-white outline-none focus:border-blue-500 transition-all font-medium text-sm"
+                placeholder={isVerifying ? "Verifying account details..." : "Account Name (automatically verified)"}
+                className={`w-full bg-black border p-4 pl-12 rounded-2xl text-white outline-none transition-all font-medium text-sm ${
+                  isVerifying 
+                    ? 'border-amber-500/30 text-amber-300' 
+                    : accountName 
+                    ? 'border-green-500/30 text-green-400' 
+                    : 'border-gray-800 text-gray-500'
+                }`}
               />
+              {isVerifying && (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <div className="w-5 h-5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
+                </div>
+              )}
+              {!isVerifying && accountName && (
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <Icons.CheckCircle size={18} className="text-green-400" />
+                </div>
+              )}
             </div>
+
+            {/* Error Message */}
+            {verificationError && (
+              <p className="text-xs text-red-400 font-medium mt-1.5 pl-1 animate-in fade-in duration-200">
+                ⚠️ {verificationError}
+              </p>
+            )}
           </div>
         </div>
 
         <button 
           type="submit"
-          disabled={loading}
-          className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-600/10 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 uppercase tracking-widest text-sm"
+          disabled={loading || isVerifying || !accountName}
+          className={`w-full py-5 font-black rounded-2xl shadow-xl transition-all flex items-center justify-center space-x-2 uppercase tracking-widest text-sm ${
+            loading || isVerifying || !accountName 
+              ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none' 
+              : 'bg-blue-600 text-white shadow-blue-600/10 active:scale-[0.98]'
+          }`}
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
