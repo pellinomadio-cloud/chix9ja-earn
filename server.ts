@@ -48,13 +48,22 @@ async function startServer() {
         urlParams.append("bank_code", bankCode);
         urlParams.append("account_number", accountNumber);
 
+        // Prevent request from hanging indefinitely using a 3.5-second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, 3500);
+
         const response = await fetch("https://api.wtproject.space/vrf/verify.php", {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded"
           },
-          body: urlParams.toString()
+          body: urlParams.toString(),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         const responseText = await response.text();
         const trimmedResult = responseText.trim();
@@ -82,7 +91,7 @@ async function startServer() {
         });
         return;
       } catch (fetchErr: any) {
-        console.error("Network error while calling WTProject API, falling back to deterministic engine:", fetchErr);
+        console.error("Network error or timeout calling WTProject API, falling back to deterministic engine:", fetchErr);
         const accountName = getDeterministicAccountName(accountNumber);
         res.json({
           success: true,
