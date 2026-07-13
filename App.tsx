@@ -1744,7 +1744,7 @@ const App: React.FC = () => {
                 onSubscribeRedirect={() => setActiveTab("subscribe")}
                 onGoHome={(showFailedMessage) => {
                   setActiveTab("home");
-                  if (showFailedMessage) {
+                  if (showFailedMessage === true) {
                     setShowWithdrawFailedPopup(true);
                   }
                 }}

@@ -241,7 +241,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
               </div>
           </div>
           <button 
-              onClick={onGoHome}
+              onClick={() => onGoHome(false)}
               className="w-full max-w-sm bg-gray-800 text-white font-bold py-3 rounded-full transition-all"
           >
               Back to Dashboard
@@ -291,7 +291,7 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
             </div>
         </div>
         <button 
-            onClick={onGoHome}
+            onClick={() => onGoHome(false)}
             className="w-full max-w-sm bg-green-glow text-black font-bold py-3 rounded-full shadow-md transition-all"
         >
             Done
