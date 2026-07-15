@@ -77,6 +77,34 @@ const App: React.FC = () => {
   const [installProgress, setInstallProgress] = useState(0);
   const [installStepLog, setInstallStepLog] = useState("");
 
+  // Splash Screen States
+  const [showSplashScreen, setShowSplashScreen] = useState(true);
+  const [splashProgress, setSplashProgress] = useState(0);
+
+  useEffect(() => {
+    const duration = 4000;
+    const intervalTime = 40; // 40ms intervals
+    const totalSteps = duration / intervalTime; // 100 steps
+    let currentStep = 0;
+
+    const splashProgressInterval = setInterval(() => {
+      currentStep++;
+      const nextProgress = Math.min(Math.round((currentStep / totalSteps) * 100), 100);
+      setSplashProgress(nextProgress);
+      
+      if (currentStep >= totalSteps) {
+        clearInterval(splashProgressInterval);
+        setTimeout(() => {
+          setShowSplashScreen(false);
+        }, 150);
+      }
+    }, intervalTime);
+
+    return () => {
+      clearInterval(splashProgressInterval);
+    };
+  }, []);
+
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -1602,6 +1630,74 @@ const App: React.FC = () => {
             window.location.href = '/';
           }} />
         </main>
+      </div>
+    );
+  }
+
+  if (showSplashScreen) {
+    return (
+      <div className="min-h-screen bg-[#130f04] font-sans text-white flex flex-col items-center justify-center p-6 select-none relative overflow-hidden transition-colors duration-200">
+        {/* Glow Effects */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-green-glow/5 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/2 w-96 h-96 rounded-full bg-amber-500/5 blur-[150px] pointer-events-none"></div>
+
+        {/* Ambient Grid Accent */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_at_center,black_60%,transparent_100%)] pointer-events-none"></div>
+
+        <div className="flex flex-col items-center max-w-sm w-full space-y-10 z-10 animate-in fade-in zoom-in-95 duration-700">
+          
+          {/* Animated Logo */}
+          <div className="relative">
+            {/* Outer dotted spinning ring */}
+            <div className="absolute -inset-6 border border-dashed border-green-glow/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
+            
+            {/* Middle glowing decorative ring */}
+            <div className="absolute -inset-3 border border-green-glow/40 rounded-full animate-[spin_10s_linear_infinite_reverse]"></div>
+            
+            {/* Pulse flare */}
+            <div className="absolute inset-0 bg-green-glow/25 rounded-full blur-xl scale-95 animate-pulse"></div>
+
+            {/* Core Circle */}
+            <div className="relative w-28 h-28 sm:w-32 sm:h-32 bg-green-glow rounded-full flex items-center justify-center shadow-[0_0_60px_rgba(0,255,65,0.5)] border border-green-light/40 transform hover:scale-105 transition-all duration-300">
+              <span className="text-black font-black text-4xl sm:text-5xl italic tracking-tighter drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">Cx</span>
+            </div>
+          </div>
+
+          {/* Branding Texts */}
+          <div className="text-center space-y-3">
+            <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-[0.2em] bg-gradient-to-r from-white via-green-glow to-white bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(0,255,65,0.2)] animate-[pulse_2.5s_infinite]">
+              chix9ja
+            </h1>
+            <p className="text-[10px] sm:text-xs text-zinc-500 font-mono tracking-[0.25em] uppercase leading-relaxed max-w-xs mx-auto">
+              Secure Instant Settlement Node
+            </p>
+          </div>
+
+          {/* Loader Container */}
+          <div className="flex flex-col items-center space-y-3 pt-6 w-full max-w-[240px]">
+            {/* Percentage Display */}
+            <div className="font-mono text-xs sm:text-sm font-black text-green-glow tracking-widest text-glow-green">
+              {String(splashProgress).padStart(3, '0')}%
+            </div>
+            
+            {/* Linear Progress Bar */}
+            <div className="w-full h-1.5 bg-zinc-950 border border-zinc-850 rounded-full overflow-hidden relative shadow-inner">
+              <div 
+                className="h-full bg-gradient-to-r from-green-light to-green-glow shadow-[0_0_8px_#00FF41] rounded-full transition-all duration-75 ease-out"
+                style={{ width: `${splashProgress}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Bottom Security Seals */}
+          <div className="pt-8 flex flex-col items-center space-y-2">
+            <div className="flex items-center gap-1.5 text-[8px] sm:text-[9px] text-zinc-600 font-mono uppercase tracking-[0.2em]">
+              <Icons.ShieldCheck size={11} className="text-green-glow" />
+              <span>CBN Licensed Partner Gateway</span>
+            </div>
+            <p className="text-[8px] text-zinc-700 font-mono">SYSTEM VERSION 4.12.0 • ONLINE</p>
+          </div>
+        </div>
       </div>
     );
   }
