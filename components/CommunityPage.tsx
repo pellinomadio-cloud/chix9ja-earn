@@ -26,10 +26,11 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const isVip = !!user.isVIP;
+  const isAdmin = localStorage.getItem("chix9ja_admin_logged_in") === "true" || user.email.toLowerCase() === 'admin@chix9ja.com' || user.email.toLowerCase() === 'pellinomadio@gmail.com';
+  const isEligible = !!user.isVIP || !!user.isSubscribed || isAdmin;
 
   useEffect(() => {
-    if (!isVip) {
+    if (!isEligible) {
       setLoading(false);
       return;
     }
@@ -49,8 +50,9 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
           name: data.name || 'Anonymous',
           email: data.email || '',
           message: data.message || '',
-          timestamp: data.timestamp
-        });
+          timestamp: data.timestamp,
+          isAdmin: !!data.isAdmin
+        } as any);
       });
       setMessages(msgs);
       setLoading(false);
@@ -65,7 +67,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
     });
 
     return () => unsubscribe();
-  }, [isVip]);
+  }, [isEligible]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +79,10 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
 
     try {
       await addDoc(collection(db, 'community_chats'), {
-        name: user.name,
+        name: isAdmin ? 'System Administrator 👑' : user.name,
         email: user.email,
         message: msg,
+        isAdmin: isAdmin,
         timestamp: serverTimestamp() || Date.now()
       });
     } catch (err) {
@@ -93,7 +96,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
     }
   };
 
-  if (!isVip) {
+  if (!isEligible) {
     return (
       <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans relative overflow-hidden animate-in fade-in duration-200 flex flex-col justify-center items-center px-4">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[140px] pointer-events-none" />
@@ -109,7 +112,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
               VIP <span className="text-amber-500">Community</span>
             </h2>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              The Chix9ja VIP Community Chat is an exclusive lounge for our certified VIP members. Discuss investments, trading signals, and connect with fellow high-earners.
+              The Chix9ja Community Chat is an exclusive lounge for our certified Subscribed & VIP members. Receive expert signals, alerts, and broadcasts from verified Administrators.
             </p>
           </div>
 
@@ -118,7 +121,7 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
               onClick={onGoToUpgrade}
               className="w-full py-3.5 bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold rounded-2xl text-xs uppercase tracking-widest shadow-[0_4px_15px_rgba(245,158,11,0.2)] hover:from-amber-500 hover:to-amber-600 active:scale-95 transition-all cursor-pointer"
             >
-              Upgrade to VIP Lounge
+              Get Subscribed / VIP Status
             </button>
             <button
               onClick={onBack}
@@ -168,22 +171,27 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
         ) : (
           messages.map((msg, idx) => {
             const isMe = msg.email.toLowerCase() === user.email.toLowerCase();
+            const msgIsAdmin = !!msg.isAdmin || msg.email.toLowerCase() === 'admin@chix9ja.com' || msg.email.toLowerCase() === 'pellinomadio@gmail.com';
             return (
               <div
                 key={msg.id || idx}
                 className={`flex flex-col max-w-[80%] ${isMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}
               >
                 <div className="flex items-center space-x-1.5 mb-1 text-[10px] font-bold text-zinc-500 font-mono">
-                  <span>{isMe ? 'You' : msg.name}</span>
-                  {!isMe && (
+                  <span>{isMe ? 'You' : msgIsAdmin ? 'System Administrator 👑' : msg.name}</span>
+                  {msgIsAdmin ? (
+                    <span className="bg-red-500/10 text-red-400 text-[8px] px-1.5 py-0.5 rounded border border-red-500/20 uppercase font-black tracking-wider animate-pulse">ADMIN</span>
+                  ) : (
                     <span className="bg-amber-500/10 text-amber-400 text-[8px] px-1 py-0.2 rounded border border-amber-500/20 uppercase scale-90">VIP</span>
                   )}
                 </div>
                 <div
                   className={`p-3.5 rounded-2xl text-xs leading-relaxed break-words ${
-                    isMe
-                      ? 'bg-emerald-600 text-black font-semibold rounded-tr-none'
-                      : 'bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none'
+                    msgIsAdmin
+                      ? 'bg-zinc-900 border border-red-500/30 text-white rounded-tl-none font-medium'
+                      : isMe
+                        ? 'bg-emerald-600 text-black font-semibold rounded-tr-none'
+                        : 'bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none'
                   }`}
                 >
                   {msg.message}
@@ -196,25 +204,34 @@ export const CommunityPage: React.FC<CommunityPageProps> = ({ user, onBack, onGo
       </div>
 
       {/* Input Section */}
-      <div className="p-4 bg-zinc-950 border-t border-zinc-900 sticky bottom-16 left-0 right-0 z-20">
-        <form onSubmit={handleSendMessage} className="max-w-2xl mx-auto flex gap-2">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Type your message..."
-            maxLength={500}
-            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-all font-medium"
-          />
-          <button
-            type="submit"
-            disabled={!inputText.trim() || sending}
-            className="p-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:hover:bg-amber-500 text-black rounded-2xl transition-all cursor-pointer shrink-0"
-          >
-            <Icons.Send size={16} />
-          </button>
-        </form>
-      </div>
+      {isAdmin ? (
+        <div className="p-4 bg-zinc-950 border-t border-zinc-900 sticky bottom-16 left-0 right-0 z-20">
+          <form onSubmit={handleSendMessage} className="max-w-2xl mx-auto flex gap-2">
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="Type system broadcast message..."
+              maxLength={500}
+              className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-all font-medium"
+            />
+            <button
+              type="submit"
+              disabled={!inputText.trim() || sending}
+              className="p-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:hover:bg-amber-500 text-black rounded-2xl transition-all cursor-pointer shrink-0"
+            >
+              <Icons.Send size={16} />
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="p-4 bg-zinc-950/80 border-t border-zinc-900 sticky bottom-16 left-0 right-0 z-20 text-center">
+          <div className="max-w-2xl mx-auto py-2.5 px-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 flex items-center justify-center gap-2 text-zinc-400 text-[10px] uppercase font-bold tracking-wider font-mono">
+            <Icons.Lock size={12} className="text-amber-500 animate-pulse shrink-0" />
+            <span>🔒 Broadcast-Only Channel: Only verified Administrators can send messages.</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

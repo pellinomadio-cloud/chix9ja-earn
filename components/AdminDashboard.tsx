@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
-import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
 import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone } from 'lucide-react';
 
@@ -152,6 +152,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [isUpdatingChannels, setIsUpdatingChannels] = useState(false);
   const [channelsSuccessMsg, setChannelsSuccessMsg] = useState('');
 
+  // Community Broadcast States
+  const [communityMessage, setCommunityMessage] = useState('');
+  const [isSendingCommunity, setIsSendingCommunity] = useState(false);
+  const [communitySuccessMsg, setCommunitySuccessMsg] = useState('');
+
   useEffect(() => {
     if (bankDetails) {
       setEditBankName(bankDetails.bankName);
@@ -215,6 +220,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       alert("Failed to update channels configuration: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setIsUpdatingChannels(false);
+    }
+  };
+
+  const handleSendCommunityMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!communityMessage.trim() || isSendingCommunity) return;
+
+    setIsSendingCommunity(true);
+    setCommunitySuccessMsg('');
+
+    try {
+      await addDoc(collection(db, 'community_chats'), {
+        name: 'System Administrator 👑',
+        email: 'admin@chix9ja.com',
+        message: communityMessage.trim(),
+        isAdmin: true,
+        timestamp: serverTimestamp() || Date.now()
+      });
+      setCommunityMessage('');
+      setCommunitySuccessMsg('Broadcast message successfully transmitted to VIP Community Chat lounge!');
+      setTimeout(() => setCommunitySuccessMsg(''), 4000);
+    } catch (err) {
+      console.error("Error broadcasting to community:", err);
+      alert("Failed to broadcast message: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsSendingCommunity(false);
     }
   };
 
@@ -1790,6 +1821,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                             className="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-600/10 disabled:opacity-40 active:scale-[0.98]"
                         >
                             {isUpdatingChannels ? 'Updating Channels...' : 'Synchronize Channels & Support'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {/* VIP Community Broadcast Lounge Card */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-zinc-800 overflow-hidden">
+                <div className="p-4 bg-zinc-900/80 border-b border-zinc-800/80 flex items-center space-x-2">
+                    <Megaphone className="text-amber-500 stroke-[2.2]" size={15} />
+                    <h3 className="font-black text-white text-xs uppercase tracking-wider font-mono">VIP Community Broadcast Lounge</h3>
+                </div>
+                
+                <form onSubmit={handleSendCommunityMessage} className="p-5 space-y-4">
+                    <p className="text-[10px] text-zinc-400 font-medium font-mono leading-relaxed uppercase">
+                        Broadcast critical announcements, investment guidance, or greetings directly to subscribed/VIP users on the community page. This operates as a secure, verified channels feed.
+                    </p>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-widest block">Broadcast Message Body</label>
+                        <textarea
+                            rows={3}
+                            className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-amber-500 transition-all font-medium"
+                            value={communityMessage}
+                            onChange={(e) => setCommunityMessage(e.target.value)}
+                            placeholder="Type premium alert message to display to subscribed community members..."
+                            maxLength={1000}
+                            required
+                        />
+                    </div>
+
+                    {communitySuccessMsg && (
+                        <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 text-[10px] uppercase font-bold tracking-tight rounded-xl text-center font-mono">
+                            ✓ {communitySuccessMsg}
+                        </div>
+                    )}
+
+                    <div className="flex justify-end pt-1">
+                        <button 
+                            type="submit" 
+                            disabled={!communityMessage.trim() || isSendingCommunity}
+                            className="w-full sm:w-auto px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-amber-500/10 disabled:opacity-40 active:scale-[0.98] cursor-pointer"
+                        >
+                            {isSendingCommunity ? 'Transmitting Broadcast...' : 'Transmit Community Broadcast'}
                         </button>
                     </div>
                 </form>
