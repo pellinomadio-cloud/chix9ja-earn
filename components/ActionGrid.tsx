@@ -5,8 +5,8 @@ import { MenuItem } from '../types';
 
 const topRowItems: MenuItem[] = [
   { id: 'bank', label: 'Withdraw', icon: Icons.Send },
-  { id: 'promo', label: 'Promo', icon: Icons.Gift },
-  { id: 'quiz_game', label: 'Quiz Game', icon: Icons.Gamepad2 },
+  { id: 'community', label: 'Community', icon: Icons.MessageCircle },
+  { id: 'quiz_game', label: 'Gaming Hub', icon: Icons.Gamepad2 },
   { id: 'subscribe', label: 'Subscribe', icon: Icons.Subscribe },
 ];
 
@@ -16,7 +16,7 @@ const bottomGridItems: MenuItem[] = [
   { id: 'support', label: 'Support', icon: Icons.Support, color: 'text-blue-500' },
   { id: 'free_withdraw', label: 'Task', icon: Icons.Gift, color: 'text-orange-500 dark:text-orange-400', badge: 'Unlock' },
   { id: 'business', label: 'My Business Hub', icon: Icons.Business, color: 'text-blue-600 dark:text-blue-400' },
-  { id: 'rewards', label: 'Rewards', icon: Icons.Reward, color: 'text-fuchsia-500' },
+  { id: 'advertise', label: 'Advertise', icon: Icons.Megaphone, color: 'text-fuchsia-500' },
   { id: 'upgrade', label: 'VIP', icon: Icons.Upgrade, color: 'text-amber-500 dark:text-amber-400' },
   { id: 'ux-trade', label: 'UX-Trade', icon: Icons.Invest, color: 'text-green-glow font-bold' },
   { id: 'sync', label: 'Sync Account', icon: Icons.Sync, color: 'text-gray-500 dark:text-gray-400' },

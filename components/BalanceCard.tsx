@@ -18,7 +18,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
   };
 
   return (
-    <div className="bg-gradient-to-br from-green-light via-green-glow to-green-dark rounded-2xl p-4 mb-4 relative overflow-hidden transition-all duration-500 border border-green-dark shadow-green-lg group">
+    <div className="bg-gradient-to-br from-amber-300 via-amber-500 to-amber-600 rounded-2xl p-4 mb-4 relative overflow-hidden transition-all duration-500 border border-amber-600 shadow-[0_0_25px_rgba(245,158,11,0.5)] group">
         {/* Background decoration */}
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/30 rounded-full mix-blend-overlay filter blur-2xl opacity-50 group-hover:scale-110 transition-transform duration-700"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
@@ -35,12 +35,12 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
                         </button>
                     </div>
                     {isVIP ? (
-                        <div className="flex items-center text-amber-900 bg-amber-400 px-2 py-0.5 rounded-full text-[10px] font-black w-fit uppercase tracking-wider shadow-[0_0_10px_rgba(251,191,36,0.5)] animate-gold-shine">
-                            <Icons.Star size={12} className="mr-1 fill-amber-900" /> VIP Member
+                        <div className="flex items-center text-amber-950 bg-amber-300 px-2 py-0.5 rounded-full text-[10px] font-black w-fit uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.5)] animate-gold-shine">
+                            <Icons.Star size={12} className="mr-1 fill-amber-950" /> VIP Member
                         </div>
                     ) : isSubscribed ? (
-                        <div className="flex items-center text-amber-900 bg-amber-400 px-2 py-0.5 rounded-full text-[10px] font-black w-fit uppercase tracking-wider shadow-[0_0_10px_rgba(251,191,36,0.5)] animate-gold-shine">
-                            <Icons.Star size={12} className="mr-1 fill-amber-900" /> Subscribed Member
+                        <div className="flex items-center text-amber-950 bg-amber-300 px-2 py-0.5 rounded-full text-[10px] font-black w-fit uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.5)] animate-gold-shine">
+                            <Icons.Star size={12} className="mr-1 fill-amber-950" /> Subscribed Member
                         </div>
                     ) : null}
                 </div>
@@ -63,7 +63,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
                 </div>
                 <button 
                     onClick={onHistoryClick}
-                    className="bg-black hover:bg-gray-900 text-fuchsia-400 px-4 py-2 rounded-full text-xs font-bold shadow-lg active:scale-95 transition-all"
+                    className="bg-black hover:bg-gray-900 text-amber-400 px-4 py-2 rounded-full text-xs font-bold shadow-lg active:scale-95 transition-all"
                 >
                     Transaction History
                 </button>
@@ -71,7 +71,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
 
             <div className="mt-4 pt-2 border-t border-black/10 flex justify-between items-center">
                 <p className="text-xs text-black/80 font-medium flex items-center">
-                    <span className="bg-black text-fuchsia-400 text-[10px] px-1 rounded mr-2 font-bold">10</span>
+                    <span className="bg-black text-amber-400 text-[10px] px-1 rounded mr-2 font-bold">10</span>
                     Higher return? Increase deposit with <span className="text-black ml-1 font-bold">20% p.a.</span>
                 </p>
                 <button 

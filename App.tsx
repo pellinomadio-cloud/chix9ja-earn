@@ -37,6 +37,8 @@ import UXTrade from "./components/UXTrade";
 import Investment from "./components/Investment";
 import SystemNotification from "./components/SystemNotification";
 import PromoPage from "./components/PromoPage";
+import { CommunityPage } from "./components/CommunityPage";
+import { AdvertisePage } from "./components/AdvertisePage";
 import { Icons } from "./components/Icons";
 import { User, Plan, Transaction, RewardStatus } from "./types";
 import { GoogleGenAI, Modality } from "@google/genai";
@@ -781,7 +783,9 @@ const App: React.FC = () => {
       activeTab === "ux-trade" ||
       activeTab === "link_withdraw_account" ||
       activeTab === "how_it_works" ||
-      activeTab === "promo"
+      activeTab === "promo" ||
+      activeTab === "community" ||
+      activeTab === "advertise"
     ) {
       setActiveTab("home");
     } else if (activeTab === "admin") {
@@ -1031,6 +1035,10 @@ const App: React.FC = () => {
   const handleGridAction = (id: string) => {
     if (id === "promo") {
       setActiveTab("promo");
+    } else if (id === "community") {
+      setActiveTab("community");
+    } else if (id === "advertise") {
+      setActiveTab("advertise");
     } else if (id === "rewards") {
       setActiveTab("reward");
     } else if (id === "referrals") {
@@ -1356,9 +1364,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleGameResult = (win: boolean) => {
+  const handleGameResult = (win: boolean, customAmount?: number, customDesc?: string) => {
     if (!user) return;
-    const amount = win ? 2000 : 1000;
+    const amount = customAmount !== undefined ? customAmount : (win ? 2000 : 1000);
     const now = new Date();
     const lastQuiz = user.lastQuizTimestamp
       ? new Date(user.lastQuizTimestamp)
@@ -1371,11 +1379,13 @@ const App: React.FC = () => {
       newCount = 1;
     }
 
+    const description = customDesc || (win ? "Quiz Game Win Reward" : "Quiz Game Loss Penalty");
+
     const newTransaction: Transaction = {
       id: `trx-game-${Date.now()}`,
       type: win ? "credit" : "debit",
       amount: amount,
-      description: win ? "Quiz Game Win Reward" : "Quiz Game Loss Penalty",
+      description: description,
       date: new Date().toISOString(),
       status: "success",
     };
@@ -1467,6 +1477,8 @@ const App: React.FC = () => {
     nowTs - rewardStatus.lastClaimedTimestamp >= twentyFourHours;
 
   const pageTitles: Record<string, string> = {
+    community: "VIP Community",
+    advertise: "Advertise Campaign",
     loan: "UX-Trade Desk",
     "ux-trade": "UX-Trade Desk",
     finance: "Business Hub",
@@ -1727,7 +1739,9 @@ const App: React.FC = () => {
               activeTab !== "receipt" &&
               activeTab !== "loan" &&
               activeTab !== "ux-trade" &&
-              activeTab !== "invest" && (
+              activeTab !== "invest" &&
+              activeTab !== "community" &&
+              activeTab !== "advertise" && (
                 <Header
                   userName={user?.name}
                   profileImage={user?.profileImage}
@@ -1825,6 +1839,18 @@ const App: React.FC = () => {
                 user={user!}
                 onUpdateUser={handleUpdateProfile}
                 onBack={handleBack}
+              />
+            ) : activeTab === "community" ? (
+              <CommunityPage
+                user={user!}
+                onBack={handleBack}
+                onGoToUpgrade={() => setActiveTab("upgrade_proposal")}
+              />
+            ) : activeTab === "advertise" ? (
+              <AdvertisePage
+                user={user!}
+                onBack={handleBack}
+                onGoToSubscribe={() => setActiveTab("subscribe")}
               />
             ) : activeTab === "promo" ? (
               <PromoPage

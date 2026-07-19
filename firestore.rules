@@ -37,5 +37,13 @@ service cloud.firestore {
     match /flutterwave_payments/{id} {
       allow read, write: if isSignedIn();
     }
+
+    match /adverts/{id} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /community_chats/{id} {
+      allow read, write: if isSignedIn();
+    }
   }
 }

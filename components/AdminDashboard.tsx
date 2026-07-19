@@ -3,7 +3,7 @@ import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
-import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle } from 'lucide-react';
+import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone } from 'lucide-react';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -125,6 +125,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted'>('all');
   const [searchEmail, setSearchEmail] = useState('');
   const [showPendingSubPage, setShowPendingSubPage] = useState(false);
+  const [showAdvertsSubPage, setShowAdvertsSubPage] = useState(false);
+  const [pendingAdverts, setPendingAdverts] = useState<any[]>([]);
   const [visibleUsersCount, setVisibleUsersCount] = useState(30);
   const [inviteUserEmail, setInviteUserEmail] = useState<string | null>(null);
   const [customInviteMsg, setCustomInviteMsg] = useState('');
@@ -228,6 +230,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   };
 
+  const handleResolveAdvert = async (id: string, status: 'approved' | 'declined') => {
+    try {
+      await setDoc(doc(db, 'adverts', id), { status }, { merge: true });
+      alert(`Advert ${status === 'approved' ? 'Approved & is now Live' : 'Declined'}!`);
+    } catch (err) {
+      console.error("Error resolving advert:", err);
+      alert("Failed to resolve advert: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
+  const handleDeleteAdvert = async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this advert?")) return;
+    try {
+      await deleteDoc(doc(db, 'adverts', id));
+      alert("Advert deleted successfully!");
+    } catch (err) {
+      console.error("Error deleting advert:", err);
+      alert("Failed to delete advert: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
+
   const handleResolveGiveaway = async (email: string, status: 'approved' | 'declined', bonusAmount = 0) => {
     try {
       const emailKey = email.toLowerCase().trim();
@@ -326,9 +349,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             setGiveawayRequests(list);
         });
 
+        // Real-time adverts fetch
+        const unsubAdverts = onSnapshot(collection(db, 'adverts'), (querySnapshot) => {
+            const list: any[] = [];
+            querySnapshot.forEach((doc) => {
+                list.push({ id: doc.id, ...doc.data() });
+            });
+            // Sort by timestamp descending
+            list.sort((a: any, b: any) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
+            setPendingAdverts(list);
+        });
+
         return () => {
             unsubscribe();
             unsubGiveaway();
+            unsubAdverts();
             clearInterval(interval);
         };
     }
@@ -1280,6 +1315,189 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     );
   }
 
+  if (showAdvertsSubPage) {
+    return (
+      <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans relative overflow-hidden animate-in fade-in duration-200">
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-fuchsia-500/5 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-fuchsia-500/5 rounded-full blur-[140px] pointer-events-none" />
+          
+          <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 relative z-10">
+              {/* Top Command Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800/80 pb-6">
+                  <div className="space-y-1 text-left">
+                      <div className="flex items-center space-x-2.5">
+                          <span className="h-2 w-2 bg-fuchsia-500 rounded-full animate-pulse" />
+                          <span className="text-[9px] font-mono font-black uppercase text-fuchsia-400 tracking-widest block bg-fuchsia-950/40 border border-fuchsia-500/20 px-2 py-0.5 rounded-md">
+                              Clearance: Level Alpha
+                          </span>
+                      </div>
+                      <h2 className="text-3xl font-black text-white tracking-wider uppercase font-mono">
+                          Pending <span className="text-fuchsia-400">Adverts</span>
+                      </h2>
+                      <p className="text-xs text-zinc-400 font-medium">Approve or Decline sponsored advertisements and payment proofs submitted by VIP & Premium users.</p>
+                  </div>
+
+                  <button 
+                      onClick={() => setShowAdvertsSubPage(false)}
+                      className="py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-[0.97]"
+                  >
+                      ← Back Panel
+                  </button>
+              </div>
+
+              {/* Advert Approvals list */}
+              <div className="space-y-4">
+                  {pendingAdverts.length === 0 ? (
+                      <div className="bg-zinc-950 border border-zinc-900 rounded-3xl p-16 text-center space-y-4">
+                          <div className="w-16 h-16 bg-fuchsia-500/10 rounded-full flex items-center justify-center mx-auto border border-fuchsia-500/20">
+                              <Megaphone className="text-fuchsia-500" size={28} />
+                          </div>
+                          <div className="space-y-1">
+                              <h3 className="font-extrabold text-white text-base">No Adverts Submitted</h3>
+                              <p className="text-xs text-zinc-500">There are no active or pending advertisement requests in the queue.</p>
+                          </div>
+                      </div>
+                  ) : (
+                      pendingAdverts.map((ad: any) => (
+                          <div key={ad.id} className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700/80 transition-all space-y-6 text-left">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-4">
+                                  <div>
+                                      <div className="flex items-center space-x-2">
+                                          <h4 className="font-black text-white text-sm uppercase tracking-tight">{ad.name || 'Anonymous User'}</h4>
+                                          <span className="text-[10px] bg-zinc-800 text-zinc-400 border border-zinc-750 px-2 py-0.5 rounded font-mono font-bold">
+                                              {ad.email}
+                                          </span>
+                                      </div>
+                                      <p className="text-[10px] text-zinc-500 font-mono mt-1">Submitted: {ad.timestamp ? new Date(ad.timestamp).toLocaleString() : 'N/A'}</p>
+                                  </div>
+                                  <div>
+                                      {ad.status === 'pending' ? (
+                                          <span className="text-[10px] font-black bg-amber-500/15 border border-amber-500/25 text-amber-500 px-3 py-1 rounded-full uppercase tracking-wider">
+                                              Pending Action
+                                          </span>
+                                      ) : ad.status === 'approved' ? (
+                                          <span className="text-[10px] font-black bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full uppercase tracking-wider">
+                                              Live & Approved
+                                          </span>
+                                      ) : (
+                                          <span className="text-[10px] font-black bg-rose-500/15 border border-rose-500/25 text-rose-500 px-3 py-1 rounded-full uppercase tracking-wider">
+                                              Declined
+                                          </span>
+                                      )}
+                                  </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  {/* Left: Info details */}
+                                  <div className="space-y-4">
+                                      <div className="space-y-2">
+                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Campaign Configuration</h5>
+                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4 space-y-2.5 font-mono text-[11px]">
+                                              <p className="text-zinc-400 flex justify-between">
+                                                  <span>Wager Base:</span> 
+                                                  <span className="text-white font-bold">₦{Number(ad.price || 0).toLocaleString()}</span>
+                                              </p>
+                                              <p className="text-zinc-400 flex justify-between">
+                                                  <span>Run Time:</span> 
+                                                  <span className="text-white font-bold">{ad.days} Days</span>
+                                              </p>
+                                              <div className="border-t border-zinc-850 pt-2 flex justify-between text-xs font-bold text-fuchsia-400">
+                                                  <span>Total Cost:</span>
+                                                  <span>₦{Number(ad.totalCost || (ad.price * ad.days) || 0).toLocaleString()}</span>
+                                              </div>
+                                          </div>
+                                      </div>
+
+                                      <div className="space-y-2">
+                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Advert Destination Link</h5>
+                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4">
+                                              <a 
+                                                  href={ad.link ? (ad.link.startsWith('http') ? ad.link : `https://${ad.link}`) : '#'} 
+                                                  target="_blank" 
+                                                  rel="noreferrer"
+                                                  className="text-xs text-blue-400 hover:text-blue-300 font-bold underline break-all font-mono"
+                                              >
+                                                  {ad.link || 'No destination link provided'}
+                                              </a>
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  {/* Right: Uploaded media */}
+                                  <div className="space-y-4">
+                                      <div className="space-y-2">
+                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Campaign Creative Video</h5>
+                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-3 flex flex-col justify-center items-center">
+                                              {ad.videoData ? (
+                                                  <div className="w-full space-y-2">
+                                                      <video 
+                                                          src={ad.videoData} 
+                                                          controls 
+                                                          className="w-full max-h-40 rounded-xl bg-black object-contain border border-zinc-800" 
+                                                      />
+                                                      <div className="text-[9px] text-zinc-500 font-mono text-center truncate">{ad.videoName || 'creative_video.mp4'}</div>
+                                                  </div>
+                                              ) : (
+                                                  <div className="py-8 text-center text-xs text-zinc-600 font-mono">No video creative loaded</div>
+                                              )}
+                                          </div>
+                                      </div>
+                                  </div>
+                              </div>
+
+                              {/* Payment Proof Preview */}
+                              {ad.paymentProof && (
+                                  <div className="space-y-2 border-t border-zinc-850 pt-4">
+                                      <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Payment Proof (Receipt)</h5>
+                                      <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-3 max-w-sm">
+                                          <img 
+                                              src={ad.paymentProof} 
+                                              alt="Receipt proof" 
+                                              className="w-full max-h-64 object-contain rounded-xl border border-zinc-800 hover:opacity-90 cursor-pointer" 
+                                              onClick={() => window.open(ad.paymentProof, '_blank')}
+                                          />
+                                          <p className="text-[9px] text-zinc-500 text-center mt-2 font-mono">Click receipt image to expand in new tab</p>
+                                      </div>
+                                  </div>
+                              )}
+
+                              {/* Controls */}
+                              <div className="flex flex-col sm:flex-row items-center gap-3 border-t border-zinc-800/80 pt-4">
+                                  {ad.status === 'pending' && (
+                                      <>
+                                          <button 
+                                              onClick={() => handleResolveAdvert(ad.id, 'approved')}
+                                              className="w-full sm:flex-1 py-3 px-4 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+                                          >
+                                              <CheckCircle2 size={14} />
+                                              <span>Approve & Set Live</span>
+                                          </button>
+                                          <button 
+                                              onClick={() => handleResolveAdvert(ad.id, 'declined')}
+                                              className="w-full sm:flex-1 py-3 px-4 bg-zinc-850 hover:bg-zinc-800 text-rose-400 border border-zinc-750 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+                                          >
+                                              <XCircle size={14} />
+                                              <span>Decline Campaign</span>
+                                          </button>
+                                      </>
+                                  )}
+                                  <button 
+                                      onClick={() => handleDeleteAdvert(ad.id)}
+                                      className="w-full sm:w-auto px-4 py-3 bg-red-950/40 hover:bg-red-950 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                  >
+                                      <Trash size={14} />
+                                      <span>Purge</span>
+                                  </button>
+                              </div>
+                          </div>
+                      ))
+                  )}
+              </div>
+          </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans select-none relative overflow-wrap-normal overflow-hidden">
         {/* Glow Effects */}
@@ -1324,7 +1542,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </div>
 
             {/* Faster Diagnostics Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
                 <button 
                     onClick={() => setShowPendingSubPage(true)}
                     className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(16,185,129,0.02)] relative overflow-hidden hover:border-emerald-500/50 hover:bg-zinc-900 transition-all text-left w-full cursor-pointer group"
@@ -1337,6 +1555,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <span className="text-[9.5px] text-zinc-500 font-mono mt-1 block group-hover:text-emerald-400">Click to view all →</span>
                     <div className="absolute right-3.5 bottom-3 text-emerald-500/5 group-hover:text-emerald-500/20 transition-all">
                         <ShieldAlert size={28} />
+                    </div>
+                </button>
+
+                <button 
+                    onClick={() => setShowAdvertsSubPage(true)}
+                    className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(217,70,239,0.02)] relative overflow-hidden hover:border-fuchsia-500/50 hover:bg-zinc-900 transition-all text-left w-full cursor-pointer group"
+                >
+                    <span className="text-[9px] font-bold text-zinc-400 group-hover:text-fuchsia-400 uppercase tracking-widest block font-mono font-bold">Adverts Queue</span>
+                    <span className="text-2xl font-black text-white font-mono block mt-1 flex items-center gap-1.5">
+                        {pendingAdverts.filter((ad: any) => ad.status === 'pending').length}
+                        {pendingAdverts.filter((ad: any) => ad.status === 'pending').length > 0 && <span className="inline-block w-2 h-2 rounded-full bg-fuchsia-500 animate-ping" />}
+                    </span>
+                    <span className="text-[9.5px] text-zinc-500 font-mono mt-1 block group-hover:text-fuchsia-400">Manage Adverts →</span>
+                    <div className="absolute right-3.5 bottom-3 text-fuchsia-500/5 group-hover:text-fuchsia-500/20 transition-all">
+                        <span className="text-fuchsia-500 opacity-20 group-hover:opacity-100 transition-opacity">
+                            <Icons.Megaphone size={28} />
+                        </span>
                     </div>
                 </button>
 
