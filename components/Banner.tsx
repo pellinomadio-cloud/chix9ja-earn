@@ -85,10 +85,10 @@ const Banner: React.FC = () => {
             <p className="text-zinc-300 text-xs font-medium mb-3 max-w-[200px] line-clamp-2 leading-relaxed">
               Check out this sponsored offer from a verified chix9ja partner.
             </p>
-            {currentAd?.link && (
+            {(currentAd?.link || (currentAd as any)?.advertLink) && (
               <button 
-                onClick={() => handleOpenLink(currentAd.link)}
-                className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-black py-2.5 px-6 rounded-xl shadow-md active:scale-95 transition-all"
+                onClick={() => handleOpenLink(currentAd?.link || (currentAd as any)?.advertLink)}
+                className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-black py-2.5 px-6 rounded-xl shadow-md active:scale-95 transition-all cursor-pointer"
               >
                 Visit Website
               </button>

@@ -3,7 +3,7 @@ import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
-import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone } from 'lucide-react';
+import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle } from 'lucide-react';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -261,10 +261,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
   };
 
-  const handleResolveAdvert = async (id: string, status: 'approved' | 'declined') => {
+  const handleResolveAdvert = async (id: string, status: 'approved' | 'declined' | 'stopped') => {
     try {
       await setDoc(doc(db, 'adverts', id), { status }, { merge: true });
-      alert(`Advert ${status === 'approved' ? 'Approved & is now Live' : 'Declined'}!`);
+      let statusLabel = 'Declined';
+      if (status === 'approved') statusLabel = 'Approved & Set Live';
+      if (status === 'stopped') statusLabel = 'Stopped';
+      alert(`Advert status updated to: ${statusLabel}!`);
     } catch (err) {
       console.error("Error resolving advert:", err);
       alert("Failed to resolve advert: " + (err instanceof Error ? err.message : String(err)));
@@ -1389,139 +1392,184 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                           </div>
                       </div>
                   ) : (
-                      pendingAdverts.map((ad: any) => (
-                          <div key={ad.id} className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700/80 transition-all space-y-6 text-left">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-4">
-                                  <div>
-                                      <div className="flex items-center space-x-2">
-                                          <h4 className="font-black text-white text-sm uppercase tracking-tight">{ad.name || 'Anonymous User'}</h4>
-                                          <span className="text-[10px] bg-zinc-800 text-zinc-400 border border-zinc-750 px-2 py-0.5 rounded font-mono font-bold">
-                                              {ad.email}
-                                          </span>
-                                      </div>
-                                      <p className="text-[10px] text-zinc-500 font-mono mt-1">Submitted: {ad.timestamp ? new Date(ad.timestamp).toLocaleString() : 'N/A'}</p>
-                                  </div>
-                                  <div>
-                                      {ad.status === 'pending' ? (
-                                          <span className="text-[10px] font-black bg-amber-500/15 border border-amber-500/25 text-amber-500 px-3 py-1 rounded-full uppercase tracking-wider">
-                                              Pending Action
-                                          </span>
-                                      ) : ad.status === 'approved' ? (
-                                          <span className="text-[10px] font-black bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full uppercase tracking-wider">
-                                              Live & Approved
-                                          </span>
-                                      ) : (
-                                          <span className="text-[10px] font-black bg-rose-500/15 border border-rose-500/25 text-rose-500 px-3 py-1 rounded-full uppercase tracking-wider">
-                                              Declined
-                                          </span>
-                                      )}
-                                  </div>
-                              </div>
+                      pendingAdverts.map((ad: any) => {
+                          const targetLink = ad.advertLink || ad.link || '';
+                          const fullUrl = targetLink ? (targetLink.startsWith('http') ? targetLink : `https://${targetLink}`) : '#';
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                  {/* Left: Info details */}
-                                  <div className="space-y-4">
-                                      <div className="space-y-2">
-                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Campaign Configuration</h5>
-                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4 space-y-2.5 font-mono text-[11px]">
-                                              <p className="text-zinc-400 flex justify-between">
-                                                  <span>Wager Base:</span> 
-                                                  <span className="text-white font-bold">₦{Number(ad.price || 0).toLocaleString()}</span>
-                                              </p>
-                                              <p className="text-zinc-400 flex justify-between">
-                                                  <span>Run Time:</span> 
-                                                  <span className="text-white font-bold">{ad.days} Days</span>
-                                              </p>
-                                              <div className="border-t border-zinc-850 pt-2 flex justify-between text-xs font-bold text-fuchsia-400">
-                                                  <span>Total Cost:</span>
-                                                  <span>₦{Number(ad.totalCost || (ad.price * ad.days) || 0).toLocaleString()}</span>
+                          return (
+                              <div key={ad.id} className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-6 hover:border-zinc-700/80 transition-all space-y-6 text-left">
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800 pb-4">
+                                      <div>
+                                          <div className="flex items-center space-x-2">
+                                              <h4 className="font-black text-white text-sm uppercase tracking-tight">{ad.name || 'Anonymous User'}</h4>
+                                              <span className="text-[10px] bg-zinc-800 text-zinc-400 border border-zinc-750 px-2 py-0.5 rounded font-mono font-bold">
+                                                  {ad.email}
+                                              </span>
+                                          </div>
+                                          <p className="text-[10px] text-zinc-500 font-mono mt-1">Submitted: {ad.timestamp ? new Date(ad.timestamp).toLocaleString() : 'N/A'}</p>
+                                      </div>
+                                      <div>
+                                          {ad.status === 'pending' ? (
+                                              <span className="text-[10px] font-black bg-amber-500/15 border border-amber-500/25 text-amber-500 px-3 py-1 rounded-full uppercase tracking-wider">
+                                                  Pending Review
+                                              </span>
+                                          ) : ad.status === 'approved' ? (
+                                              <span className="text-[10px] font-black bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 px-3 py-1 rounded-full uppercase tracking-wider animate-pulse">
+                                                  🟢 Live & Active
+                                              </span>
+                                          ) : ad.status === 'stopped' ? (
+                                              <span className="text-[10px] font-black bg-amber-500/15 border border-amber-500/25 text-amber-400 px-3 py-1 rounded-full uppercase tracking-wider">
+                                                  🛑 Stopped
+                                              </span>
+                                          ) : (
+                                              <span className="text-[10px] font-black bg-rose-500/15 border border-rose-500/25 text-rose-500 px-3 py-1 rounded-full uppercase tracking-wider">
+                                                  ❌ Declined
+                                              </span>
+                                          )}
+                                      </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                      {/* Left: Info details */}
+                                      <div className="space-y-4">
+                                          <div className="space-y-2">
+                                              <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Campaign Configuration</h5>
+                                              <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4 space-y-2.5 font-mono text-[11px]">
+                                                  <p className="text-zinc-400 flex justify-between">
+                                                      <span>Daily Rate:</span> 
+                                                      <span className="text-white font-bold">₦{Number(ad.price || 0).toLocaleString()}</span>
+                                                  </p>
+                                                  <p className="text-zinc-400 flex justify-between">
+                                                      <span>Duration:</span> 
+                                                      <span className="text-white font-bold">{ad.days} Days</span>
+                                                  </p>
+                                                  <div className="border-t border-zinc-850 pt-2 flex justify-between text-xs font-bold text-fuchsia-400">
+                                                      <span>Total Budget:</span>
+                                                      <span>₦{Number(ad.totalCost || (ad.price * ad.days) || 0).toLocaleString()}</span>
+                                                  </div>
+                                              </div>
+                                          </div>
+
+                                          <div className="space-y-2">
+                                              <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Landing Page Link</h5>
+                                              <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4 space-y-3">
+                                                  <p className="text-xs text-zinc-300 font-mono break-all font-semibold select-all bg-black p-2.5 rounded-xl border border-zinc-900">
+                                                      {targetLink || 'No landing page URL specified'}
+                                                  </p>
+                                                  {targetLink && (
+                                                      <a 
+                                                          href={fullUrl} 
+                                                          target="_blank" 
+                                                          rel="noreferrer"
+                                                          className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95"
+                                                      >
+                                                          <ExternalLink size={14} />
+                                                          <span>Visit Landing Page</span>
+                                                      </a>
+                                                  )}
                                               </div>
                                           </div>
                                       </div>
 
-                                      <div className="space-y-2">
-                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Advert Destination Link</h5>
-                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4">
-                                              <a 
-                                                  href={ad.link ? (ad.link.startsWith('http') ? ad.link : `https://${ad.link}`) : '#'} 
-                                                  target="_blank" 
-                                                  rel="noreferrer"
-                                                  className="text-xs text-blue-400 hover:text-blue-300 font-bold underline break-all font-mono"
+                                      {/* Right: Uploaded media */}
+                                      <div className="space-y-4">
+                                          <div className="space-y-2">
+                                              <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Campaign Video Creative</h5>
+                                              <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-3 flex flex-col justify-center items-center">
+                                                  {ad.videoData ? (
+                                                      <div className="w-full space-y-2">
+                                                          <video 
+                                                              src={ad.videoData} 
+                                                              controls 
+                                                              className="w-full max-h-44 rounded-xl bg-black object-contain border border-zinc-800" 
+                                                          />
+                                                          <div className="text-[9px] text-zinc-500 font-mono text-center truncate">{ad.videoName || 'creative_video.mp4'}</div>
+                                                      </div>
+                                                  ) : (
+                                                      <div className="py-8 text-center text-xs text-zinc-600 font-mono">No video creative loaded</div>
+                                                  )}
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+
+                                  {/* Payment Proof Preview */}
+                                  {ad.paymentProof && (
+                                      <div className="space-y-2 border-t border-zinc-850 pt-4">
+                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Payment Proof (Receipt)</h5>
+                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-3 max-w-sm">
+                                              <img 
+                                                  src={ad.paymentProof} 
+                                                  alt="Receipt proof" 
+                                                  className="w-full max-h-64 object-contain rounded-xl border border-zinc-800 hover:opacity-90 cursor-pointer" 
+                                                  onClick={() => window.open(ad.paymentProof, '_blank')}
+                                              />
+                                              <p className="text-[9px] text-zinc-500 text-center mt-2 font-mono">Click receipt image to view full resolution</p>
+                                          </div>
+                                      </div>
+                                  )}
+
+                                  {/* Controls */}
+                                  <div className="flex flex-col sm:flex-row items-center gap-3 border-t border-zinc-800/80 pt-4">
+                                      {ad.status === 'pending' && (
+                                          <>
+                                              <button 
+                                                  onClick={() => handleResolveAdvert(ad.id, 'approved')}
+                                                  className="w-full sm:flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
                                               >
-                                                  {ad.link || 'No destination link provided'}
-                                              </a>
-                                          </div>
-                                      </div>
-                                  </div>
+                                                  <CheckCircle2 size={14} />
+                                                  <span>Approve & Set Live</span>
+                                              </button>
+                                              <button 
+                                                  onClick={() => handleResolveAdvert(ad.id, 'declined')}
+                                                  className="w-full sm:flex-1 py-3 px-4 bg-zinc-850 hover:bg-zinc-800 text-rose-400 border border-zinc-750 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+                                              >
+                                                  <XCircle size={14} />
+                                                  <span>Decline Campaign</span>
+                                              </button>
+                                          </>
+                                      )}
 
-                                  {/* Right: Uploaded media */}
-                                  <div className="space-y-4">
-                                      <div className="space-y-2">
-                                          <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Campaign Creative Video</h5>
-                                          <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-3 flex flex-col justify-center items-center">
-                                              {ad.videoData ? (
-                                                  <div className="w-full space-y-2">
-                                                      <video 
-                                                          src={ad.videoData} 
-                                                          controls 
-                                                          className="w-full max-h-40 rounded-xl bg-black object-contain border border-zinc-800" 
-                                                      />
-                                                      <div className="text-[9px] text-zinc-500 font-mono text-center truncate">{ad.videoName || 'creative_video.mp4'}</div>
-                                                  </div>
-                                              ) : (
-                                                  <div className="py-8 text-center text-xs text-zinc-600 font-mono">No video creative loaded</div>
-                                              )}
-                                          </div>
-                                      </div>
-                                  </div>
-                              </div>
+                                      {ad.status === 'approved' && (
+                                          <>
+                                              <button 
+                                                  onClick={() => handleResolveAdvert(ad.id, 'stopped')}
+                                                  className="w-full sm:flex-1 py-3 px-4 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+                                              >
+                                                  <PauseCircle size={14} />
+                                                  <span>Stop Advert</span>
+                                              </button>
+                                              <button 
+                                                  onClick={() => handleResolveAdvert(ad.id, 'declined')}
+                                                  className="w-full sm:flex-1 py-3 px-4 bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-500/30 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+                                              >
+                                                  <XCircle size={14} />
+                                                  <span>Cancel Advert</span>
+                                              </button>
+                                          </>
+                                      )}
 
-                              {/* Payment Proof Preview */}
-                              {ad.paymentProof && (
-                                  <div className="space-y-2 border-t border-zinc-850 pt-4">
-                                      <h5 className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-widest">Payment Proof (Receipt)</h5>
-                                      <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-3 max-w-sm">
-                                          <img 
-                                              src={ad.paymentProof} 
-                                              alt="Receipt proof" 
-                                              className="w-full max-h-64 object-contain rounded-xl border border-zinc-800 hover:opacity-90 cursor-pointer" 
-                                              onClick={() => window.open(ad.paymentProof, '_blank')}
-                                          />
-                                          <p className="text-[9px] text-zinc-500 text-center mt-2 font-mono">Click receipt image to expand in new tab</p>
-                                      </div>
-                                  </div>
-                              )}
-
-                              {/* Controls */}
-                              <div className="flex flex-col sm:flex-row items-center gap-3 border-t border-zinc-800/80 pt-4">
-                                  {ad.status === 'pending' && (
-                                      <>
+                                      {(ad.status === 'stopped' || ad.status === 'declined') && (
                                           <button 
                                               onClick={() => handleResolveAdvert(ad.id, 'approved')}
-                                              className="w-full sm:flex-1 py-3 px-4 bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
+                                              className="w-full sm:flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
                                           >
-                                              <CheckCircle2 size={14} />
-                                              <span>Approve & Set Live</span>
+                                              <PlayCircle size={14} />
+                                              <span>Reactivate & Set Live</span>
                                           </button>
-                                          <button 
-                                              onClick={() => handleResolveAdvert(ad.id, 'declined')}
-                                              className="w-full sm:flex-1 py-3 px-4 bg-zinc-850 hover:bg-zinc-800 text-rose-400 border border-zinc-750 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center justify-center space-x-2 cursor-pointer"
-                                          >
-                                              <XCircle size={14} />
-                                              <span>Decline Campaign</span>
-                                          </button>
-                                      </>
-                                  )}
-                                  <button 
-                                      onClick={() => handleDeleteAdvert(ad.id)}
-                                      className="w-full sm:w-auto px-4 py-3 bg-red-950/40 hover:bg-red-950 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
-                                  >
-                                      <Trash size={14} />
-                                      <span>Purge</span>
-                                  </button>
+                                      )}
+
+                                      <button 
+                                          onClick={() => handleDeleteAdvert(ad.id)}
+                                          className="w-full sm:w-auto px-4 py-3 bg-red-950/40 hover:bg-red-950 border border-red-500/20 text-red-400 rounded-xl text-xs font-bold uppercase transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5"
+                                      >
+                                          <Trash size={14} />
+                                          <span>Purge</span>
+                                      </button>
+                                  </div>
                               </div>
-                          </div>
-                      ))
+                          );
+                      })
                   )}
               </div>
           </div>

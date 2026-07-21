@@ -4,6 +4,7 @@ import { User, Plan } from '../types';
 import { db, useBankDetails } from '../firebase';
 import { collection, addDoc, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
 import { motion } from 'motion/react';
+import { CheckCircle2, AlertCircle, XCircle, Clock, Lock } from 'lucide-react';
 
 interface AdvertisePageProps {
   user: User;
@@ -17,10 +18,11 @@ interface AdvertData {
   videoSize: string;
   videoData: string;
   advertLink: string;
+  link?: string;
   price: number;
   days: number;
   totalCost: number;
-  status: 'pending' | 'approved' | 'declined';
+  status: 'pending' | 'approved' | 'declined' | 'stopped';
   paymentProof: string;
   timestamp: string;
 }
@@ -177,6 +179,7 @@ export const AdvertisePage: React.FC<AdvertisePageProps> = ({ user, onBack, onGo
         videoSize: videoFile ? `${(videoFile.size / (1024 * 1024)).toFixed(2)} MB` : '0 MB',
         videoData: videoBase64 || '',
         advertLink: advertLink.trim(),
+        link: advertLink.trim(),
         price: priceNum,
         days: daysNum,
         totalCost: totalCost,
@@ -456,26 +459,57 @@ export const AdvertisePage: React.FC<AdvertisePageProps> = ({ user, onBack, onGo
         ) : (
           <div className="space-y-6 bg-zinc-900/40 p-6 rounded-3xl border border-zinc-800 text-center py-8">
             <div className="w-16 h-16 bg-fuchsia-500/10 rounded-full flex items-center justify-center mx-auto border border-fuchsia-500/30">
-              <Icons.Clock className="text-fuchsia-400 h-8 w-8 animate-pulse" />
+              {activeAd?.status === 'approved' ? (
+                <CheckCircle2 className="text-emerald-400 h-8 w-8" />
+              ) : activeAd?.status === 'stopped' ? (
+                <AlertCircle className="text-amber-400 h-8 w-8" />
+              ) : activeAd?.status === 'declined' ? (
+                <XCircle className="text-rose-400 h-8 w-8" />
+              ) : (
+                <Clock className="text-fuchsia-400 h-8 w-8 animate-pulse" />
+              )}
             </div>
 
             <div className="space-y-2">
               <h3 className="text-lg font-black text-white font-mono uppercase tracking-wide">
-                Campaign Pending
+                {activeAd?.status === 'approved' ? (
+                  <span className="text-emerald-400">Campaign Live & Active 🟢</span>
+                ) : activeAd?.status === 'stopped' ? (
+                  <span className="text-amber-400">Campaign Stopped 🛑</span>
+                ) : activeAd?.status === 'declined' ? (
+                  <span className="text-rose-400">Campaign Declined ❌</span>
+                ) : (
+                  <span>Campaign Pending Review ⏳</span>
+                )}
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed px-2">
-                We have received your payment proof receipt of <span className="text-fuchsia-400 font-bold">₦{activeAd?.totalCost.toLocaleString()}</span>. Our Central Treasury is verifying the transaction into the company account.
+                {activeAd?.status === 'approved' ? (
+                  <>Your promotional campaign is currently broadcast live on the main Chix9ja banner! Users can tap your landing page link to visit your offer.</>
+                ) : activeAd?.status === 'stopped' ? (
+                  <>This advertisement campaign has been stopped by the System Administrator. Contact support or launch a new campaign.</>
+                ) : activeAd?.status === 'declined' ? (
+                  <>Your advertisement request was declined. Please verify your payment details or creative and try again.</>
+                ) : (
+                  <>We have received your campaign request and payment proof of <span className="text-fuchsia-400 font-bold">₦{activeAd?.totalCost?.toLocaleString()}</span>. Our Central Treasury is verifying the transaction into the company account before setting your ad live.</>
+                )}
               </p>
             </div>
 
-            <div className="p-4 bg-black/40 rounded-2xl border border-zinc-850 text-left font-mono text-xs space-y-1.5">
+            <div className="p-4 bg-black/40 rounded-2xl border border-zinc-850 text-left font-mono text-xs space-y-2">
               <div className="flex justify-between">
                 <span className="text-zinc-500">CAMPAIGN:</span>
                 <span className="text-zinc-200 truncate max-w-[150px]">{activeAd?.videoName}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">LINK:</span>
-                <span className="text-zinc-200 truncate max-w-[150px]">{activeAd?.advertLink}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-zinc-500">LANDING PAGE:</span>
+                <a 
+                  href={(activeAd?.advertLink || activeAd?.link || '').startsWith('http') ? (activeAd?.advertLink || activeAd?.link || '') : `https://${activeAd?.advertLink || activeAd?.link || ''}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:underline truncate max-w-[150px] font-bold"
+                >
+                  {activeAd?.advertLink || activeAd?.link || 'No link'}
+                </a>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">DAYS BUDGETED:</span>
@@ -483,13 +517,20 @@ export const AdvertisePage: React.FC<AdvertisePageProps> = ({ user, onBack, onGo
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">STATUS:</span>
-                <span className="text-amber-500 font-black uppercase">PENDING APPROVAL</span>
+                <span className={`font-black uppercase ${
+                  activeAd?.status === 'approved' ? 'text-emerald-400' :
+                  activeAd?.status === 'stopped' ? 'text-amber-400' :
+                  activeAd?.status === 'declined' ? 'text-rose-400' : 'text-amber-500'
+                }`}>
+                  {activeAd?.status === 'approved' ? 'LIVE & APPROVED' :
+                   activeAd?.status === 'stopped' ? 'STOPPED BY ADMIN' :
+                   activeAd?.status === 'declined' ? 'DECLINED' : 'PENDING APPROVAL'}
+                </span>
               </div>
             </div>
 
             <button
               onClick={() => {
-                // Let them design/start a new one anyway if they want, or exit
                 setStep('form');
               }}
               className="w-full py-3.5 bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 text-zinc-400 font-bold rounded-2xl text-xs uppercase tracking-widest transition-all cursor-pointer"

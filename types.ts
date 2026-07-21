@@ -114,3 +114,20 @@ export interface Plan {
   duration: string;
   recommended?: boolean;
 }
+
+export interface Advert {
+  id: string;
+  name?: string;
+  email?: string;
+  videoName?: string;
+  videoSize?: string;
+  videoData?: string;
+  advertLink?: string;
+  link?: string;
+  price?: number;
+  days?: number;
+  totalCost?: number;
+  status: 'pending' | 'approved' | 'declined' | 'stopped';
+  paymentProof?: string;
+  timestamp?: string;
+}
