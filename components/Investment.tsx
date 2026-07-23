@@ -168,7 +168,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
   const accountName = bankDetails.accountName;
 
   const plans: InvestmentPlan[] = [
-    { id: 'silver', name: 'Silver Plan', investAmount: 10000, returnAmount: 70000, duration: '24 Hours', color: 'from-gray-400 to-gray-600' },
+    { id: 'silver', name: 'Silver Plan', investAmount: 6750, returnAmount: 70000, duration: '24 Hours', color: 'from-gray-400 to-gray-600' },
     { id: 'gold', name: 'Gold Plan', investAmount: 20000, returnAmount: 150000, duration: '24 Hours', color: 'from-amber-300 to-amber-600' },
     { id: 'platinum', name: 'Platinum Plan', investAmount: 30000, returnAmount: 200000, duration: '24 Hours', color: 'from-blue-400 to-blue-700' },
     { id: 'diamond', name: 'Diamond Plan', investAmount: 40000, returnAmount: 300000, duration: '24 Hours', color: 'from-cyan-300 to-cyan-600' },
