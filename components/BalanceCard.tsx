@@ -8,9 +8,10 @@ interface BalanceCardProps {
   subscriptionPlan?: string;
   onAdminClick?: () => void;
   onHistoryClick?: () => void;
+  onDepositClick?: () => void;
 }
 
-const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false, isVIP = false, subscriptionPlan = '', onAdminClick, onHistoryClick }) => {
+const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false, isVIP = false, subscriptionPlan = '', onAdminClick, onHistoryClick, onDepositClick }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   const formatCurrency = (amount: number) => {
@@ -44,7 +45,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
                         </div>
                     ) : null}
                 </div>
-                <button className="text-sm text-black/70 flex items-center font-medium hover:text-black transition-colors">
+                <button onClick={onDepositClick} className="text-sm text-black/70 flex items-center font-medium hover:text-black transition-colors active:scale-95 cursor-pointer">
                     Add Money <Icons.ChevronRight size={14} />
                 </button>
             </div>

@@ -707,12 +707,43 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     } else if (type === 'investment') {
         updatedUser.isRestricted = false;
         updatedUser.pendingInvestmentStep = null;
+    } else if (type === 'deposit' || userObj.pendingDeposit) {
+        const depositAmt = userObj.pendingDeposit?.amount || userObj.pendingPaymentAmount || 0;
+        updatedUser.balance = (updatedUser.balance || 0) + depositAmt;
+
+        const depositTx: Transaction = {
+            id: 'tx_dep_' + Math.random().toString(36).substring(2, 9),
+            type: 'credit',
+            amount: depositAmt,
+            description: 'Chix9ja Account Deposit',
+            date: new Date().toISOString(),
+            status: 'success'
+        };
+
+        let txs = updatedUser.transactions || [];
+        let updatedTxList = txs.map((t: Transaction) => {
+            if (t.amount === depositAmt && t.status === 'pending') {
+                return { ...t, status: 'success' as const, description: 'Chix9ja Account Deposit' };
+            }
+            return t;
+        });
+
+        if (!updatedTxList.some(t => t.id === depositTx.id)) {
+            updatedTxList = [depositTx, ...updatedTxList];
+        }
+
+        updatedUser.transactions = updatedTxList;
+        updatedUser.pendingDeposit = null;
     }
     
     let mailSubject = "Account Update Alert";
     let mailBody = `Dear ${updatedUser.name},\n\nYour recent request has been evaluated and officially approved by the Chix9ja Admin Team!\n\nAll security systems configured successfully.`;
 
-    if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly' || type === 'subscription_promo') {
+    if (type === 'deposit') {
+        const depositAmt = userObj.pendingDeposit?.amount || userObj.pendingPaymentAmount || 0;
+        mailSubject = `💰 Deposit Approved: ₦${depositAmt.toLocaleString()} Credited!`;
+        mailBody = `Dear ${updatedUser.name},\n\nYour deposit of ₦${depositAmt.toLocaleString()} has been verified and officially approved by the Chix9ja Treasury!\n\nYour Chix9ja account balance has been credited with ₦${depositAmt.toLocaleString()}.\n\nThank you for choosing Chix9ja!\n\nBest regards,\nThe Chix9ja Treasury Department`;
+    } else if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly' || type === 'subscription_promo') {
         let planLabel = 'Monthly Pro';
         if (type === 'subscription_weekly') planLabel = 'Weekly Saver';
         if (type === 'subscription_yearly') planLabel = 'Premium Elite';
@@ -749,6 +780,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     const updatedUser = { ...userObj };
     
     updatedUser.pendingActivation = null;
+    updatedUser.pendingDeposit = null;
     updatedUser.pendingPaymentProof = undefined;
     updatedUser.pendingPaymentAmount = undefined;
     updatedUser.pendingPaymentDate = undefined;
@@ -977,7 +1009,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   // Performance optimizations using useMemo to avoid laggy filtering and search re-renders
   const pendingUsers = useMemo(() => {
-    return users.filter(u => u.pendingActivation);
+    return users.filter(u => u.pendingActivation || u.pendingDeposit).map(u => {
+      if (!u.pendingActivation && u.pendingDeposit) {
+        return {
+          ...u,
+          pendingActivation: 'deposit' as const,
+          pendingPaymentAmount: u.pendingDeposit.amount,
+          pendingPaymentProof: u.pendingDeposit.paymentProof,
+          pendingPaymentDate: u.pendingDeposit.date,
+        };
+      }
+      return u;
+    });
   }, [users]);
 
   const displayedUsers = useMemo(() => {

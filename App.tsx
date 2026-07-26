@@ -37,6 +37,7 @@ import UXTrade from "./components/UXTrade";
 import Investment from "./components/Investment";
 import SystemNotification from "./components/SystemNotification";
 import PromoPage from "./components/PromoPage";
+import DepositPage from "./components/DepositPage";
 import { CommunityPage } from "./components/CommunityPage";
 import { AdvertisePage } from "./components/AdvertisePage";
 import { Icons } from "./components/Icons";
@@ -1507,6 +1508,7 @@ const App: React.FC = () => {
     receipt: "Receipt",
     link_withdraw_account: "Account Hosting",
     how_it_works: "How It Works",
+    deposit: "Deposit Funds",
   };
 
   // Intercept and render standalone full-screen Admin Portal for /admin routes
@@ -1741,7 +1743,8 @@ const App: React.FC = () => {
               activeTab !== "ux-trade" &&
               activeTab !== "invest" &&
               activeTab !== "community" &&
-              activeTab !== "advertise" && (
+              activeTab !== "advertise" &&
+              activeTab !== "deposit" && (
                 <Header
                   userName={user?.name}
                   profileImage={user?.profileImage}
@@ -1880,6 +1883,13 @@ const App: React.FC = () => {
                 user={user!}
                 onPurchase={handleServicePurchase}
                 onBack={() => setActiveTab("home")}
+              />
+            ) : activeTab === "deposit" && user ? (
+              <DepositPage
+                user={user}
+                onBack={handleBack}
+                onUpdateUser={handleUpdateProfile}
+                onViewHistory={() => setActiveTab("transaction_history")}
               />
             ) : activeTab === "sync_account" ? (
               <SyncAccount user={user!} onRestore={handleRestoreAccount} />
@@ -2142,6 +2152,7 @@ const App: React.FC = () => {
                   subscriptionPlan={user?.subscriptionPlan}
                   onAdminClick={() => setActiveTab("admin")}
                   onHistoryClick={() => setActiveTab("transaction_history")}
+                  onDepositClick={() => setActiveTab("deposit")}
                 />
                 <ActionGrid
                   onActionClick={handleGridAction}
