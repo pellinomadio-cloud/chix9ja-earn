@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
+import { Wallet, ArrowLeft, ShieldCheck, Coins, Check, AlertCircle, RefreshCw, Star, ArrowUpRight, Ban, Building, User as UserIcon } from 'lucide-react';
 import { User } from '../types';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -228,321 +229,358 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
 
   if (isDeactivated) {
     return (
-        <div className="px-4 py-10 flex flex-col items-center justify-center text-center space-y-6 animate-in zoom-in duration-300">
-           <div className="w-24 h-24 bg-red-900/30 rounded-full flex items-center justify-center mb-4">
-              <Icons.Ban size={48} className="text-red-400" />
-          </div>
-          <div>
-              <h2 className="text-2xl font-bold text-white mb-2">Withdrawal Restricted</h2>
-              <div className="bg-red-900/20 p-4 rounded-xl border border-red-800">
-                 <p className="text-red-300 font-bold text-sm leading-relaxed">
-                     User must pay 20,000 naira to activate account, using a POS.
-                 </p>
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-100/40 text-amber-950 font-sans p-4 sm:p-6 pb-24">
+        <div className="max-w-md mx-auto space-y-5 animate-in fade-in duration-300">
+          <div className="bg-white border-2 border-red-300 rounded-3xl p-6 shadow-xl text-center space-y-5">
+            <div className="w-16 h-16 bg-red-100 border-2 border-red-300 rounded-full flex items-center justify-center mx-auto text-red-600 shadow-md">
+              <Ban size={36} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-amber-950 uppercase tracking-tight mb-2">Withdrawal Restricted</h2>
+              <div className="bg-red-50 p-4 rounded-2xl border border-red-200">
+                <p className="text-red-700 font-bold text-xs leading-relaxed">
+                  User must pay 20,000 naira to activate account, using a POS.
+                </p>
               </div>
-          </div>
-          <button 
+            </div>
+            <button 
               onClick={() => onGoHome(false)}
-              className="w-full max-w-sm bg-gray-800 text-white font-bold py-3 rounded-full transition-all"
-          >
+              className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-black font-extrabold rounded-2xl shadow-lg transition-all active:scale-95 uppercase tracking-wider text-xs"
+            >
               Back to Dashboard
-          </button>
+            </button>
+          </div>
         </div>
+      </div>
     );
   }
 
-  // Subscription block bypassed - form stays open!
-
   if (step === 'success') {
     return (
-      <div className="px-4 py-8 flex flex-col items-center justify-center text-center space-y-6 animate-in zoom-in duration-300">
-         <div className="w-24 h-24 bg-green-glow/10 rounded-full flex items-center justify-center mb-4 relative">
-            <div className="absolute inset-0 rounded-full border-4 border-green-glow opacity-20 animate-ping"></div>
-            <Icons.Check size={48} className="text-green-glow" />
-        </div>
-        <div>
-            <h2 className="text-2xl font-bold text-white mb-1">Withdrawal Successful!</h2>
-            <p className="text-gray-500 text-sm">
-                You successfully withdrew <span className="font-bold text-white">₦{parseFloat(amount).toLocaleString()}</span> to {accountName}.
-            </p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-100/40 text-amber-950 font-sans p-4 sm:p-6 pb-24">
+        <div className="max-w-md mx-auto space-y-5 animate-in fade-in duration-300">
+          <div className="bg-white border-2 border-emerald-400 rounded-3xl p-6 shadow-xl shadow-amber-200/60 text-center space-y-5 relative overflow-hidden">
+            <div className="w-16 h-16 bg-emerald-100 border-2 border-emerald-400 rounded-full flex items-center justify-center mx-auto text-emerald-600 shadow-inner">
+              <Check size={36} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-amber-950 uppercase tracking-tight mb-1">Withdrawal Successful!</h2>
+              <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                You successfully withdrew <span className="font-extrabold text-amber-950">₦{parseFloat(amount).toLocaleString()}</span> to {accountName}.
+              </p>
+            </div>
 
-        {user.transactions?.some(t => t.type === 'debit' && t.status === 'pending') && (
-             <div className="w-full max-w-sm bg-blue-600 text-white p-4 rounded-xl shadow-lg flex items-start space-x-3 text-left border-l-4 border-blue-400">
-                <Icons.Upgrade size={24} className="flex-shrink-0 text-blue-200" />
+            {user.transactions?.some(t => t.type === 'debit' && t.status === 'pending') && (
+              <div className="bg-amber-50 border-2 border-amber-300 p-4 rounded-2xl text-left flex items-start space-x-3 text-amber-950">
+                <Icons.Upgrade size={24} className="shrink-0 text-amber-600 mt-0.5" />
                 <div>
-                    <h3 className="font-bold text-xs uppercase tracking-wide">Transaction Pending</h3>
-                    <p className="text-[10px] mt-1 font-medium leading-relaxed">Upgrade to VIP to remove your transaction on pending so your alerts drop immediately.</p>
+                  <h3 className="font-black text-xs uppercase tracking-wider text-amber-950">Transaction Pending</h3>
+                  <p className="text-[11px] mt-1 font-semibold leading-relaxed text-amber-900">Upgrade to VIP to remove your transaction on pending so your alerts drop immediately.</p>
                 </div>
-             </div>
-        )}
+              </div>
+            )}
 
-        <div className="bg-gray-900 p-4 rounded-xl w-full max-w-sm border border-gray-800">
-            <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-xs text-gray-500">Bank</span>
-                <span className="text-sm font-bold text-white">{bank}</span>
+            <div className="bg-amber-50/80 p-4 rounded-2xl border border-amber-200 space-y-2 text-xs">
+              <div className="flex justify-between py-1.5 border-b border-amber-200">
+                <span className="text-amber-800 font-bold">Bank</span>
+                <span className="font-extrabold text-amber-950">{bank}</span>
+              </div>
+              <div className="flex justify-between py-1.5 border-b border-amber-200">
+                <span className="text-amber-800 font-bold">Account</span>
+                <span className="font-extrabold text-amber-950">{accountNumber}</span>
+              </div>
+              <div className="flex justify-between py-1.5">
+                <span className="text-amber-800 font-bold">Transaction ID</span>
+                <span className="font-mono font-bold text-amber-950">TRX-{Math.floor(Math.random() * 100000000)}</span>
+              </div>
             </div>
-             <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-xs text-gray-500">Account</span>
-                <span className="text-sm font-bold text-white">{accountNumber}</span>
-            </div>
-            <div className="flex justify-between py-2">
-                <span className="text-xs text-gray-500">Transaction ID</span>
-                <span className="text-xs font-mono text-white">TRX-{Math.floor(Math.random() * 100000000)}</span>
-            </div>
+
+            <button 
+              onClick={() => onGoHome(false)}
+              className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-black font-extrabold rounded-2xl shadow-lg shadow-amber-300/50 transition-all active:scale-95 uppercase tracking-wider text-xs"
+            >
+              Done
+            </button>
+          </div>
         </div>
-        <button 
-            onClick={() => onGoHome(false)}
-            className="w-full max-w-sm bg-green-glow text-black font-bold py-3 rounded-full shadow-md transition-all"
-        >
-            Done
-        </button>
       </div>
     );
   }
 
   return (
-    <div className="px-4 py-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="text-center">
-         <h2 className="text-xl font-bold text-white">Withdraw to Bank</h2>
-         {user.subscriptionPlan && (
-              <span className="inline-block mt-1 px-3 py-1 bg-green-glow/10 text-green-glow rounded-full text-[10px] font-bold uppercase tracking-wider">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-amber-100/40 text-amber-950 font-sans p-4 sm:p-6 pb-24">
+      <div className="max-w-md mx-auto space-y-5 animate-in fade-in duration-300">
+        
+        {/* Header Bar */}
+        <div className="flex items-center justify-between bg-white border-2 border-amber-300/80 rounded-2xl p-4 shadow-md shadow-amber-200/50">
+          <button
+            type="button"
+            onClick={() => onGoHome(false)}
+            className="w-10 h-10 rounded-full bg-amber-100 hover:bg-amber-200 border border-amber-300 flex items-center justify-center text-amber-900 transition-all active:scale-95"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div className="text-center">
+            <h1 className="text-lg font-black text-amber-950 uppercase tracking-tight">
+              Withdraw to Bank
+            </h1>
+            <p className="text-[10px] font-bold text-amber-700 tracking-wider uppercase font-mono">
+              Chix9ja Bank Transfer
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-full bg-amber-400/20 border border-amber-300 flex items-center justify-center text-amber-700">
+            <ShieldCheck size={20} />
+          </div>
+        </div>
+
+        {/* Available Balance Card */}
+        <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 rounded-2xl p-5 text-black shadow-lg shadow-amber-300/50 border border-amber-300 relative overflow-hidden">
+          <div className="absolute -right-6 -bottom-6 w-28 h-28 bg-white/20 rounded-full blur-xl pointer-events-none"></div>
+          <div className="relative z-10 flex justify-between items-center">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-widest text-amber-950/80">
+                Available Balance
+              </p>
+              <h2 className="text-2xl sm:text-3xl font-black text-black tracking-tight mt-1">
+                ₦{(user.balance || 0).toLocaleString('en-NG', { minimumFractionDigits: 2 })}
+              </h2>
+              {user.subscriptionPlan && (
+                <span className="inline-block mt-2 px-2.5 py-0.5 bg-black/10 text-black rounded-full text-[10px] font-extrabold uppercase tracking-wider border border-black/10">
                   Plan: {user.subscriptionPlan}
-              </span>
-         )}
-      </div>
+                </span>
+              )}
+            </div>
+            <div className="bg-black/10 backdrop-blur-sm p-3 rounded-2xl border border-black/10">
+              <Wallet size={28} className="text-black" />
+            </div>
+          </div>
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-             <div className="bg-red-900/20 text-red-400 text-sm p-3 rounded-lg text-center border border-red-800 animate-pulse">
-                {error}
+        {/* Withdrawal Form Card */}
+        <div className="bg-white border-2 border-amber-300/80 rounded-3xl p-5 shadow-md shadow-amber-200/40 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-50 border border-red-300 text-red-700 text-xs font-bold p-3.5 rounded-2xl flex items-center space-x-2">
+                <AlertCircle size={18} className="text-red-600 shrink-0" />
+                <span>{error}</span>
               </div>
-        )}
+            )}
 
-        <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Select Bank</label>
-            <div className="relative">
+            <div>
+              <label className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5 mb-1.5">
+                <Building size={16} className="text-amber-600" />
+                Select Destination Bank
+              </label>
+              <div className="relative">
                 <input
-                    type="text"
-                    value={bankSearch}
-                    onChange={(e) => {
-                        setBankSearch(e.target.value);
-                        setIsBankDropdownOpen(true);
-                        if (e.target.value !== bank) {
-                            setBank('');
-                        }
-                    }}
-                    onFocus={() => setIsBankDropdownOpen(true)}
-                    onBlur={() => setTimeout(() => setIsBankDropdownOpen(false), 200)}
-                    placeholder="Search bank (e.g. Access, OPay, GTBank)"
-                    required
-                    className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-green-glow outline-none font-medium text-sm"
+                  type="text"
+                  value={bankSearch}
+                  onChange={(e) => {
+                    setBankSearch(e.target.value);
+                    setIsBankDropdownOpen(true);
+                    if (e.target.value !== bank) {
+                      setBank('');
+                    }
+                  }}
+                  onFocus={() => setIsBankDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setIsBankDropdownOpen(false), 200)}
+                  placeholder="Search bank (e.g. Access, OPay, GTBank)"
+                  required
+                  className="w-full p-3.5 bg-amber-50/50 border-2 border-amber-300 rounded-2xl text-amber-950 placeholder-amber-900/40 outline-none focus:border-amber-500 focus:bg-white font-medium text-sm transition-all"
                 />
                 <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    {bank ? (
-                        <span className="text-[9px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20 uppercase tracking-wider">
-                            Selected
-                        </span>
-                    ) : (
-                        <Icons.ChevronRight className="text-gray-400 rotate-90" size={18} />
-                    )}
+                  {bank ? (
+                    <span className="text-[10px] font-extrabold text-amber-900 bg-amber-200 px-2.5 py-1 rounded-full border border-amber-400 uppercase tracking-wider">
+                      Selected
+                    </span>
+                  ) : (
+                    <Icons.ChevronRight className="text-amber-500 rotate-90" size={18} />
+                  )}
                 </div>
 
                 {isBankDropdownOpen && (
-                    <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-gray-950 border border-gray-800 rounded-xl shadow-2xl divide-y divide-gray-900 animate-in fade-in slide-in-from-top-1 duration-100">
-                        {(() => {
-                            const filtered = bankSearch.trim() === ''
-                                ? BANKS_DATA
-                                : BANKS_DATA.filter(b => b.name.toLowerCase().includes(bankSearch.toLowerCase()));
-                            
-                            return filtered.length > 0 ? (
-                                filtered.slice(0, 15).map((b) => (
-                                    <button
-                                        key={b.code}
-                                        type="button"
-                                        onClick={() => {
-                                            setBank(b.name);
-                                            setBankSearch(b.name);
-                                            setIsBankDropdownOpen(false);
-                                        }}
-                                        className="w-full text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-900 hover:text-white transition-colors flex items-center justify-between"
-                                    >
-                                        <span className="font-medium">{b.name}</span>
-                                        <span className="text-[10px] text-gray-500 font-mono">{b.code}</span>
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="px-4 py-3 text-sm text-gray-500 italic text-center">
-                                    No banks found
-                                </div>
-                            );
-                        })()}
-                    </div>
+                  <div className="absolute z-50 w-full mt-1.5 max-h-60 overflow-y-auto bg-white border-2 border-amber-300 rounded-2xl shadow-xl divide-y divide-amber-100 animate-in fade-in slide-in-from-top-1 duration-100">
+                    {(() => {
+                      const filtered = bankSearch.trim() === ''
+                        ? BANKS_DATA
+                        : BANKS_DATA.filter(b => b.name.toLowerCase().includes(bankSearch.toLowerCase()));
+                      
+                      return filtered.length > 0 ? (
+                        filtered.slice(0, 15).map((b) => (
+                          <button
+                            key={b.code}
+                            type="button"
+                            onClick={() => {
+                              setBank(b.name);
+                              setBankSearch(b.name);
+                              setIsBankDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-3 text-sm text-amber-950 hover:bg-amber-100/60 font-medium transition-colors flex items-center justify-between"
+                          >
+                            <span className="font-semibold">{b.name}</span>
+                            <span className="text-[10px] text-amber-800/60 font-mono">{b.code}</span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-amber-800/70 italic text-center">
+                          No banks found
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
+              </div>
             </div>
-        </div>
 
-        <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Account Number</label>
-            <input
+            <div>
+              <label className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5 mb-1.5">
+                <Coins size={16} className="text-amber-600" />
+                Account Number
+              </label>
+              <input
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={10}
                 value={accountNumber}
                 onChange={(e) => {
-                    const cleaned = e.target.value.replace(/[^0-9]/g, '');
-                    if (cleaned.length <= 10) {
-                        setAccountNumber(cleaned);
-                    }
+                  const cleaned = e.target.value.replace(/[^0-9]/g, '');
+                  if (cleaned.length <= 10) {
+                    setAccountNumber(cleaned);
+                  }
                 }}
                 placeholder="0123456789"
                 required
-                className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-green-glow outline-none font-mono text-lg tracking-wider"
-            />
-        </div>
+                className="w-full p-3.5 bg-amber-50/50 border-2 border-amber-300 rounded-2xl text-amber-950 placeholder-amber-900/40 outline-none focus:border-amber-500 focus:bg-white font-mono text-lg font-bold tracking-wider transition-all"
+              />
+            </div>
 
-        <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Account Name</label>
-            <div className="relative">
+            <div>
+              <label className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5 mb-1.5">
+                <UserIcon size={16} className="text-amber-600" />
+                Account Name
+              </label>
+              <div className="relative">
                 <input
-                    type="text"
-                    readOnly
-                    value={accountName}
-                    placeholder={isVerifying ? "Verifying account details..." : "Account Name (automatically verified)"}
-                    required
-                    className={`w-full p-3 bg-gray-900 border rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-green-glow outline-none font-bold transition-all ${
-                        isVerifying 
-                            ? 'border-amber-500/30 text-amber-300' 
-                            : accountName 
-                            ? 'border-green-500/30 text-green-400' 
-                            : 'border-gray-800 text-gray-500'
-                    }`}
+                  type="text"
+                  readOnly
+                  value={accountName}
+                  placeholder={isVerifying ? "Verifying account details..." : "Account Name (automatically verified)"}
+                  required
+                  className={`w-full p-3.5 bg-amber-50/50 border-2 rounded-2xl text-amber-950 font-bold outline-none transition-all ${
+                    isVerifying 
+                      ? 'border-amber-400 text-amber-700 bg-amber-100/40' 
+                      : accountName 
+                      ? 'border-emerald-500 text-emerald-900 bg-emerald-50/60' 
+                      : 'border-amber-300 text-amber-950'
+                  }`}
                 />
                 {isVerifying && (
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                        <div className="w-5 h-5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
-                    </div>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <RefreshCw size={18} className="animate-spin text-amber-600" />
+                  </div>
                 )}
-            </div>
-            {verificationError && (
-                <p className="text-xs text-red-400 font-medium mt-1.5 pl-1 animate-in fade-in duration-200">
-                    ⚠️ {verificationError}
+              </div>
+              {verificationError && (
+                <p className="text-xs text-red-600 font-bold mt-1.5 pl-1 flex items-center gap-1">
+                  <AlertCircle size={14} className="shrink-0" />
+                  <span>{verificationError}</span>
                 </p>
-            )}
-        </div>
+              )}
+            </div>
 
-        <div>
-            <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Amount</label>
-            <div className="relative">
-                <span className="absolute left-3 top-3 text-gray-500 font-bold">₦</span>
+            <div>
+              <label className="text-xs font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5 mb-1.5">
+                <Coins size={16} className="text-amber-600" />
+                Withdrawal Amount (₦)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-3.5 text-amber-800 font-black">₦</span>
                 <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    required
-                    className="w-full p-3 pl-8 bg-gray-900 border border-gray-800 rounded-xl text-white font-bold text-lg focus:ring-2 focus:ring-green-glow outline-none"
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  required
+                  className="w-full p-3.5 pl-10 bg-amber-50/50 border-2 border-amber-300 rounded-2xl text-xl font-black text-amber-950 placeholder-amber-900/40 outline-none focus:border-amber-500 focus:bg-white transition-all"
                 />
-            </div>
-            <div className="flex justify-between items-center mt-1">
+              </div>
+              <div className="flex justify-between items-center mt-1.5">
                 {user.isSubscribed && (
-                    <div className="flex items-center text-amber-900 bg-amber-400 px-1 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter border border-amber-600 shadow-sm animate-bounce">
-                        <Icons.Star size={6} className="mr-1 fill-amber-900" /> Golden
-                    </div>
+                  <div className="flex items-center text-amber-900 bg-amber-300 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter border border-amber-500 shadow-sm animate-bounce">
+                    <Star size={10} className="mr-1 fill-amber-900" /> Golden Member
+                  </div>
                 )}
-                <p className="text-xs text-gray-500 text-right flex-1">
-                    Balance: ₦{user.balance.toLocaleString()}
+                <p className="text-xs font-bold text-amber-800 text-right flex-1">
+                  Balance: ₦{(user.balance || 0).toLocaleString()}
                 </p>
-            </div>
-        </div>
-
-        <button
-            type="submit"
-            disabled={isLoading || isVerifying || !bank || !accountNumber || accountNumber.length !== 10 || !accountName || !amount}
-            className="w-full py-4 bg-amber-400 hover:bg-amber-500 disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed text-black font-bold rounded-full shadow-lg transition-all mt-4 flex items-center justify-center space-x-2 animate-gold-glow-button"
-        >
-            {isLoading ? (
-                <span>Processing...</span>
-            ) : (
-                <>
-                    <span>Withdraw Money</span>
-                    <Icons.ArrowUpRight size={20} />
-                </>
-            )}
-        </button>
-      </form>
-      {showSubscribePopup && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center px-6 bg-black/85 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-gray-900 border-2 border-amber-500/30 rounded-3xl p-8 w-full max-w-sm text-center space-y-6 shadow-[0_0_50px_rgba(245,158,11,0.25)] relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent"></div>
-            
-            <div className="flex justify-center">
-              <div className="w-20 h-20 bg-amber-500/10 rounded-full flex items-center justify-center border border-amber-500/20 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.15)] animate-bounce">
-                <Icons.Star size={36} className="fill-amber-400" />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                Subscription Required
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                Kindly subscribe to access fast withdrawal.
-              </p>
-            </div>
+            <button
+              type="submit"
+              disabled={isLoading || isVerifying || !bank || !accountNumber || accountNumber.length !== 10 || !accountName || !amount}
+              className="w-full py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed text-black font-extrabold rounded-2xl shadow-xl shadow-amber-300/60 transition-all active:scale-95 uppercase tracking-wider text-xs flex items-center justify-center space-x-2"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw size={18} className="animate-spin text-black" />
+                  <span>Processing Withdrawal...</span>
+                </>
+              ) : (
+                <>
+                  <span>Withdraw Money</span>
+                  <ArrowUpRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
 
-            <div className="pt-2 space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowSubscribePopup(false);
-                  onSubscribeRedirect();
-                }}
-                className="w-full py-3 bg-white hover:bg-gray-100 text-black font-extrabold rounded-full text-xs shadow-md transition-all active:scale-95"
-              >
-                Go to Subscription
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowSubscribePopup(false);
-                  onGoHome(true);
-                }}
-                className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-gray-400 hover:text-white font-bold rounded-full text-xs transition-all border border-gray-800"
-              >
-                Done
-              </button>
+        {/* Subscription Popup */}
+        {showSubscribePopup && (
+          <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white border-2 border-amber-400 rounded-3xl p-6 w-full max-w-sm text-center space-y-5 shadow-2xl relative overflow-hidden">
+              <div className="w-16 h-16 bg-amber-100 border-2 border-amber-300 rounded-full flex items-center justify-center mx-auto text-amber-600 shadow-md animate-bounce">
+                <Star size={34} className="fill-amber-500" />
+              </div>
+
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-amber-950 uppercase tracking-tight">
+                  Subscription Required
+                </h3>
+                <p className="text-xs text-amber-800 font-medium leading-relaxed">
+                  Kindly subscribe to access fast withdrawal.
+                </p>
+              </div>
+
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubscribePopup(false);
+                    onSubscribeRedirect();
+                  }}
+                  className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-black font-extrabold rounded-2xl shadow-lg shadow-amber-300/50 transition-all active:scale-95 uppercase tracking-wider text-xs"
+                >
+                  Go to Subscription
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubscribePopup(false);
+                    onGoHome(true);
+                  }}
+                  className="w-full py-3 bg-amber-50 border border-amber-300 text-amber-900 font-bold rounded-2xl hover:bg-amber-100 transition-all text-xs uppercase"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <style>{`
-        @keyframes gold-glow-button {
-          0% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.4); }
-          50% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.8); }
-          100% { box-shadow: 0 0 5px rgba(251, 191, 36, 0.4); }
-        }
-        .animate-gold-glow-button {
-          animation: gold-glow-button 2s infinite ease-in-out;
-        }
-        @keyframes green-glow-button {
-          0% { box-shadow: 0 0 5px rgba(0, 255, 127, 0.4); }
-          50% { box-shadow: 0 0 15px rgba(0, 255, 127, 0.8); }
-          100% { box-shadow: 0 0 5px rgba(0, 255, 127, 0.4); }
-        }
-        .animate-green-glow-button {
-          animation: green-glow-button 2s infinite ease-in-out;
-        }
-        @keyframes white-glow-button {
-          0% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.4); }
-          50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.8); }
-          100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.4); }
-        }
-        .animate-white-glow-button {
-          animation: white-glow-button 2s infinite ease-in-out;
-        }
-      `}</style>
+      </div>
     </div>
   );
 };
