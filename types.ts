@@ -90,7 +90,9 @@ export interface User {
   referredUsers?: string[];
   referralEarnings?: number;
   referralCount?: number;
-  pendingActivation?: 'subscription_weekly' | 'subscription_monthly' | 'subscription_yearly' | 'subscription_promo' | 'vip' | 'link_account' | 'investment' | 'imminent_payment' | 'deposit' | null;
+  vipTier?: 'vip1' | 'vip2' | 'vip3' | null;
+  vipActivationTimestamp?: number;
+  pendingActivation?: 'subscription_weekly' | 'subscription_monthly' | 'subscription_yearly' | 'subscription_promo' | 'vip' | 'vip1' | 'vip2' | 'vip3' | 'link_account' | 'investment' | 'imminent_payment' | 'deposit' | null;
   pendingDeposit?: { id?: string; userEmail?: string; userName?: string; amount: number; paymentProof: string; status: 'pending' | 'approved' | 'declined'; date: string; timestamp?: number } | null;
   pendingPaymentProof?: string; // Base64 string representing the uploaded image
   pendingPaymentDate?: string; // ISO String of when proof was uploaded

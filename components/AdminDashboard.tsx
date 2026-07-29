@@ -679,12 +679,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             };
             updatedUser.transactions = [newTx, ...(updatedUser.transactions || [])];
         }
-    } else if (type === 'vip') {
+    } else if (type === 'vip' || type === 'vip1' || type === 'vip2' || type === 'vip3') {
         updatedUser.isVIP = true;
+        updatedUser.vipTier = (type === 'vip1' || type === 'vip2' || type === 'vip3') ? type : (updatedUser.vipTier || 'vip1');
+        updatedUser.vipActivationTimestamp = updatedUser.vipActivationTimestamp || Date.now();
         updatedUser.vipBalance = 1000000; // 1 Million VIP Business Fund
         
         let pendingCleared = false;
-        if (updatedUser.transactions) {
+        if ((type === 'vip1' || type === 'vip') && updatedUser.transactions) {
             updatedUser.transactions = updatedUser.transactions.map((t: Transaction) => {
                 if (t.type === 'debit' && t.status === 'pending') {
                     pendingCleared = true;
@@ -1199,6 +1201,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                       pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
                                                       pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
                                                       pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :
+                                                       pUser.pendingActivation === 'vip1' ? 'VIP 1 - Instant Cashout (₦20,000)' :
+                                                       pUser.pendingActivation === 'vip2' ? 'VIP 2 - Express 2 Working Days (₦15,000)' :
+                                                       pUser.pendingActivation === 'vip3' ? 'VIP 3 - Standard 7 Working Days (₦9,850)' :
                                                       pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
                                                       pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
                                                       pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :

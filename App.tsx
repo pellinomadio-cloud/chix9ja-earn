@@ -531,6 +531,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [darkMode, setDarkMode] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [selectedVipTier, setSelectedVipTier] = useState<'vip1' | 'vip2' | 'vip3'>('vip1');
   const [selectedTransaction, setSelectedTransaction] =
     useState<Transaction | null>(null);
   const [serviceType, setServiceType] = useState<"airtime" | "data">("airtime");
@@ -1807,13 +1808,22 @@ const App: React.FC = () => {
               />
             ) : activeTab === "upgrade_proposal" ? (
               <UpgradeProposal
-                onProceed={() => setActiveTab("upgrade_payment")}
+                user={user}
+                onProceed={(tier) => {
+                  setSelectedVipTier(tier);
+                  setActiveTab("upgrade_payment");
+                }}
+                onGoToSubscribe={() => setActiveTab("subscribe")}
+                onGoToWithdraw={() => setActiveTab("send_money")}
                 onBack={handleBack}
               />
             ) : activeTab === "upgrade_payment" ? (
               <UpgradePayment
                 userEmail={user?.email || ""}
+                selectedVipTier={selectedVipTier}
+                user={user}
                 onPaymentComplete={handlePaymentComplete}
+                onBack={() => setActiveTab("upgrade_proposal")}
               />
             ) : (activeTab === "business_hub" || activeTab === "finance") &&
               user ? (
