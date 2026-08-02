@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import FloatingMoneyBackground from './FloatingMoneyBackground';
 
 interface RegisterProps {
   onRegister: (name: string, email: string, referredBy?: string) => void;
@@ -131,137 +131,157 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 transition-colors duration-200">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-           <div className="mx-auto h-16 w-16 bg-green-glow rounded-full flex items-center justify-center mb-4 shadow-lg">
-            <span className="text-black font-bold text-2xl italic">Cx</span>
+    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-zinc-950 to-emerald-900 relative overflow-hidden flex flex-col items-center justify-center p-4 sm:p-6 transition-colors duration-200">
+      
+      {/* Floating Money Background Overlay */}
+      <FloatingMoneyBackground />
+
+      {/* Main Registration Box */}
+      <div className="relative z-10 w-full max-w-md bg-gradient-to-b from-emerald-950/90 via-zinc-950/95 to-emerald-950/90 border-2 border-amber-400/80 rounded-3xl p-6 sm:p-8 shadow-[0_0_50px_rgba(245,158,11,0.25)] backdrop-blur-xl space-y-6">
+        
+        {/* Header Branding */}
+        <div className="text-center space-y-2">
+          <div className="mx-auto h-16 w-16 bg-gradient-to-tr from-amber-400 via-yellow-400 to-emerald-400 rounded-2xl flex items-center justify-center mb-3 shadow-lg shadow-amber-500/30 ring-2 ring-amber-300">
+            <span className="text-black font-black text-2xl italic tracking-tighter">Cx</span>
           </div>
-          <h2 className="text-3xl font-extrabold text-white">Create Account</h2>
-          <p className="mt-2 text-sm text-gray-400">
-            Join chix9ja and get <span className="text-green-glow font-bold">₦10,000</span> bonus instantly!
+
+          <h2 className="text-3xl font-black text-white tracking-tight uppercase drop-shadow-sm">
+            Create <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-emerald-400">Account</span>
+          </h2>
+
+          <p className="text-xs sm:text-sm text-emerald-200/90 font-medium">
+            Join chix9ja and get <span className="text-amber-300 font-extrabold underline decoration-amber-400 decoration-2">₦10,000</span> bonus instantly!
           </p>
         </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-            
-            {error && (
-              <div className="bg-red-900/20 text-red-400 text-sm p-3 rounded-lg text-center border border-red-800">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="name" className="sr-only">Full Name</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Icons.User className="h-5 w-5 text-gray-500" />
-                </div>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-3 border border-gray-800 placeholder-gray-500 text-white bg-gray-900 focus:outline-none focus:ring-green-glow focus:border-green-glow sm:text-sm transition-all"
-                  placeholder="Full Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
+        {/* Registration Form */}
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-950/80 text-red-300 text-xs sm:text-sm p-3 rounded-xl text-center border border-red-500/60 font-medium shadow-md">
+              {error}
             </div>
-
-            <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Icons.Mail className="h-5 w-5 text-gray-500" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-3 border border-gray-800 placeholder-gray-500 text-white bg-gray-900 focus:outline-none focus:ring-green-glow focus:border-green-glow sm:text-sm transition-all"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="sr-only">4-digit PIN</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Icons.Lock className="h-5 w-5 text-gray-500" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={4}
-                  required
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-3 border border-gray-800 placeholder-gray-500 text-white bg-gray-900 focus:outline-none focus:ring-green-glow focus:border-green-glow sm:text-sm transition-all tracking-widest"
-                  placeholder="Create 4-digit PIN"
-                  value={password}
-                  onChange={handlePasswordChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="referredByInput" className="sr-only">Referral Code or Email (Optional)</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Icons.Users className="h-5 w-5 text-gray-500" />
-                </div>
-                <input
-                  id="referredByInput"
-                  name="referredByInput"
-                  type="text"
-                  className="appearance-none rounded-lg relative block w-full pl-10 px-3 py-3 border border-gray-800 placeholder-gray-500 text-white bg-gray-900 focus:outline-none focus:ring-green-glow focus:border-green-glow sm:text-sm transition-all"
-                  placeholder="Referral Code or Email (Optional)"
-                  value={referredByInput}
-                  onChange={(e) => setReferredByInput(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center">
-                <input
-                    id="terms"
-                    name="terms"
-                    type="checkbox"
-                    required
-                    className="h-4 w-4 text-green-glow focus:ring-green-glow border-gray-800 rounded bg-gray-900"
-                />
-                <label htmlFor="terms" className="ml-2 block text-sm text-gray-400">
-                    I agree to the <a href="#" className="text-green-glow hover:text-green-light font-bold">Terms</a> and <a href="#" className="text-green-glow hover:text-green-light font-bold">Privacy Policy</a>
-                </label>
-            </div>
+          )}
 
           <div>
+            <label htmlFor="name" className="sr-only">Full Name</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Icons.User className="h-5 w-5 text-amber-400/80" />
+              </div>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                className="appearance-none rounded-xl relative block w-full pl-11 px-3.5 py-3 border-2 border-emerald-800/80 placeholder-emerald-400/60 text-amber-100 bg-emerald-950/60 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 text-sm transition-all shadow-inner"
+                placeholder="Full Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="email" className="sr-only">Email address</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Icons.Mail className="h-5 w-5 text-amber-400/80" />
+              </div>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="appearance-none rounded-xl relative block w-full pl-11 px-3.5 py-3 border-2 border-emerald-800/80 placeholder-emerald-400/60 text-amber-100 bg-emerald-950/60 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 text-sm transition-all shadow-inner"
+                placeholder="Email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="password" className="sr-only">4-digit PIN</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Icons.Lock className="h-5 w-5 text-amber-400/80" />
+              </div>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                required
+                className="appearance-none rounded-xl relative block w-full pl-11 px-3.5 py-3 border-2 border-emerald-800/80 placeholder-emerald-400/60 text-amber-100 bg-emerald-950/60 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 text-sm transition-all tracking-widest shadow-inner"
+                placeholder="Create 4-digit PIN"
+                value={password}
+                onChange={handlePasswordChange}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="referredByInput" className="sr-only">Referral Code or Email (Optional)</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Icons.Users className="h-5 w-5 text-amber-400/80" />
+              </div>
+              <input
+                id="referredByInput"
+                name="referredByInput"
+                type="text"
+                className="appearance-none rounded-xl relative block w-full pl-11 px-3.5 py-3 border-2 border-emerald-800/80 placeholder-emerald-400/60 text-amber-100 bg-emerald-950/60 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 text-sm transition-all shadow-inner"
+                placeholder="Referral Code or Email (Optional)"
+                value={referredByInput}
+                onChange={(e) => setReferredByInput(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center pt-1">
+            <input
+              id="terms"
+              name="terms"
+              type="checkbox"
+              required
+              className="h-4 w-4 text-amber-400 focus:ring-amber-400 border-emerald-700 rounded bg-emerald-950"
+            />
+            <label htmlFor="terms" className="ml-2.5 block text-xs text-emerald-200/90 font-medium">
+              I agree to the{' '}
+              <a href="#" className="text-amber-300 hover:text-amber-200 font-bold underline">
+                Terms
+              </a>{' '}
+              and{' '}
+              <a href="#" className="text-amber-300 hover:text-amber-200 font-bold underline">
+                Privacy Policy
+              </a>
+            </label>
+          </div>
+
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-full text-black bg-green-glow hover:bg-green-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-glow shadow-lg transition-all disabled:opacity-70"
+              className="group relative w-full flex justify-center py-3.5 px-4 text-sm font-black rounded-full text-black bg-gradient-to-r from-amber-400 via-yellow-400 to-emerald-400 hover:from-amber-300 hover:to-emerald-300 focus:outline-none focus:ring-2 focus:ring-amber-400 shadow-xl shadow-amber-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 uppercase tracking-wider"
             >
-              {isLoading ? 'Creating Account...' : 'Get Started'}
+              {isLoading ? 'Creating Account...' : 'Get Started & Claim Bonus'}
             </button>
           </div>
         </form>
 
-        <div className="text-center mt-4">
-            <p className="text-sm text-gray-400">
-                Already have an account?{' '}
-                <button onClick={onSwitchToLogin} className="font-bold text-green-glow hover:text-green-light">
-                    Login here
-                </button>
-            </p>
+        <div className="text-center border-t border-emerald-900/60 pt-4">
+          <p className="text-xs text-emerald-300/80 font-medium">
+            Already have an account?{' '}
+            <button
+              onClick={onSwitchToLogin}
+              className="font-extrabold text-amber-300 hover:text-amber-200 underline transition-colors"
+            >
+              Login here
+            </button>
+          </p>
         </div>
       </div>
     </div>

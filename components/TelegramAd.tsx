@@ -16,10 +16,6 @@ const TelegramAd: React.FC<TelegramAdProps> = ({ onJoin, onContinue }) => {
   };
 
   const handleContinue = () => {
-    if (!hasClickedJoin) {
-      alert("Please join our official Telegram channel first to activate your dashboard!");
-      return;
-    }
     onContinue();
   };
 
@@ -43,29 +39,22 @@ const TelegramAd: React.FC<TelegramAdProps> = ({ onJoin, onContinue }) => {
         <div className="space-y-3">
             <button 
                 onClick={handleJoin}
-                className="w-full py-3.5 bg-green-glow hover:bg-green-dark text-black font-bold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center space-x-2"
+                className="w-full py-3.5 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black font-extrabold rounded-xl shadow-lg transition-all transform active:scale-95 flex items-center justify-center space-x-2"
             >
                 <Icons.Send size={18} />
-                <span>Join Channel</span>
+                <span>Join Official Telegram Channel</span>
                 {hasClickedJoin && <Icons.Check size={16} className="text-black stroke-[3]" />}
             </button>
             <button 
                 onClick={handleContinue}
-                className={`w-full py-3.5 font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-                  hasClickedJoin 
-                    ? 'bg-zinc-800 hover:bg-zinc-700 text-green-glow border border-green-glow/30 shadow-lg' 
-                    : 'bg-zinc-800/40 text-gray-500 cursor-not-allowed border border-transparent'
-                }`}
+                className="w-full py-3.5 font-extrabold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 border border-emerald-400/40"
             >
-              {!hasClickedJoin && <Icons.Lock size={14} className="text-gray-500" />}
               <span>Continue to Dashboard</span>
             </button>
         </div>
 
-        <p className="text-[10px] text-gray-500 font-mono">
-          {!hasClickedJoin 
-            ? "⚠️ Joining the Telegram community is mandatory for new members." 
-            : "✓ Thank you! You can now access your dashboard."}
+        <p className="text-[11px] text-emerald-300/80 font-semibold">
+          ✨ You can join our channel now or continue directly to your dashboard.
         </p>
       </div>
     </div>
