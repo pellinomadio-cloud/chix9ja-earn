@@ -1732,7 +1732,7 @@ const App: React.FC = () => {
     <div className={darkMode ? "dark" : ""}>
       <div className="min-h-screen bg-black font-sans text-white transition-colors duration-200 relative">
         <FloatingMoneyBackground />
-        <div className="max-w-md mx-auto bg-black min-h-screen relative shadow-2xl transition-colors duration-200 z-10">
+        <div className="max-w-md mx-auto bg-black/90 min-h-screen relative shadow-2xl transition-colors duration-200 z-10">
           <div className="pb-24">
             {activeTab !== "reward" &&
               activeTab !== "admin" &&

@@ -17,7 +17,7 @@ const floatingMoneyItems = [
 
 export const FloatingMoneyBackground: React.FC = () => {
   return (
-    <div className="pointer-events-none fixed inset-0 overflow-hidden z-0" aria-hidden="true">
+    <div className="pointer-events-none fixed inset-0 overflow-hidden z-20" aria-hidden="true">
       {/* Keyframe animations */}
       <style>{`
         @keyframes floatMoneyUp {
@@ -26,10 +26,10 @@ export const FloatingMoneyBackground: React.FC = () => {
             opacity: 0;
           }
           15% {
-            opacity: 0.75;
+            opacity: 0.85;
           }
           85% {
-            opacity: 0.75;
+            opacity: 0.85;
           }
           100% {
             transform: translateY(-15vh) rotate(360deg) scale(1.1);
