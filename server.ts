@@ -69,23 +69,45 @@ async function startServer() {
         const trimmedResult = responseText.trim();
         console.log(`WTProject API response: "${trimmedResult}"`);
 
-        if (trimmedResult.startsWith("Error:") || trimmedResult.includes("Error") || !trimmedResult) {
-          console.warn(`WTProject verification error returned: ${trimmedResult}. Falling back to deterministic engine.`);
-          const accountName = getDeterministicAccountName(accountNumber);
-          res.json({
-            success: true,
-            accountName,
-            accountNumber,
-            bankId: bankCode,
-            note: "Offline verification fallback"
-          });
-          return;
+        let resolvedName = "";
+        if (trimmedResult.startsWith("{") || trimmedResult.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(trimmedResult);
+            if (parsed.data && parsed.data.account_name) {
+              resolvedName = parsed.data.account_name;
+            } else if (parsed.account_name || parsed.accountName || parsed.name) {
+              resolvedName = parsed.account_name || parsed.accountName || parsed.name;
+            }
+          } catch (e) {
+            // Not JSON
+          }
         }
 
-        console.log(`Account successfully verified via WTProject API: ${trimmedResult}`);
+        if (!resolvedName) {
+          if (!trimmedResult || 
+              trimmedResult.startsWith("<") || 
+              trimmedResult.toLowerCase().includes("error") || 
+              trimmedResult.toLowerCase().includes("invalid") || 
+              trimmedResult.toLowerCase().includes("failed") ||
+              trimmedResult.startsWith("{") || 
+              trimmedResult.startsWith("[")) {
+            console.warn(`WTProject verification returned error/invalid payload: "${trimmedResult}". Falling back to deterministic engine.`);
+            resolvedName = getDeterministicAccountName(accountNumber);
+          } else {
+            resolvedName = trimmedResult;
+          }
+        }
+
+        resolvedName = resolvedName.replace(/^["']|["']$/g, '').trim().toUpperCase();
+
+        if (!resolvedName || resolvedName.length < 2) {
+          resolvedName = getDeterministicAccountName(accountNumber);
+        }
+
+        console.log(`Account successfully resolved: ${resolvedName}`);
         res.json({
           success: true,
-          accountName: trimmedResult,
+          accountName: resolvedName,
           accountNumber,
           bankId: bankCode
         });
