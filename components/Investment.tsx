@@ -85,75 +85,6 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
     accountName: ''
   });
 
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationError, setVerificationError] = useState('');
-  const [lastVerifiedKey, setLastVerifiedKey] = useState('');
-
-  useEffect(() => {
-    const bankCode = BANK_CODES_MAP[withdrawalAccount.bankName];
-    const accNum = withdrawalAccount.accountNumber;
-    if (!bankCode || accNum.length !== 10) {
-      if (accNum.length < 10) {
-        setVerificationError('');
-      }
-      return;
-    }
-
-    const currentKey = `${bankCode}_${accNum}`;
-    if (currentKey === lastVerifiedKey) {
-      return; // Already verified this exact combination
-    }
-
-    let isMounted = true;
-
-    const verifyAccount = async () => {
-      setIsVerifying(true);
-      setVerificationError('');
-      try {
-        const response = await fetch('/api/verify-account', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            accountNumber: accNum,
-            bankCode,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Verification network request failed');
-        }
-
-        const data = await response.json();
-        if (isMounted) {
-          if (data.success && data.accountName) {
-            setWithdrawalAccount(prev => ({ ...prev, accountName: data.accountName }));
-            setLastVerifiedKey(currentKey);
-            setVerificationError('');
-          } else {
-            setVerificationError('Could not auto-verify account name. Please type your account name manually below.');
-          }
-        }
-      } catch (err: any) {
-        console.error('Account verification request error:', err);
-        if (isMounted) {
-          setVerificationError('Network issue during auto-verification. Please type your account name manually below.');
-        }
-      } finally {
-        if (isMounted) {
-          setIsVerifying(false);
-        }
-      }
-    };
-
-    verifyAccount();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [withdrawalAccount.bankName, withdrawalAccount.accountNumber, lastVerifiedKey]);
-
   const { bankDetails } = useBankDetails();
   const accountNumber = bankDetails.accountNumber;
   const bankName = bankDetails.bankName;
@@ -443,39 +374,21 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
           <div className="space-y-1">
             <label className="text-[10px] font-black text-gray-500 uppercase ml-1">Account Name</label>
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder={isVerifying ? "Verifying account details..." : "Account Name"}
-                value={withdrawalAccount.accountName}
-                onChange={(e) => setWithdrawalAccount({ ...withdrawalAccount, accountName: e.target.value })}
-                className={`w-full bg-black border p-4 rounded-xl text-white outline-none transition-all font-bold text-sm ${
-                  isVerifying 
-                    ? 'border-amber-500/30 text-amber-300' 
-                    : withdrawalAccount.accountName 
-                    ? 'border-green-500/30 text-green-400' 
-                    : 'border-gray-800 text-gray-500'
-                }`}
-              />
-              {isVerifying && (
-                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-                  <div className="w-5 h-5 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin"></div>
-                </div>
-              )}
-            </div>
-            {verificationError && (
-              <p className="text-xs text-amber-400 font-medium mt-1.5 pl-1">
-                ℹ️ {verificationError}
-              </p>
-            )}
+            <input 
+              type="text" 
+              placeholder="Enter Full Account Name"
+              value={withdrawalAccount.accountName}
+              onChange={(e) => setWithdrawalAccount({ ...withdrawalAccount, accountName: e.target.value })}
+              className="w-full bg-black border border-gray-800 p-4 rounded-xl text-white outline-none focus:border-amber-500 transition-all font-bold text-sm"
+            />
           </div>
         </div>
 
         <button 
           onClick={handleVerifyWithdrawalAccount}
-          disabled={isVerifying || !withdrawalAccount.accountName.trim()}
+          disabled={!withdrawalAccount.bankName || withdrawalAccount.accountNumber.length !== 10 || !withdrawalAccount.accountName.trim()}
           className={`w-full py-4 font-black rounded-xl uppercase tracking-widest text-lg shadow-xl active:scale-95 transition-all ${
-            isVerifying || !withdrawalAccount.accountName.trim()
+            !withdrawalAccount.bankName || withdrawalAccount.accountNumber.length !== 10 || !withdrawalAccount.accountName.trim()
               ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed shadow-none'
               : 'bg-amber-500 text-black'
           }`}
