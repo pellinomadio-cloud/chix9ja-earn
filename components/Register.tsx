@@ -41,6 +41,29 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
     }
 
     setIsLoading(true);
+
+    // Strict Email Format and Domain Validation via backend API
+    try {
+      const valRes = await fetch('/api/validate-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailKey })
+      });
+      const valData = await valRes.json();
+      if (!valData.valid) {
+        setError(valData.reason || 'Please provide a valid and active email address.');
+        setIsLoading(false);
+        return;
+      }
+    } catch (valErr) {
+      const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(emailKey)) {
+        setError('Please enter a valid email address.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const securePassword = `${password}_chix9ja_secure_salt`;
 
     // Check device registration limit (Max 2 accounts per device)
@@ -108,6 +131,17 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
       // 3. Create User in Firebase Auth
       await createUserWithEmailAndPassword(auth, emailKey, securePassword);
       
+      // Send congratulatory welcome email from chix9ja
+      try {
+        fetch('/api/send-welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: emailKey, name: name.trim() })
+        }).catch(err => console.warn('Welcome email dispatch warning:', err));
+      } catch (mailErr) {
+        console.warn('Welcome email request error:', mailErr);
+      }
+
       // Update registered accounts list on this device
       if (!deviceAccounts.includes(emailKey)) {
         deviceAccounts.push(emailKey);
