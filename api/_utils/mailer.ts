@@ -1,5 +1,3 @@
-import nodemailer from "nodemailer";
-
 export function isValidEmailStrict(email: string): { valid: boolean; reason?: string } {
   if (!email || typeof email !== 'string') {
     return { valid: false, reason: "Email address is required" };
@@ -55,25 +53,4 @@ export function isValidEmailStrict(email: string): { valid: boolean; reason?: st
   }
 
   return { valid: true };
-}
-
-export async function createTransporter() {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: Number(process.env.SMTP_PORT) === 465,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 5000,
-    });
-  }
-
-  return nodemailer.createTransport({
-    jsonTransport: true,
-  });
 }

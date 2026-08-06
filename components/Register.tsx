@@ -130,17 +130,6 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
 
       // 3. Create User in Firebase Auth
       await createUserWithEmailAndPassword(auth, emailKey, securePassword);
-      
-      // Send congratulatory welcome email from chix9ja
-      try {
-        fetch('/api/send-welcome-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: emailKey, name: name.trim() })
-        }).catch(err => console.warn('Welcome email dispatch warning:', err));
-      } catch (mailErr) {
-        console.warn('Welcome email request error:', mailErr);
-      }
 
       // Update registered accounts list on this device
       if (!deviceAccounts.includes(emailKey)) {

@@ -3,7 +3,7 @@ import { Icons } from './Icons';
 import { User, Transaction } from '../types';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
-import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle, Mail } from 'lucide-react';
+import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle } from 'lucide-react';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -101,14 +101,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [notifTarget, setNotifTarget] = useState<'all' | string>('all');
   const [isSendingNotif, setIsSendingNotif] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-
-  // Email Broadcast state variables
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailMessage, setEmailMessage] = useState('');
-  const [emailTarget, setEmailTarget] = useState<'all' | string>('all');
-  const [customEmailInput, setCustomEmailInput] = useState('');
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [emailSuccessMsg, setEmailSuccessMsg] = useState('');
 
   // Giveaway state variables
   const { unlocked: giveawayUnlocked } = useGiveawayStatus();
@@ -861,104 +853,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   const handleQuickNotify = (email: string) => {
     setNotifTarget(email.toLowerCase().trim());
-    setEmailTarget(email.toLowerCase().trim());
     const formElement = document.getElementById('admin-notify-form');
     if (formElement) {
         formElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const handleSendEmailBroadcast = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailSubject.trim() || !emailMessage.trim()) {
-      alert("Please enter both an email subject and message body.");
-      return;
-    }
-
-    setIsSendingEmail(true);
-    setEmailSuccessMsg('');
-
-    try {
-      let recipientList: string[] = [];
-      if (emailTarget === 'all') {
-        recipientList = users
-          .map(u => u.email?.toLowerCase().trim())
-          .filter((em): em is string => Boolean(em));
-      } else if (emailTarget === 'custom') {
-        recipientList = customEmailInput
-          .split(/[,;\s]+/)
-          .map(em => em.trim().toLowerCase())
-          .filter(Boolean);
-      } else {
-        recipientList = [emailTarget.toLowerCase().trim()];
-      }
-
-      if (recipientList.length === 0) {
-        alert("No valid recipient email addresses found.");
-        setIsSendingEmail(false);
-        return;
-      }
-
-      if (emailTarget === 'all' && !confirm(`Are you sure you want to broadcast this email to ALL ${recipientList.length} users' valid email addresses?`)) {
-        setIsSendingEmail(false);
-        return;
-      }
-
-      const res = await fetch('/api/admin/send-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subject: emailSubject.trim(),
-          message: emailMessage.trim(),
-          recipients: recipientList
-        })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        let msg = `Email broadcast dispatched! Delivered to ${data.sentCount} recipient(s).`;
-        if (data.smtpConfigured === false) {
-          msg += ` (Server Mailer: System log mode active)`;
-        }
-        
-        // Also update in-app notifications on matched user documents in Firestore
-        const notifItem = {
-          id: Math.random().toString(36).substring(2, 9),
-          message: `[OFFICIAL EMAIL BROADCAST] ${emailSubject.trim()}: ${emailMessage.trim()}`,
-          date: new Date().toISOString(),
-          read: false
-        };
-
-        const targetUsersToNotify = users.filter(u => {
-          const em = u.email?.toLowerCase().trim();
-          return em && (emailTarget === 'all' || recipientList.includes(em));
-        });
-
-        for (const tu of targetUsersToNotify) {
-          try {
-            const updatedList = [notifItem, ...(tu.adminNotifications || [])];
-            await saveUserDocument(tu.email.toLowerCase().trim(), {
-              ...tu,
-              adminNotifications: updatedList
-            });
-          } catch (e) {
-            console.warn("Could not push in-app notification backup for user:", tu.email, e);
-          }
-        }
-
-        setEmailSuccessMsg(msg);
-        setEmailSubject('');
-        setEmailMessage('');
-        if (emailTarget === 'custom') setCustomEmailInput('');
-        setTimeout(() => setEmailSuccessMsg(''), 8000);
-      } else {
-        alert(data.error || "Failed to dispatch email broadcast.");
-      }
-    } catch (err: any) {
-      console.error("Error sending admin email broadcast:", err);
-      alert("Error dispatching email: " + (err.message || String(err)));
-    } finally {
-      setIsSendingEmail(false);
     }
   };
 
@@ -1834,90 +1731,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 </div>
             </div>
 
-            {/* Core Email Broadcast & Notification Hub */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Send Official Email to Users' Valid Email Address */}
-                <div id="admin-email-form" className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-amber-500/30 overflow-hidden">
-                    <div className="p-4 bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-900 border-b border-amber-500/30 flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <Mail className="text-amber-400 stroke-[2.2]" size={16} />
-                            <h3 className="font-black text-white text-xs uppercase tracking-wider font-mono">Email Broadcast & Messaging Console</h3>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">chix9ja Mailer</span>
-                    </div>
-                    
-                    <form onSubmit={handleSendEmailBroadcast} className="p-5 space-y-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest block">Recipient Target Address</label>
-                            <select
-                                className="w-full text-xs p-3 rounded-xl border border-amber-500/30 bg-black text-white outline-none focus:border-amber-400 font-semibold cursor-pointer transition-all"
-                                value={emailTarget}
-                                onChange={(e) => setEmailTarget(e.target.value)}
-                            >
-                                <option value="all">✉️ BROADCAST TO ALL VALID USER EMAILS ({users.length} Users)</option>
-                                <option value="custom">✍️ TYPE CUSTOM RECIPIENT EMAIL(S)</option>
-                                {users.map((u, i) => (
-                                    <option key={i} value={u.email.toLowerCase().trim()}>
-                                        👤 {u.name} ({u.email})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {emailTarget === 'custom' && (
-                            <div className="space-y-1.5 animate-in fade-in">
-                                <label className="text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest block">Enter Recipient Email Address(es)</label>
-                                <input
-                                    type="text"
-                                    className="w-full text-xs p-3 rounded-xl border border-amber-500/40 bg-black text-white outline-none focus:border-amber-400 placeholder:text-zinc-600 transition-all font-medium"
-                                    value={customEmailInput}
-                                    onChange={(e) => setCustomEmailInput(e.target.value)}
-                                    placeholder="e.g. user@gmail.com or email1@domain.com, email2@domain.com"
-                                    required
-                                />
-                            </div>
-                        )}
-
-                        <div className="space-y-1.5">
-                            <label className="text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest block">Email Subject</label>
-                            <input
-                                type="text"
-                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-amber-400 placeholder:text-zinc-600 transition-all font-medium"
-                                value={emailSubject}
-                                onChange={(e) => setEmailSubject(e.target.value)}
-                                placeholder="Important Update from chix9ja..."
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest block">Email Message Body</label>
-                            <textarea
-                                className="w-full text-xs p-3 rounded-xl border border-zinc-800 bg-black text-white outline-none focus:border-amber-400 min-h-[100px] placeholder:text-zinc-600 leading-relaxed transition-all font-medium"
-                                value={emailMessage}
-                                onChange={(e) => setEmailMessage(e.target.value)}
-                                placeholder="Dear Valued Member, We are pleased to inform you..."
-                                rows={4}
-                                required
-                            />
-                        </div>
-
-                        {emailSuccessMsg && (
-                            <div className="p-3 bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-bold rounded-xl text-center font-mono animate-in fade-in">
-                                ✓ {emailSuccessMsg}
-                            </div>
-                        )}
-
-                        <button 
-                            type="submit" 
-                            disabled={isSendingEmail}
-                            className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 hover:to-yellow-300 text-black font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-amber-500/20 disabled:opacity-40 active:scale-[0.98] cursor-pointer"
-                        >
-                            {isSendingEmail ? 'Dispatching Emails...' : 'Send Official Email Broadcast'}
-                        </button>
-                    </form>
-                </div>
+            {/* Core Notification Hub */}
+            <div className="grid grid-cols-1 gap-6">
 
                 {/* Send Dispatch Message alerts fast */}
                 <div id="admin-notify-form" className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-lg border border-zinc-800 overflow-hidden">
