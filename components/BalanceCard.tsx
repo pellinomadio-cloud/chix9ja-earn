@@ -64,9 +64,8 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, isSubscribed = false
                 </div>
                 <button 
                     onClick={onHistoryClick}
-                    className="shining-diamond-button px-4 py-2 rounded-full text-xs font-black shadow-lg active:scale-95 transition-all flex items-center space-x-1"
+                    className="bg-black text-white hover:bg-zinc-900 px-4 py-2 rounded-full text-xs font-bold shadow-md active:scale-95 transition-all flex items-center space-x-1 cursor-pointer"
                 >
-                    <span className="text-xs">💎</span>
                     <span>Transaction History</span>
                 </button>
             </div>
