@@ -106,6 +106,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [emailSubject, setEmailSubject] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
   const [emailTarget, setEmailTarget] = useState<'all' | string>('all');
+  const [customEmailInput, setCustomEmailInput] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailSuccessMsg, setEmailSuccessMsg] = useState('');
 
@@ -883,6 +884,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         recipientList = users
           .map(u => u.email?.toLowerCase().trim())
           .filter((em): em is string => Boolean(em));
+      } else if (emailTarget === 'custom') {
+        recipientList = customEmailInput
+          .split(/[,;\s]+/)
+          .map(em => em.trim().toLowerCase())
+          .filter(Boolean);
       } else {
         recipientList = [emailTarget.toLowerCase().trim()];
       }
@@ -910,10 +916,41 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
       const data = await res.json();
       if (data.success) {
-        setEmailSuccessMsg(`Email broadcast dispatched successfully! Delivered to ${data.sentCount} user(s).`);
+        let msg = `Email broadcast dispatched! Delivered to ${data.sentCount} recipient(s).`;
+        if (data.smtpConfigured === false) {
+          msg += ` (Server Mailer: System log mode active)`;
+        }
+        
+        // Also update in-app notifications on matched user documents in Firestore
+        const notifItem = {
+          id: Math.random().toString(36).substring(2, 9),
+          message: `[OFFICIAL EMAIL BROADCAST] ${emailSubject.trim()}: ${emailMessage.trim()}`,
+          date: new Date().toISOString(),
+          read: false
+        };
+
+        const targetUsersToNotify = users.filter(u => {
+          const em = u.email?.toLowerCase().trim();
+          return em && (emailTarget === 'all' || recipientList.includes(em));
+        });
+
+        for (const tu of targetUsersToNotify) {
+          try {
+            const updatedList = [notifItem, ...(tu.adminNotifications || [])];
+            await saveUserDocument(tu.email.toLowerCase().trim(), {
+              ...tu,
+              adminNotifications: updatedList
+            });
+          } catch (e) {
+            console.warn("Could not push in-app notification backup for user:", tu.email, e);
+          }
+        }
+
+        setEmailSuccessMsg(msg);
         setEmailSubject('');
         setEmailMessage('');
-        setTimeout(() => setEmailSuccessMsg(''), 7000);
+        if (emailTarget === 'custom') setCustomEmailInput('');
+        setTimeout(() => setEmailSuccessMsg(''), 8000);
       } else {
         alert(data.error || "Failed to dispatch email broadcast.");
       }
@@ -1819,6 +1856,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                 onChange={(e) => setEmailTarget(e.target.value)}
                             >
                                 <option value="all">✉️ BROADCAST TO ALL VALID USER EMAILS ({users.length} Users)</option>
+                                <option value="custom">✍️ TYPE CUSTOM RECIPIENT EMAIL(S)</option>
                                 {users.map((u, i) => (
                                     <option key={i} value={u.email.toLowerCase().trim()}>
                                         👤 {u.name} ({u.email})
@@ -1826,6 +1864,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                 ))}
                             </select>
                         </div>
+
+                        {emailTarget === 'custom' && (
+                            <div className="space-y-1.5 animate-in fade-in">
+                                <label className="text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest block">Enter Recipient Email Address(es)</label>
+                                <input
+                                    type="text"
+                                    className="w-full text-xs p-3 rounded-xl border border-amber-500/40 bg-black text-white outline-none focus:border-amber-400 placeholder:text-zinc-600 transition-all font-medium"
+                                    value={customEmailInput}
+                                    onChange={(e) => setCustomEmailInput(e.target.value)}
+                                    placeholder="e.g. user@gmail.com or email1@domain.com, email2@domain.com"
+                                    required
+                                />
+                            </div>
+                        )}
 
                         <div className="space-y-1.5">
                             <label className="text-[9px] font-mono font-bold text-amber-300/80 uppercase tracking-widest block">Email Subject</label>

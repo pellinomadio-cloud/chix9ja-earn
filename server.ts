@@ -80,27 +80,16 @@ async function createTransporter() {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 5000,
     });
   }
 
-  // Fallback / Development mailer mode: create ethereal test account or json transporter
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    return nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
-  } catch (err) {
-    console.warn("Could not create Ethereal test mailer, using JSON logger transport:", err);
-    return nodemailer.createTransport({
-      jsonTransport: true,
-    });
-  }
+  // Non-blocking JSON transport fallback for deployed environments where SMTP keys are not set
+  return nodemailer.createTransport({
+    jsonTransport: true,
+  });
 }
 
 async function startServer() {
@@ -225,50 +214,49 @@ async function startServer() {
 
       const transporter = await createTransporter();
       const fromAddress = process.env.SMTP_FROM || '"chix9ja Admin Office" <admin@chix9ja.com>';
+      const isSmtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
-      let sentCount = 0;
-      let failedCount = 0;
-
-      for (const targetEmail of validRecipients) {
-        try {
-          const htmlContent = `
-            <div style="font-family: Arial, sans-serif; background-color: #05180f; color: #ffffff; padding: 25px; border-radius: 14px; max-width: 600px; margin: 0 auto; border: 2px solid #10b981;">
-              <div style="text-align: center; margin-bottom: 20px;">
-                <span style="background: #f59e0b; color: #000; font-weight: 900; font-size: 22px; padding: 8px 18px; border-radius: 8px; font-style: italic;">
-                  chix9ja
-                </span>
-              </div>
-              <h2 style="color: #f59e0b; border-bottom: 1px solid #065f46; padding-bottom: 10px;">
-                ${subject}
-              </h2>
-              <div style="font-size: 15px; line-height: 1.7; color: #ecfdf5; white-space: pre-wrap; margin: 20px 0;">
-                ${message}
-              </div>
-              <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #065f46; text-align: center; font-size: 11px; color: #6ee7b7;">
-                This message was sent by the Official chix9ja Admin Desk to registered valid email: ${targetEmail}
-              </div>
+      const sendPromises = validRecipients.map(async (targetEmail) => {
+        const htmlContent = `
+          <div style="font-family: Arial, sans-serif; background-color: #05180f; color: #ffffff; padding: 25px; border-radius: 14px; max-width: 600px; margin: 0 auto; border: 2px solid #10b981;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <span style="background: #f59e0b; color: #000; font-weight: 900; font-size: 22px; padding: 8px 18px; border-radius: 8px; font-style: italic;">
+                chix9ja
+              </span>
             </div>
-          `;
+            <h2 style="color: #f59e0b; border-bottom: 1px solid #065f46; padding-bottom: 10px;">
+              ${subject}
+            </h2>
+            <div style="font-size: 15px; line-height: 1.7; color: #ecfdf5; white-space: pre-wrap; margin: 20px 0;">
+              ${message}
+            </div>
+            <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #065f46; text-align: center; font-size: 11px; color: #6ee7b7;">
+              This message was sent by the Official chix9ja Admin Desk to registered valid email: ${targetEmail}
+            </div>
+          </div>
+        `;
 
-          await transporter.sendMail({
-            from: fromAddress,
-            to: targetEmail,
-            subject: `[chix9ja] ${subject}`,
-            html: htmlContent,
-            text: message
-          });
-          sentCount++;
-        } catch (mailErr) {
-          console.error(`Failed to dispatch broadcast email to ${targetEmail}:`, mailErr);
-          failedCount++;
-        }
-      }
+        return transporter.sendMail({
+          from: fromAddress,
+          to: targetEmail,
+          subject: `[chix9ja] ${subject}`,
+          html: htmlContent,
+          text: message
+        });
+      });
+
+      const results = await Promise.allSettled(sendPromises);
+      const sentCount = results.filter(r => r.status === 'fulfilled').length;
+      const failedCount = results.filter(r => r.status === 'rejected').length;
 
       res.json({
         success: true,
-        message: `Broadcast completed. Sent to ${sentCount} user(s).`,
+        message: isSmtpConfigured
+          ? `Broadcast completed via SMTP. Delivered to ${sentCount} user(s).`
+          : `Broadcast processed and registered in system mail log for ${sentCount} user(s).`,
         sentCount,
         failedCount,
+        smtpConfigured: isSmtpConfigured,
         invalidRecipients
       });
     } catch (err: any) {
