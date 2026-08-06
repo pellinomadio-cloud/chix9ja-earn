@@ -77,6 +77,56 @@
     background-size: 200% 100%;
     animation: green-shimmer 3s infinite linear;
   }
+
+  .shining-diamond-button {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e0f2fe 0%, #ffffff 35%, #bae6fd 70%, #f0f9ff 100%);
+    color: #030712;
+    font-weight: 900;
+    border: 2px solid #e0f2fe;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.9), 0 0 30px rgba(56, 189, 248, 0.6), inset 0 0 12px rgba(255, 255, 255, 0.9);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: diamond-pulse 3s infinite ease-in-out;
+  }
+
+  .shining-diamond-button::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    left: -150%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      115deg,
+      transparent 0%,
+      transparent 40%,
+      rgba(255, 255, 255, 0.95) 50%,
+      rgba(186, 230, 253, 0.9) 55%,
+      transparent 65%,
+      transparent 100%
+    );
+    transform: rotate(25deg);
+    animation: diamond-sweep 2.5s infinite ease-in-out;
+    pointer-events: none;
+  }
+
+  .shining-diamond-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 45px rgba(56, 189, 248, 0.9), inset 0 0 20px rgba(255, 255, 255, 1);
+    border-color: #ffffff;
+  }
+
+  @keyframes diamond-sweep {
+    0% { transform: translateX(-100%) rotate(25deg); }
+    40% { transform: translateX(100%) rotate(25deg); }
+    100% { transform: translateX(100%) rotate(25deg); }
+  }
+
+  @keyframes diamond-pulse {
+    0%, 100% { filter: brightness(1) drop-shadow(0 0 8px rgba(186, 230, 253, 0.7)); }
+    50% { filter: brightness(1.25) drop-shadow(0 0 20px rgba(255, 255, 255, 1)); }
+  }
 }
 
 @keyframes green-shimmer {
