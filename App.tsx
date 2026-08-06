@@ -923,8 +923,8 @@ const App: React.FC = () => {
     } catch {}
 
     const emailKey = email.toLowerCase().trim();
-    if (!deviceAccounts.includes(emailKey) && deviceAccounts.length >= 2) {
-      alert("Registration limit exceeded: You cannot create more than two chix9ja accounts on this device.");
+    if (!deviceAccounts.includes(emailKey) && deviceAccounts.length >= 5) {
+      alert("Registration limit exceeded: You cannot create more than 5 chix9ja accounts on this device.");
       return;
     }
 

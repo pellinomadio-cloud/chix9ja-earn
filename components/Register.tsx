@@ -66,7 +66,7 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
 
     const securePassword = `${password}_chix9ja_secure_salt`;
 
-    // Check device registration limit (Max 2 accounts per device)
+    // Check device registration limit (Max 5 accounts per device)
     let deviceAccounts: string[] = [];
     try {
       const stored = localStorage.getItem('chix9ja_device_registered_accounts');
@@ -77,8 +77,8 @@ const Register: React.FC<RegisterProps> = ({ onRegister, onSwitchToLogin, defaul
       deviceAccounts = [];
     }
 
-    if (!deviceAccounts.includes(emailKey) && deviceAccounts.length >= 2) {
-      setError('Registration limit exceeded. You cannot create more than two chix9ja accounts on this device.');
+    if (!deviceAccounts.includes(emailKey) && deviceAccounts.length >= 5) {
+      setError('Registration limit exceeded. You cannot create more than 5 chix9ja accounts on this device.');
       setIsLoading(false);
       return;
     }
