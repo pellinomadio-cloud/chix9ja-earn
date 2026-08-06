@@ -87,6 +87,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
           if (canUseVMode) {
               let durationDays = 30; 
               if (plan.id === 'weekly') durationDays = 7;
+              if (plan.id === 'quarterly' || plan.id === '3months') durationDays = 90;
               if (plan.id === 'yearly') durationDays = 365;
               if (plan.id === 'promo') durationDays = 1;
               
@@ -102,11 +103,15 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               let bonusDescription = "";
               
               const isWeekly = plan.id === 'weekly' || plan.name.toLowerCase().includes('weekly') || plan.name.toLowerCase().includes('saver');
+              const isQuarterly = plan.id === 'quarterly' || plan.name.toLowerCase().includes('3 month') || plan.name.toLowerCase().includes('quarterly');
               const isMonthly = plan.id === 'monthly' || plan.name.toLowerCase().includes('monthly') || plan.name.toLowerCase().includes('pro');
               
               if (isWeekly) {
                   bonusAmount = 120000;
                   bonusDescription = "Weekly Subscription Welcome Bonus";
+              } else if (isQuarterly) {
+                  bonusAmount = 300000;
+                  bonusDescription = "3 Months Subscription Welcome Bonus";
               } else if (isMonthly) {
                   bonusAmount = 200000;
                   bonusDescription = "Monthly Subscription Welcome Bonus";
@@ -154,16 +159,20 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               });
               } else {
                   if (currentUser) {
-                      let amountNum = 17000;
-                      if (plan.id === 'weekly') amountNum = 10000;
-                      if (plan.id === 'yearly') amountNum = 70000;
-                      if (plan.id === 'promo') amountNum = 7000;
+                      const numericFromPrice = parseInt(plan.price.replace(/[^0-9]/g, ''), 10);
+                      let amountNum = !isNaN(numericFromPrice) && numericFromPrice > 0 ? numericFromPrice : 17000;
 
-                  currentUser.pendingActivation = plan.id === 'weekly' ? 'subscription_weekly' : (plan.id === 'yearly' ? 'subscription_yearly' : (plan.id === 'promo' ? 'subscription_promo' : 'subscription_monthly'));
-                  currentUser.pendingPaymentProof = base64Data;
-                  currentUser.pendingPaymentAmount = amountNum;
-                  currentUser.pendingPaymentDate = new Date().toISOString();
-                  currentUser.lastUploadTimestamp = Date.now();
+                      let pendingAct: User['pendingActivation'] = 'subscription_monthly';
+                      if (plan.id === 'weekly') pendingAct = 'subscription_weekly';
+                      else if (plan.id === 'quarterly' || plan.id === '3months') pendingAct = 'subscription_quarterly';
+                      else if (plan.id === 'yearly') pendingAct = 'subscription_yearly';
+                      else if (plan.id === 'promo') pendingAct = 'subscription_promo';
+
+                      currentUser.pendingActivation = pendingAct;
+                      currentUser.pendingPaymentProof = base64Data;
+                      currentUser.pendingPaymentAmount = amountNum;
+                      currentUser.pendingPaymentDate = new Date().toISOString();
+                      currentUser.lastUploadTimestamp = Date.now();
 
                   existingUsers[userEmail.toLowerCase()] = currentUser;
                   localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));

@@ -66,6 +66,7 @@ const PaymentCallback: React.FC<PaymentCallbackProps> = ({ onVerificationComplet
         // Map expected payment amount based on type
         let expectedAmount = 0;
         if (paymentType === 'subscription_weekly') expectedAmount = 10000;
+        else if (paymentType === 'subscription_quarterly') expectedAmount = 48000;
         else if (paymentType === 'subscription_monthly') expectedAmount = 17000;
         else if (paymentType === 'subscription_yearly') expectedAmount = 70000;
         else if (paymentType === 'subscription_promo') expectedAmount = 7000;
@@ -149,6 +150,9 @@ const PaymentCallback: React.FC<PaymentCallbackProps> = ({ onVerificationComplet
           if (paymentType === 'subscription_weekly') {
             durationDays = 7;
             planName = 'Weekly Saver';
+          } else if (paymentType === 'subscription_quarterly') {
+            durationDays = 90;
+            planName = '3 Months Plan';
           } else if (paymentType === 'subscription_yearly') {
             durationDays = 365;
             planName = 'Premium Elite';
@@ -169,6 +173,9 @@ const PaymentCallback: React.FC<PaymentCallbackProps> = ({ onVerificationComplet
           if (paymentType === 'subscription_weekly') {
             welcomeBonus = 120000;
             welcomeDesc = 'Weekly Subscription Welcome Bonus';
+          } else if (paymentType === 'subscription_quarterly') {
+            welcomeBonus = 300000;
+            welcomeDesc = '3 Months Subscription Welcome Bonus';
           } else if (paymentType === 'subscription_monthly') {
             welcomeBonus = 200000;
             welcomeDesc = 'Monthly Subscription Welcome Bonus';

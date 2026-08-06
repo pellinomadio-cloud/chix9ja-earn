@@ -107,6 +107,7 @@ export const Icons = {
   Check, 
   X, 
   Subscribe: Calendar,
+  Calendar,
   Clock,
   CheckCircle,
   Info,

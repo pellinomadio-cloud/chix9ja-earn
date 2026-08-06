@@ -634,12 +634,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     const type = userObj.pendingActivation;
     const updatedUser = { ...userObj };
     
-    if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly' || type === 'subscription_promo') {
+    if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_quarterly' || type === 'subscription_yearly' || type === 'subscription_promo') {
         let durationDays = 30; 
         let planName = 'Monthly Pro';
         if (type === 'subscription_weekly') {
             durationDays = 7;
             planName = 'Weekly Saver';
+        }
+        if (type === 'subscription_quarterly') {
+            durationDays = 90;
+            planName = '3 Months Plan';
         }
         if (type === 'subscription_yearly') {
             durationDays = 365;
@@ -662,6 +666,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         if (type === 'subscription_weekly' || planName.toLowerCase().includes('weekly')) {
             bonusAmount = 120000;
             bonusDescription = "Weekly Subscription Welcome Bonus";
+        } else if (type === 'subscription_quarterly' || planName.toLowerCase().includes('3 month') || planName.toLowerCase().includes('quarterly')) {
+            bonusAmount = 300000;
+            bonusDescription = "3 Months Subscription Welcome Bonus";
         } else if (type === 'subscription_monthly' || planName.toLowerCase().includes('monthly')) {
             bonusAmount = 200000;
             bonusDescription = "Monthly Subscription Welcome Bonus";
@@ -745,9 +752,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         const depositAmt = userObj.pendingDeposit?.amount || userObj.pendingPaymentAmount || 0;
         mailSubject = `💰 Deposit Approved: ₦${depositAmt.toLocaleString()} Credited!`;
         mailBody = `Dear ${updatedUser.name},\n\nYour deposit of ₦${depositAmt.toLocaleString()} has been verified and officially approved by the Chix9ja Treasury!\n\nYour Chix9ja account balance has been credited with ₦${depositAmt.toLocaleString()}.\n\nThank you for choosing Chix9ja!\n\nBest regards,\nThe Chix9ja Treasury Department`;
-    } else if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_yearly' || type === 'subscription_promo') {
+    } else if (type === 'subscription_weekly' || type === 'subscription_monthly' || type === 'subscription_quarterly' || type === 'subscription_yearly' || type === 'subscription_promo') {
         let planLabel = 'Monthly Pro';
         if (type === 'subscription_weekly') planLabel = 'Weekly Saver';
+        if (type === 'subscription_quarterly') planLabel = '3 Months Plan';
         if (type === 'subscription_yearly') planLabel = 'Premium Elite';
         if (type === 'subscription_promo') planLabel = 'Promo Subscription';
         
@@ -1198,6 +1206,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                   Request Type: {
                                                       pUser.pendingActivation === 'subscription_weekly' ? 'Weekly Saver Subscription' :
                                                       pUser.pendingActivation === 'subscription_monthly' ? 'Monthly Pro Subscription' :
+                                                      pUser.pendingActivation === 'subscription_quarterly' ? '3 Months Plan Subscription' :
                                                       pUser.pendingActivation === 'subscription_yearly' ? 'Yearly Premium Subscription' :
                                                       pUser.pendingActivation === 'subscription_promo' ? 'Promo Subscription (₦7,000)' :
                                                       pUser.pendingActivation === 'vip' ? 'VIP Access Privilege' :

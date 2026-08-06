@@ -20,12 +20,11 @@ interface PlanDisplay extends Plan {
 const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
   const { unlocked: giveawayUnlocked } = useGiveawayStatus();
 
-  const plans: PlanDisplay[] = [
+  const basePlans = [
     { 
       id: 'promo', 
       name: 'Promo Subscription', 
-      price: '₦7,000', 
-      amount: '7,000 Naira', 
+      basePrice: 7000, 
       duration: 'Once Withdrawal Access',
       limitDescription: 'Single Withdrawal Session',
       features: ['Once Withdrawal Allowed', 'Immediate Desk Activator', 'Standard Support'],
@@ -35,8 +34,7 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     { 
       id: 'weekly', 
       name: 'Weekly Saver', 
-      price: '₦10,000', 
-      amount: '10,000 Naira', 
+      basePrice: 10000, 
       duration: '7 Days Access',
       limitDescription: 'Withdraw up to ₦200,000',
       features: ['Priority Withdrawals', 'Weekly Rewards', 'Basic Support'],
@@ -46,8 +44,7 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
     { 
       id: 'monthly', 
       name: 'Monthly Pro', 
-      price: '₦17,000', 
-      amount: '17,000 Naira', 
+      basePrice: 17000, 
       duration: '30 Days Access', 
       recommended: true,
       limitDescription: 'Withdraw up to ₦2,000,000',
@@ -56,10 +53,19 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
       color: 'from-green-glow to-emerald-400'
     },
     { 
+      id: 'quarterly', 
+      name: '3 Months Plan', 
+      basePrice: 48000, 
+      duration: '90 Days Access', 
+      limitDescription: 'Withdraw up to ₦800,000',
+      features: ['Withdraw up to ₦800,000', '90 Days Extended Access', 'Priority Support & Fast Desk'],
+      icon: <Icons.Calendar size={24} />,
+      color: 'from-amber-500 to-yellow-500'
+    },
+    { 
       id: 'yearly', 
       name: 'Premium Elite', 
-      price: '₦70,000', 
-      amount: '70,000 Naira', 
+      basePrice: 70000, 
       duration: '365 Days Access',
       limitDescription: 'Unlimited Withdrawals',
       features: ['No Withdrawal Limits', 'VIP Exclusive Hub', 'Dedicated Manager'],
@@ -67,6 +73,18 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
       color: 'from-fuchsia-600 to-pink-500'
     },
   ];
+
+  // Price multiplier if user balance > 1,000,000
+  const priceMultiplier = userBalance > 1000000 ? 1 + ((userBalance - 1000000) / 1000000) : 1;
+
+  const plans: PlanDisplay[] = basePlans.map(p => {
+    const scaledNumeric = Math.round((p.basePrice * priceMultiplier) / 500) * 500;
+    return {
+      ...p,
+      price: `₦${scaledNumeric.toLocaleString()}`,
+      amount: `${scaledNumeric.toLocaleString()} Naira`
+    };
+  });
 
   const visiblePlans = plans.filter(p => p.id !== 'promo' || giveawayUnlocked);
 
@@ -92,12 +110,32 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
         </p>
       </motion.div>
 
+      {/* Dynamic Price Surge Warning for Balances > ₦1,000,000 */}
+      {userBalance > 1000000 && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/20 border border-amber-500/40 p-4 rounded-2xl text-center space-y-1 relative overflow-hidden shadow-xl"
+        >
+          <div className="flex items-center justify-center space-x-2 text-amber-400 font-black text-xs uppercase tracking-wider">
+            <Icons.AlertTriangle size={14} className="animate-pulse" />
+            <span>High Balance Dynamic Adjustment Active</span>
+          </div>
+          <p className="text-[10px] text-gray-300 font-medium leading-relaxed">
+            Since your dashboard balance exceeds <span className="font-mono text-amber-300 font-bold">₦1,000,000</span> (Current: <span className="font-mono text-emerald-400 font-bold">₦{userBalance.toLocaleString()}</span>), subscription package pricing has been dynamically adjusted.
+          </p>
+        </motion.div>
+      )}
+
       {/* Modern Plans Stack */}
       <div className="space-y-3">
         {visiblePlans.map((plan, index) => {
           const isWeeklyRestricted = plan.id === 'weekly' && userBalance > 200000;
+          const isQuarterlyRestricted = plan.id === 'quarterly' && userBalance > 800000;
           const isMonthlyRestricted = plan.id === 'monthly' && userBalance > 2000000;
-          const isRestricted = isWeeklyRestricted || isMonthlyRestricted;
+          const isRestricted = isWeeklyRestricted || isQuarterlyRestricted || isMonthlyRestricted;
+
+          const limitText = plan.id === 'weekly' ? '₦200,000' : plan.id === 'quarterly' ? '₦800,000' : '₦2,000,000';
 
           return (
             <motion.div
@@ -143,7 +181,7 @@ const Subscribe: React.FC<SubscribeProps> = ({ onPlanSelect, userBalance }) => {
                       <p className="text-[9px] font-black uppercase tracking-widest">Locked</p>
                     </div>
                     <p className="text-[10px] font-bold text-gray-400 leading-tight uppercase">
-                      Balance (₦{userBalance.toLocaleString()}) exceeds weekly limit. Please choose a higher tier.
+                      Balance (₦{userBalance.toLocaleString()}) exceeds limit ({limitText}) for this plan. Please choose a higher tier.
                     </p>
                   </div>
                 ) : (

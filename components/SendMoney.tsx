@@ -125,6 +125,9 @@ const SendMoney: React.FC<SendMoneyProps> = ({ user, onTransfer, onSubscribeRedi
     if (planName === 'Weekly Plan' || planName === 'Weekly Saver') {
         limit = user.customWeeklyLimit ?? 500000;
         periodMs = 7 * 24 * 60 * 60 * 1000; // 7 days
+    } else if (planName === '3 Months Plan' || planName === 'Quarterly Plan' || planName === '3 Months Saver') {
+        limit = 800000;
+        periodMs = 90 * 24 * 60 * 60 * 1000; // 90 days
     } else if (planName === 'Monthly Plan' || planName === 'Monthly Pro') {
         limit = user.customMonthlyLimit ?? 2000000;
         periodMs = 30 * 24 * 60 * 60 * 1000; // 30 days
