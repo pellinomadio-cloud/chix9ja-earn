@@ -1,13 +1,30 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import firebaseConfig from './firebase-applet-config.json';
 import { useState, useEffect } from 'react';
 
 const app = initializeApp(firebaseConfig);
-export const db = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)')
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
-  : getFirestore(app); /* CRITICAL: The app will break without this line */
+
+let firestoreInstance;
+try {
+  const dbId = (firebaseConfig as any).firestoreDatabaseId;
+  const settings = {
+    experimentalAutoDetectLongPolling: true,
+  };
+  if (dbId && dbId !== '(default)') {
+    firestoreInstance = initializeFirestore(app, settings, dbId);
+  } else {
+    firestoreInstance = initializeFirestore(app, settings);
+  }
+} catch (e) {
+  const dbId = (firebaseConfig as any).firestoreDatabaseId;
+  firestoreInstance = (dbId && dbId !== '(default)')
+    ? getFirestore(app, dbId)
+    : getFirestore(app);
+}
+
+export const db = firestoreInstance;
 export const auth = getAuth();
 
 // Monkeypatch localStorage.setItem to gracefully handle QuotaExceededError (e.g., of chix9ja_users cache)
@@ -168,15 +185,16 @@ export async function syncUserFromLocalToFirestore(email: string): Promise<void>
 }
 
 
-// Validate Connection to Firestore on boot as per guidelines
+// Validate Connection to Firestore on boot gracefully
 async function testConnection() {
   try {
     const testDocRef = doc(db, 'test-connection-placeholder', 'connectivity');
-    await getDocFromServer(testDocRef);
+    await Promise.race([
+      getDoc(testDocRef),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Connection check timeout')), 3000))
+    ]);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.warn("Please check your Firebase configuration. You appear to be offline.");
-    }
+    console.warn("Firestore running in offline or cached mode:", error instanceof Error ? error.message : error);
   }
 }
 testConnection();
