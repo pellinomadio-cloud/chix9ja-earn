@@ -78,6 +78,8 @@ export interface User {
   lastTelegramClaimTimestamp?: number;
   lastTelegramClaim2Timestamp?: number;
   lastWhatsAppClaimTimestamp?: number;
+  dailyWaitlistJoinedAt?: number;
+  dailyWaitlistClaimedAt?: number;
   lastBiggyWinClaimTimestamp?: number;
   lastGameRewardsClaimTimestamp?: number;
   dailyQuizCount?: number;

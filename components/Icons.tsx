@@ -63,7 +63,8 @@ import {
   PlusCircle,
   Hash,
   Users,
-  Megaphone
+  Megaphone,
+  Sparkles
 } from 'lucide-react';
 
 // Exporting icons for easy import elsewhere
@@ -137,5 +138,6 @@ export const Icons = {
   PlusCircle,
   Hash,
   Users,
-  Megaphone
+  Megaphone,
+  Sparkles
 };

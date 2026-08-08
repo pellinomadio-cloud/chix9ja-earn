@@ -1299,6 +1299,69 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDailyWaitlistJoin = () => {
+    if (!user) return;
+    const nowTs = Date.now();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+    const lastJoined = user.dailyWaitlistJoinedAt || 0;
+
+    if (nowTs - lastJoined < oneWeek) {
+      const remainingMs = oneWeek - (nowTs - lastJoined);
+      const remainingDays = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+      const remainingHours = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+      alert(`You can only join the Users Promo Waitlist once per week! Next attempt available in ${remainingDays}d ${remainingHours}h.`);
+      return;
+    }
+
+    const updatedUser = {
+      ...user,
+      dailyWaitlistJoinedAt: nowTs,
+      dailyWaitlistClaimedAt: undefined,
+    };
+    setUser(updatedUser);
+    saveUserToStorage(updatedUser);
+    alert("🎉 Successfully joined the Users Promo Waitlist! In 1 hour, your ₦500,000 credit will be ready to claim on your dashboard!");
+  };
+
+  const handleDailyWaitlistClaim = () => {
+    if (!user || !user.dailyWaitlistJoinedAt) return;
+    const nowTs = Date.now();
+    const oneHour = 60 * 60 * 1000;
+    const elapsed = nowTs - user.dailyWaitlistJoinedAt;
+
+    if (elapsed < oneHour) {
+      const remainingMins = Math.ceil((oneHour - elapsed) / (60 * 1000));
+      alert(`Your 1-hour waitlist period is still active! Please check back in ${remainingMins} minute(s).`);
+      return;
+    }
+
+    if (user.dailyWaitlistClaimedAt && user.dailyWaitlistClaimedAt >= user.dailyWaitlistJoinedAt) {
+      alert("You have already claimed your ₦500,000 promo reward for this week!");
+      return;
+    }
+
+    const rewardAmount = 500000;
+    const newTransaction: Transaction = {
+      id: `trx-waitlist-${Date.now()}`,
+      type: "credit",
+      amount: rewardAmount,
+      description: "Users Promo Waitlist 1-Hour Reward",
+      date: new Date().toISOString(),
+      status: "success",
+    };
+
+    const updatedUser = {
+      ...user,
+      balance: user.balance + rewardAmount,
+      dailyWaitlistClaimedAt: nowTs,
+      transactions: [newTransaction, ...(user.transactions || [])],
+    };
+
+    setUser(updatedUser);
+    saveUserToStorage(updatedUser);
+    alert(`💰 CONGRATULATIONS! ₦${rewardAmount.toLocaleString()} has been credited to your dashboard balance!`);
+  };
+
   const handleBiggyWinClaim = () => {
     if (!user) return;
     const nowTs = Date.now();
@@ -1932,6 +1995,8 @@ const App: React.FC = () => {
                 onTelegramClaim={handleTelegramClaim}
                 onTelegramClaim2={handleTelegramClaim2}
                 onWhatsAppClaim={handleWhatsAppClaim}
+                onDailyWaitlistJoin={handleDailyWaitlistJoin}
+                onDailyWaitlistClaim={handleDailyWaitlistClaim}
                 onBiggyWinClaim={handleBiggyWinClaim}
                 onGameRewardsClaim={handleGameRewardsClaim}
                 onGameResult={handleGameResult}
@@ -2204,8 +2269,7 @@ const App: React.FC = () => {
             )}
           </div>
           {currentView === "dashboard" &&
-            activeTab !== "ux-trade" &&
-            activeTab !== "loan" &&
+            activeTab === "home" &&
             user?.notificationPreferences && (
               <LiveNotifications preferences={user.notificationPreferences} />
             )}

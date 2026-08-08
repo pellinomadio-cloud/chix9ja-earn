@@ -9,6 +9,8 @@ interface TaskPageProps {
   onTelegramClaim: () => void;
   onTelegramClaim2: () => void;
   onWhatsAppClaim: () => void;
+  onDailyWaitlistJoin?: () => void;
+  onDailyWaitlistClaim?: () => void;
   onBiggyWinClaim: () => void;
   onGameRewardsClaim: () => void;
   onGameResult: (win: boolean, customAmount?: number, customDesc?: string) => void;
@@ -21,6 +23,8 @@ const TaskPage: React.FC<TaskPageProps> = ({
   onTelegramClaim, 
   onTelegramClaim2, 
   onWhatsAppClaim,
+  onDailyWaitlistJoin,
+  onDailyWaitlistClaim,
   onBiggyWinClaim,
   onGameRewardsClaim,
   onGameResult, 
@@ -28,6 +32,14 @@ const TaskPage: React.FC<TaskPageProps> = ({
   mode = 'all' 
 }) => {
   const { channels } = useAppChannels();
+
+  // Ticker for live countdown timer
+  const [now, setNow] = React.useState<number>(Date.now());
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Active Game State: 'none' (Gaming Hub selection list) or chosen game ID
   const [activeGame, setActiveGame] = useState<'none' | 'quiz' | 'coinflip' | 'colorspin'>('none');
@@ -280,6 +292,120 @@ const TaskPage: React.FC<TaskPageProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Users Promo Waitlist Card */}
+            {(() => {
+              const ONE_HOUR = 60 * 60 * 1000;
+              const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+              const joinedAt = user.dailyWaitlistJoinedAt || 0;
+              const claimedAt = user.dailyWaitlistClaimedAt || 0;
+              const timeSinceJoin = now - joinedAt;
+              
+              const isJoined = joinedAt > 0;
+              const isHourElapsed = isJoined && timeSinceJoin >= ONE_HOUR;
+              const isClaimedThisWeek = isJoined && claimedAt >= joinedAt;
+              const canJoinNew = !isJoined || timeSinceJoin >= ONE_WEEK;
+
+              const remainingWaitMs = Math.max(0, ONE_HOUR - timeSinceJoin);
+              const remainingCooldownMs = Math.max(0, ONE_WEEK - timeSinceJoin);
+
+              // Helper for 1-hour waitlist timer MM:SS
+              const minutesLeft = Math.floor(remainingWaitMs / (1000 * 60));
+              const secondsLeft = Math.floor((remainingWaitMs % (1000 * 60)) / 1000);
+              const timerStr = `${minutesLeft.toString().padStart(2, '0')}:${secondsLeft.toString().padStart(2, '0')}`;
+
+              // Helper for 1-week cooldown timer Dd Hh
+              const daysCooldown = Math.floor(remainingCooldownMs / (24 * 60 * 60 * 1000));
+              const hoursCooldown = Math.floor((remainingCooldownMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+
+              return (
+                <div className="bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-900 rounded-2xl p-5 shadow-lg border border-amber-500/40 space-y-4 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                  <div className="flex items-center space-x-4 relative z-10">
+                    <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center text-amber-400 border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                      <Icons.Sparkles size={24} className="animate-pulse" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-black text-white text-sm uppercase tracking-wide">Users Promo Waitlist</h3>
+                        {canJoinNew ? (
+                          <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded uppercase">Available</span>
+                        ) : isClaimedThisWeek ? (
+                          <span className="text-[10px] font-black bg-zinc-800 text-zinc-400 border border-zinc-700 px-2 py-0.5 rounded uppercase">Claimed</span>
+                        ) : isHourElapsed ? (
+                          <span className="text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-400 px-2 py-0.5 rounded uppercase animate-bounce">Reward Ready!</span>
+                        ) : (
+                          <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded uppercase animate-pulse">Waitlist Active</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-amber-200/90 font-medium mt-0.5">
+                        Join waitlist for 1 hour to receive <strong className="text-yellow-300 font-bold">₦500,000</strong> on your dashboard.
+                      </p>
+                      <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest block mt-1">
+                        Limit: 1x Per Week
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Progress bar during 1-hour waitlist */}
+                  {isJoined && !isHourElapsed && (
+                    <div className="space-y-1.5 pt-1">
+                      <div className="flex justify-between items-center text-[11px] font-mono font-bold">
+                        <span className="text-amber-300 flex items-center gap-1">
+                          <Icons.Clock size={12} className="animate-spin-slow" />
+                          1-Hour Waitlist Timer
+                        </span>
+                        <span className="text-yellow-300 font-bold">{timerStr}</span>
+                      </div>
+                      <div className="w-full bg-zinc-950 h-2 rounded-full border border-amber-500/20 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-amber-500 to-yellow-300 h-full transition-all duration-1000 shadow-[0_0_10px_rgba(250,204,21,0.5)]" 
+                          style={{ width: `${Math.min(100, (timeSinceJoin / ONE_HOUR) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="pt-1">
+                    {canJoinNew ? (
+                      <button 
+                        onClick={() => onDailyWaitlistJoin && onDailyWaitlistJoin()}
+                        className="w-full py-3.5 rounded-xl font-black shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-black hover:brightness-110 shadow-[0_4px_20px_rgba(245,158,11,0.3)]"
+                      >
+                        <Icons.Sparkles size={18} />
+                        <span>Join Users Promo Waitlist (₦500,000)</span>
+                      </button>
+                    ) : isClaimedThisWeek ? (
+                      <button 
+                        disabled
+                        className="w-full py-3.5 rounded-xl font-bold bg-zinc-800 border border-zinc-700 text-zinc-500 cursor-not-allowed flex items-center justify-center space-x-2 text-xs"
+                      >
+                        <Icons.CheckCircle size={16} className="text-emerald-500" />
+                        <span>Claimed for this week (Unlocks in {daysCooldown}d {hoursCooldown}h)</span>
+                      </button>
+                    ) : isHourElapsed ? (
+                      <button 
+                        onClick={() => onDailyWaitlistClaim && onDailyWaitlistClaim()}
+                        className="w-full py-3.5 rounded-xl font-black shadow-lg transition-all flex items-center justify-center space-x-2 active:scale-95 bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-black hover:brightness-110 shadow-[0_4px_20px_rgba(16,185,129,0.4)] animate-pulse"
+                      >
+                        <Icons.Gift size={18} />
+                        <span>Claim ₦500,000 Dashboard Reward!</span>
+                      </button>
+                    ) : (
+                      <button 
+                        disabled
+                        className="w-full py-3.5 rounded-xl font-bold bg-amber-950/60 border border-amber-500/30 text-amber-300 cursor-not-allowed flex items-center justify-center space-x-2 text-xs"
+                      >
+                        <Icons.Clock size={16} className="animate-spin-slow" />
+                        <span>Waitlist Active — {timerStr} remaining</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
