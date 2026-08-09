@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { User, ChixTokVideo, ChixTokComment, Transaction } from '../types';
+import { collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface ChixTokProps {
   user: User;
@@ -153,11 +155,29 @@ export const getStoredChixTokVideos = (): ChixTokVideo[] => {
   return defaultChixTokVideos;
 };
 
-export const saveChixTokVideos = (videos: ChixTokVideo[]) => {
+export const saveChixTokVideos = async (videos: ChixTokVideo[]) => {
   try {
     localStorage.setItem('chixtok_videos', JSON.stringify(videos));
   } catch (e) {
-    console.error("Failed to save chixtok_videos", e);
+    console.error("Failed to save chixtok_videos in localStorage", e);
+  }
+  for (const video of videos) {
+    try {
+      await setDoc(doc(db, 'chixtok_videos', video.id), video, { merge: true });
+    } catch (err) {
+      console.warn(`Could not sync video ${video.id} to Firestore:`, err);
+    }
+  }
+};
+
+export const deleteChixTokVideoFromFirestore = async (vidId: string) => {
+  try {
+    localStorage.setItem('chixtok_videos', JSON.stringify(getStoredChixTokVideos().filter(v => v.id !== vidId)));
+  } catch (e) {}
+  try {
+    await deleteDoc(doc(db, 'chixtok_videos', vidId));
+  } catch (err) {
+    console.warn(`Could not delete video ${vidId} from Firestore:`, err);
   }
 };
 
@@ -174,10 +194,32 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Load videos on mount
+  // Realtime subscription to Firestore database
   useEffect(() => {
-    const loaded = getStoredChixTokVideos();
-    setVideos(loaded);
+    const unsub = onSnapshot(collection(db, 'chixtok_videos'), (snapshot) => {
+      if (!snapshot.empty) {
+        const loaded: ChixTokVideo[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push(docSnap.data() as ChixTokVideo);
+        });
+        loaded.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setVideos(loaded);
+        try {
+          localStorage.setItem('chixtok_videos', JSON.stringify(loaded));
+        } catch (e) {}
+      } else {
+        // Seed default videos into Firestore if empty
+        defaultChixTokVideos.forEach((v) => {
+          setDoc(doc(db, 'chixtok_videos', v.id), v, { merge: true }).catch(() => {});
+        });
+        setVideos(defaultChixTokVideos);
+      }
+    }, (error) => {
+      console.error("Error listening to chixtok_videos in Firestore:", error);
+      setVideos(getStoredChixTokVideos());
+    });
+
+    return () => unsub();
   }, []);
 
   const currentVideo = videos[currentIndex] || defaultChixTokVideos[0];

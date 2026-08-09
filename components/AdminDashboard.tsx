@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction, ChixTokVideo } from '../types';
-import { getStoredChixTokVideos, saveChixTokVideos } from './ChixTok';
+import { getStoredChixTokVideos, saveChixTokVideos, deleteChixTokVideoFromFirestore } from './ChixTok';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
 import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle } from 'lucide-react';
@@ -137,7 +137,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [pendingAdverts, setPendingAdverts] = useState<any[]>([]);
 
   useEffect(() => {
-    setChixTokVideos(getStoredChixTokVideos());
+    const unsub = onSnapshot(collection(db, 'chixtok_videos'), (snapshot) => {
+      if (!snapshot.empty) {
+        const loaded: ChixTokVideo[] = [];
+        snapshot.forEach((docSnap) => {
+          loaded.push(docSnap.data() as ChixTokVideo);
+        });
+        loaded.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setChixTokVideos(loaded);
+      } else {
+        setChixTokVideos(getStoredChixTokVideos());
+      }
+    }, (err) => {
+      console.error("Error listening to chixtok_videos in AdminDashboard:", err);
+      setChixTokVideos(getStoredChixTokVideos());
+    });
+
+    return () => unsub();
   }, []);
 
   const handleChixTokFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,11 +245,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     alert("🎉 ChixTok Video Tutorial uploaded successfully with preset 100k+ likes & 6k+ user testimony comments!");
   };
 
-  const handleDeleteChixTokVideo = (id: string) => {
+  const handleDeleteChixTokVideo = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this ChixTok video?")) return;
     const updated = chixTokVideos.filter(v => v.id !== id);
     setChixTokVideos(updated);
-    saveChixTokVideos(updated);
+    await deleteChixTokVideoFromFirestore(id);
     alert("Video deleted successfully.");
   };
   const [visibleUsersCount, setVisibleUsersCount] = useState(30);
