@@ -215,7 +215,13 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
       });
 
       const combinedList = Array.from(combinedMap.values());
-      combinedList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+      combinedList.sort((a, b) => {
+        const aIsAd = a.id.startsWith('ad-') || a.id.startsWith('vid-ad-');
+        const bIsAd = b.id.startsWith('ad-') || b.id.startsWith('vid-ad-');
+        if (aIsAd && !bIsAd) return -1;
+        if (!aIsAd && bIsAd) return 1;
+        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      });
 
       if (combinedList.length > 0) {
         setVideos(combinedList);
@@ -249,17 +255,17 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
       updateCombinedVideos();
     });
 
-    // 2. Listen to adverts collection (Approved sponsored video adverts)
+    // 2. Listen to adverts collection (Sponsored video adverts)
     const unsubAdverts = onSnapshot(collection(db, 'adverts'), (snapshot) => {
       const ads: ChixTokVideo[] = [];
       if (!snapshot.empty) {
         snapshot.forEach((docSnap) => {
           const adData = docSnap.data();
-          if (adData.status === 'approved') {
-            const videoSource = adData.videoData || adData.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
+          if (adData.status !== 'declined' && adData.status !== 'stopped') {
+            const videoSource = adData.videoData || adData.videoUrl || adData.video || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
             const adVid: ChixTokVideo = {
               id: `ad-${docSnap.id}`,
-              title: adData.videoName || adData.name || 'Sponsored Video Advert',
+              title: adData.videoName || adData.title || adData.name || 'Sponsored Video Advert',
               description: adData.advertLink ? `🔥 SPONSORED ADVERT: ${adData.advertLink}` : (adData.videoName || '🔥 Sponsored Advertisement on Chix9ja'),
               creatorName: adData.name ? `${adData.name} (Sponsored)` : 'Sponsored Partner',
               creatorAvatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
