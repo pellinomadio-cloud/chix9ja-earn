@@ -146,13 +146,13 @@ export const getStoredChixTokVideos = (): ChixTokVideo[] => {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return [parsed[0]];
       }
     }
   } catch (e) {
     console.error("Failed to parse chixtok_videos", e);
   }
-  return defaultChixTokVideos;
+  return [defaultChixTokVideos[0]];
 };
 
 export const saveChixTokVideos = async (videos: ChixTokVideo[]) => {
@@ -204,33 +204,26 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
     let sponsoredAdVids: ChixTokVideo[] = [];
 
     const updateCombinedVideos = () => {
-      const combinedMap = new Map<string, ChixTokVideo>();
+      // ONLY ONE post on the ChixTok page!
+      // Priority 1: Approved Sponsored Advert Post
+      // Priority 2: Direct ChixTok video post
+      // Priority 3: Default tutorial video post
+      let singlePost: ChixTokVideo | null = null;
 
-      // Sponsored Adverts first so users see active sponsored videos at top
-      sponsoredAdVids.forEach(v => combinedMap.set(v.id, v));
-      directChixTokVids.forEach(v => {
-        if (!combinedMap.has(v.id)) {
-          combinedMap.set(v.id, v);
-        }
-      });
-
-      const combinedList = Array.from(combinedMap.values());
-      combinedList.sort((a, b) => {
-        const aIsAd = a.id.startsWith('ad-') || a.id.startsWith('vid-ad-');
-        const bIsAd = b.id.startsWith('ad-') || b.id.startsWith('vid-ad-');
-        if (aIsAd && !bIsAd) return -1;
-        if (!aIsAd && bIsAd) return 1;
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-      });
-
-      if (combinedList.length > 0) {
-        setVideos(combinedList);
-        try {
-          localStorage.setItem('chixtok_videos', JSON.stringify(combinedList));
-        } catch (e) {}
+      if (sponsoredAdVids.length > 0) {
+        singlePost = sponsoredAdVids[0];
+      } else if (directChixTokVids.length > 0) {
+        singlePost = directChixTokVids[0];
       } else {
-        setVideos(getStoredChixTokVideos());
+        singlePost = defaultChixTokVideos[0];
       }
+
+      const singleList = [singlePost];
+      setVideos(singleList);
+      setCurrentIndex(0);
+      try {
+        localStorage.setItem('chixtok_videos', JSON.stringify(singleList));
+      } catch (e) {}
     };
 
     // 1. Listen to chixtok_videos
