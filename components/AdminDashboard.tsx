@@ -89,12 +89,37 @@ const GiveawayClaimRow: React.FC<{
   );
 };
 
+const getCachedAdminUsers = (): User[] => {
+  try {
+    const existingUsersStr = localStorage.getItem('chix9ja_users');
+    if (existingUsersStr) {
+      const parsed = JSON.parse(existingUsersStr);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      } else if (typeof parsed === 'object' && parsed !== null) {
+        return Object.values(parsed) as User[];
+      }
+    }
+  } catch (e) {
+    console.error("Error reading cached users for admin dashboard:", e);
+  }
+  return [];
+};
+
+const getInitialAdminAuth = (): boolean => {
+  try {
+    return localStorage.getItem('chix9ja_admin_session') === 'true';
+  } catch (e) {
+    return false;
+  }
+};
+
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(getInitialAdminAuth);
   const [adminEmail, setAdminEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<User[]>(getCachedAdminUsers);
   const [selectedPlans, setSelectedPlans] = useState<Record<string, string>>({});
   const [currentTime, setCurrentTime] = useState(Date.now());
   const [activeReceiptUser, setActiveReceiptUser] = useState<User | null>(null);
@@ -503,7 +528,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   useEffect(() => {
     if (isAuthenticated) {
-        setIsSyncing(true);
+        if (users.length === 0) {
+            setIsSyncing(true);
+        }
         // Setup real-time listener for the users collection
         const unsubscribe = onSnapshot(collection(db, 'users'), (querySnapshot) => {
             const globalUsers: User[] = [];
@@ -620,6 +647,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     }
     if (password === 'MAVELL999') {
         setIsAuthenticated(true);
+        try {
+            localStorage.setItem('chix9ja_admin_session', 'true');
+        } catch (e) {}
         setError('');
     } else {
         setError('Invalid administrative authorization password.');
@@ -2001,7 +2031,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                         <span>← Back Home</span>
                     </button>
                     <button 
-                        onClick={() => setIsAuthenticated(false)} 
+                        onClick={() => {
+                            setIsAuthenticated(false);
+                            try {
+                                localStorage.removeItem('chix9ja_admin_session');
+                            } catch (e) {}
+                        }} 
                         className="py-2 px-3.5 bg-rose-950/60 hover:bg-rose-900 hover:text-white text-rose-400 border border-rose-500/20 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-[0.97]"
                     >
                         Lock Portal
