@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { User, ChixTokVideo, ChixTokComment, Transaction } from '../types';
 import { collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { db, useBankDetails, syncUserFromLocalToFirestore } from '../firebase';
+import { db, useBankDetails, syncUserFromLocalToFirestore, sanitizeForFirestore } from '../firebase';
 
 interface ChixTokProps {
   user: User;
@@ -163,7 +163,7 @@ export const saveChixTokVideos = async (videos: ChixTokVideo[]) => {
   }
   for (const video of videos) {
     try {
-      await setDoc(doc(db, 'chixtok_videos', video.id), video, { merge: true });
+      await setDoc(doc(db, 'chixtok_videos', video.id), sanitizeForFirestore(video), { merge: true });
     } catch (err) {
       console.warn(`Could not sync video ${video.id} to Firestore:`, err);
     }
@@ -198,32 +198,102 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Realtime subscription to Firestore database
+  // Realtime subscription to both chixtok_videos AND approved sponsored adverts in Firestore
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'chixtok_videos'), (snapshot) => {
+    let directChixTokVids: ChixTokVideo[] = [];
+    let sponsoredAdVids: ChixTokVideo[] = [];
+
+    const updateCombinedVideos = () => {
+      const combinedMap = new Map<string, ChixTokVideo>();
+
+      // Sponsored Adverts first so users see active sponsored videos at top
+      sponsoredAdVids.forEach(v => combinedMap.set(v.id, v));
+      directChixTokVids.forEach(v => {
+        if (!combinedMap.has(v.id)) {
+          combinedMap.set(v.id, v);
+        }
+      });
+
+      const combinedList = Array.from(combinedMap.values());
+      combinedList.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+      if (combinedList.length > 0) {
+        setVideos(combinedList);
+        try {
+          localStorage.setItem('chixtok_videos', JSON.stringify(combinedList));
+        } catch (e) {}
+      } else {
+        setVideos(getStoredChixTokVideos());
+      }
+    };
+
+    // 1. Listen to chixtok_videos
+    const unsubChixTok = onSnapshot(collection(db, 'chixtok_videos'), (snapshot) => {
       if (!snapshot.empty) {
         const loaded: ChixTokVideo[] = [];
         snapshot.forEach((docSnap) => {
           loaded.push(docSnap.data() as ChixTokVideo);
         });
-        loaded.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        setVideos(loaded);
-        try {
-          localStorage.setItem('chixtok_videos', JSON.stringify(loaded));
-        } catch (e) {}
+        directChixTokVids = loaded;
       } else {
         // Seed default videos into Firestore if empty
         defaultChixTokVideos.forEach((v) => {
-          setDoc(doc(db, 'chixtok_videos', v.id), v, { merge: true }).catch(() => {});
+          setDoc(doc(db, 'chixtok_videos', v.id), sanitizeForFirestore(v), { merge: true }).catch(() => {});
         });
-        setVideos(defaultChixTokVideos);
+        directChixTokVids = defaultChixTokVideos;
       }
+      updateCombinedVideos();
     }, (error) => {
       console.error("Error listening to chixtok_videos in Firestore:", error);
-      setVideos(getStoredChixTokVideos());
+      directChixTokVids = getStoredChixTokVideos();
+      updateCombinedVideos();
     });
 
-    return () => unsub();
+    // 2. Listen to adverts collection (Approved sponsored video adverts)
+    const unsubAdverts = onSnapshot(collection(db, 'adverts'), (snapshot) => {
+      const ads: ChixTokVideo[] = [];
+      if (!snapshot.empty) {
+        snapshot.forEach((docSnap) => {
+          const adData = docSnap.data();
+          if (adData.status === 'approved') {
+            const videoSource = adData.videoData || adData.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
+            const adVid: ChixTokVideo = {
+              id: `ad-${docSnap.id}`,
+              title: adData.videoName || adData.name || 'Sponsored Video Advert',
+              description: adData.advertLink ? `🔥 SPONSORED ADVERT: ${adData.advertLink}` : (adData.videoName || '🔥 Sponsored Advertisement on Chix9ja'),
+              creatorName: adData.name ? `${adData.name} (Sponsored)` : 'Sponsored Partner',
+              creatorAvatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
+              videoUrl: videoSource,
+              likesCount: 38400,
+              commentsCount: 940,
+              sharesCount: 2100,
+              comments: [
+                {
+                  id: `c-ad-${docSnap.id}-1`,
+                  userName: 'Chix9ja Sponsor Manager',
+                  comment: `Official Sponsored Video Advert. Click to check out: ${adData.advertLink || adData.link || 'https://chix9ja.com'}`,
+                  timeAgo: 'Sponsored',
+                  likesCount: 1540,
+                  isVerified: true
+                }
+              ],
+              createdAt: adData.timestamp || new Date().toISOString(),
+              soundName: '♫ Sponsored Video Advert - Official Partner Sound'
+            };
+            ads.push(adVid);
+          }
+        });
+      }
+      sponsoredAdVids = ads;
+      updateCombinedVideos();
+    }, (error) => {
+      console.error("Error listening to adverts in ChixTok:", error);
+    });
+
+    return () => {
+      unsubChixTok();
+      unsubAdverts();
+    };
   }, []);
 
   const currentVideo = videos[currentIndex] || defaultChixTokVideos[0];

@@ -170,7 +170,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     reader.readAsDataURL(file);
   };
 
-  const handleUploadChixTokVideo = (e: React.FormEvent) => {
+  const handleUploadChixTokVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     const finalUrl = newVidBase64 || newVidUrl || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
     if (!newVidTitle.trim()) {
@@ -234,15 +234,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       soundName: '♫ Chix9ja Official Success Audio - Original Sound'
     };
 
-    const updated = [newVid, ...chixTokVideos];
-    setChixTokVideos(updated);
-    saveChixTokVideos(updated);
+    try {
+      await setDoc(doc(db, 'chixtok_videos', newVid.id), sanitizeForFirestore(newVid), { merge: true });
+      const updated = [newVid, ...chixTokVideos];
+      setChixTokVideos(updated);
+      await saveChixTokVideos(updated);
 
-    setNewVidTitle('');
-    setNewVidDesc('');
-    setNewVidUrl('');
-    setNewVidBase64('');
-    alert("🎉 ChixTok Video Tutorial uploaded successfully with preset 100k+ likes & 6k+ user testimony comments!");
+      setNewVidTitle('');
+      setNewVidDesc('');
+      setNewVidUrl('');
+      setNewVidBase64('');
+      alert("🎉 ChixTok Video Tutorial uploaded successfully to Firestore! All app users can now see this video.");
+    } catch (err) {
+      console.error("Error uploading video to Firestore:", err);
+      alert("Failed to sync video to Firestore: " + (err instanceof Error ? err.message : String(err)));
+    }
   };
 
   const handleDeleteChixTokVideo = async (id: string) => {
@@ -389,8 +395,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const handleResolveAdvert = async (id: string, status: 'approved' | 'declined' | 'stopped') => {
     try {
       await setDoc(doc(db, 'adverts', id), { status }, { merge: true });
+
+      // If approved, sync to chixtok_videos collection so it appears live on ChixTok for all users
+      if (status === 'approved') {
+        const foundAd = pendingAdverts.find(a => a.id === id);
+        if (foundAd) {
+          const videoSource = foundAd.videoData || foundAd.videoUrl || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
+          const adVid: ChixTokVideo = {
+            id: `vid-ad-${id}`,
+            title: foundAd.videoName || foundAd.name || 'Sponsored Video Advert',
+            description: foundAd.advertLink ? `🔥 SPONSORED ADVERT: ${foundAd.advertLink}` : '🔥 Sponsored Advertisement on Chix9ja',
+            creatorName: foundAd.name ? `${foundAd.name} (Sponsored)` : 'Sponsored Partner',
+            creatorAvatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
+            videoUrl: videoSource,
+            likesCount: 38400,
+            commentsCount: 940,
+            sharesCount: 2100,
+            comments: [],
+            createdAt: foundAd.timestamp || new Date().toISOString(),
+            soundName: '♫ Sponsored Video Advert - Official Partner Sound'
+          };
+          await setDoc(doc(db, 'chixtok_videos', adVid.id), sanitizeForFirestore(adVid), { merge: true });
+        }
+      }
+
       let statusLabel = 'Declined';
-      if (status === 'approved') statusLabel = 'Approved & Set Live';
+      if (status === 'approved') statusLabel = 'Approved & Set Live on App & ChixTok';
       if (status === 'stopped') statusLabel = 'Stopped';
       alert(`Advert status updated to: ${statusLabel}!`);
     } catch (err) {
