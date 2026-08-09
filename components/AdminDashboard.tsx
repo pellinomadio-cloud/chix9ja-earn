@@ -417,6 +417,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
           };
           await setDoc(doc(db, 'chixtok_videos', adVid.id), sanitizeForFirestore(adVid), { merge: true });
         }
+      } else {
+        // If declined or stopped, remove from chixtok_videos
+        await deleteDoc(doc(db, 'chixtok_videos', `vid-ad-${id}`)).catch(() => {});
+        await deleteDoc(doc(db, 'chixtok_videos', `ad-${id}`)).catch(() => {});
       }
 
       let statusLabel = 'Declined';

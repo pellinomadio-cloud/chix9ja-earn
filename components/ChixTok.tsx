@@ -255,13 +255,13 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
       updateCombinedVideos();
     });
 
-    // 2. Listen to adverts collection (Sponsored video adverts)
+    // 2. Listen to adverts collection (Approved sponsored video adverts only)
     const unsubAdverts = onSnapshot(collection(db, 'adverts'), (snapshot) => {
       const ads: ChixTokVideo[] = [];
       if (!snapshot.empty) {
         snapshot.forEach((docSnap) => {
           const adData = docSnap.data();
-          if (adData.status !== 'declined' && adData.status !== 'stopped') {
+          if (adData.status === 'approved') {
             const videoSource = adData.videoData || adData.videoUrl || adData.video || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
             const adVid: ChixTokVideo = {
               id: `ad-${docSnap.id}`,

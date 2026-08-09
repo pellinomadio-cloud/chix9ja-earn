@@ -188,40 +188,12 @@ export const AdvertisePage: React.FC<AdvertisePageProps> = ({ user, onBack, onGo
         timestamp: new Date().toISOString()
       };
 
-      // Save to firestore adverts collection
+      // Save to firestore adverts collection (pending status initially)
       const docRef = await addDoc(collection(db, 'adverts'), {
         ...newAd,
         email: user.email,
         name: user.name
       });
-
-      // Also sync directly to chixtok_videos collection in Firestore so all users see it on ChixTok
-      if (videoBase64) {
-        const adVid: ChixTokVideo = {
-          id: `vid-ad-${docRef.id}`,
-          title: videoFile?.name || 'Sponsored Video Advert',
-          description: advertLink.trim() ? `🔥 SPONSORED ADVERT: ${advertLink.trim()}` : '🔥 Sponsored Advertisement on Chix9ja',
-          creatorName: user.name ? `${user.name} (Sponsored)` : 'Sponsored Partner',
-          creatorAvatar: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=150&q=80',
-          videoUrl: videoBase64,
-          likesCount: 38400,
-          commentsCount: 940,
-          sharesCount: 2100,
-          comments: [
-            {
-              id: `c-ad-${docRef.id}-1`,
-              userName: 'Chix9ja Sponsor Manager',
-              comment: `Official Sponsored Video Advert. Click to check out: ${advertLink.trim() || 'https://chix9ja.com'}`,
-              timeAgo: 'Sponsored',
-              likesCount: 1540,
-              isVerified: true
-            }
-          ],
-          createdAt: new Date().toISOString(),
-          soundName: '♫ Sponsored Video Advert - Official Partner Sound'
-        };
-        await setDoc(doc(db, 'chixtok_videos', adVid.id), sanitizeForFirestore(adVid), { merge: true });
-      }
 
       setActiveAd({ id: docRef.id, ...newAd });
       setStep('pending');
