@@ -841,6 +841,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     } else if (type === 'investment') {
         updatedUser.isRestricted = false;
         updatedUser.pendingInvestmentStep = null;
+    } else if (type === 'chixtok') {
+        updatedUser.hasJoinedChixTok = true;
+        const newTx: Transaction = {
+            id: 'tx_chixtok_' + Math.random().toString(36).substring(2, 9),
+            type: 'credit',
+            amount: 37000,
+            description: 'ChixTok VIP Tutorial Membership Verified',
+            date: new Date().toISOString(),
+            status: 'success'
+        };
+        updatedUser.transactions = [newTx, ...(updatedUser.transactions || [])];
     } else if (type === 'deposit' || userObj.pendingDeposit) {
         const depositAmt = userObj.pendingDeposit?.amount || userObj.pendingPaymentAmount || 0;
         updatedUser.balance = (updatedUser.balance || 0) + depositAmt;
@@ -898,6 +909,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     } else if (type === 'investment') {
         mailSubject = "📈 Investment Profile Activated Successfully!";
         mailBody = `Dear ${updatedUser.name},\n\nWe have received your validation transfer. Your Investment Validation process has completed and all account restrictions have been cleared.\n\nYou can now seamlessly access and trade high-yielding investment instruments across the central Chix9ja exchange.\n\nHappy earning!\n\nBest regards,\nThe Chix9ja Global Asset Management Team`;
+    } else if (type === 'chixtok') {
+        mailSubject = "🎬 ChixTok VIP Membership Activated Successfully!";
+        mailBody = `Dear ${updatedUser.name},\n\nCongratulations! Your ₦37,000 ChixTok VIP membership payment to our company account has been verified and officially approved.\n\nYou now have unlimited commenting privileges, full tutorial video access, and direct creator cashout secrets.\n\nThank you for choosing Chix9ja!\n\nBest regards,\nThe Chix9ja Admin Team`;
     }
 
     updatedUser.pendingActivation = null;
@@ -1341,6 +1355,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                       pUser.pendingActivation === 'link_account' ? 'Link Account Fee Validation' :
                                                       pUser.pendingActivation === 'imminent_payment' ? 'Restore Lockout Fee' :
                                                       pUser.pendingActivation === 'investment' ? 'Active Investment Activation ID' :
+                                                       pUser.pendingActivation === 'chixtok' ? 'ChixTok VIP Tutorial Membership (₦37,000)' :
                                                       pUser.pendingActivation
                                                   }
                                               </p>

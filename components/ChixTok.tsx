@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
 import { User, ChixTokVideo, ChixTokComment, Transaction } from '../types';
 import { collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, useBankDetails, syncUserFromLocalToFirestore } from '../firebase';
 
 interface ChixTokProps {
   user: User;
@@ -191,6 +191,10 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [newCommentText, setNewCommentText] = useState('');
   const [isSubmittingJoin, setIsSubmittingJoin] = useState(false);
+  const { bankDetails } = useBankDetails();
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofBase64, setProofBase64] = useState<string | null>(null);
+  const [copiedAccount, setCopiedAccount] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -268,41 +272,57 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
     }
   };
 
-  // Join ChixTok for ₦37,000
-  const handleJoinChixTok = () => {
+  const handleCopyAccount = () => {
+    if (bankDetails.accountNumber) {
+      navigator.clipboard.writeText(bankDetails.accountNumber);
+      setCopiedAccount(true);
+      setTimeout(() => setCopiedAccount(false), 2000);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setProofFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProofBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Join ChixTok for ₦37,000 (Payment to Company Account & Admin Approval)
+  const handleJoinChixTok = async () => {
     const COST = 37000;
-    if (user.balance < COST) {
-      alert(`Insufficient balance! You need ₦${COST.toLocaleString()} to join ChixTok. Your current balance is ₦${user.balance.toLocaleString()}. Please make a deposit.`);
-      if (onNavigateToDeposit) {
-        onNavigateToDeposit();
-      }
+    if (!proofBase64) {
+      alert("Please select and upload your payment transfer receipt to our company account first.");
       return;
     }
 
     setIsSubmittingJoin(true);
 
-    setTimeout(() => {
-      const newTransaction: Transaction = {
-        id: `trx-chixtok-${Date.now()}`,
-        type: 'debit',
-        amount: COST,
-        description: 'ChixTok Video Tutorials VIP Membership Fee',
-        date: new Date().toISOString(),
-        status: 'success'
-      };
-
+    try {
       const updatedUser: User = {
         ...user,
-        balance: user.balance - COST,
-        hasJoinedChixTok: true,
-        transactions: [newTransaction, ...(user.transactions || [])]
+        pendingActivation: 'chixtok',
+        pendingPaymentProof: proofBase64,
+        pendingPaymentAmount: COST,
+        pendingPaymentDate: new Date().toISOString(),
+        lastUploadTimestamp: Date.now()
       };
 
       onUpdateUser(updatedUser);
+      await syncUserFromLocalToFirestore(user.email);
+
       setIsSubmittingJoin(false);
       setShowJoinModal(false);
-      alert('🎉 CONGRATULATIONS! You have successfully joined ChixTok! You now have unlimited commenting privileges & full access to all tutorial secrets!');
-    }, 1200);
+      alert('🎉 Payment receipt submitted successfully! Your ₦37,000 ChixTok VIP membership payment to our company account has been sent to the admin team for verification. Once approved by admin, your commenting privileges will be automatically unlocked.');
+    } catch (err) {
+      console.error("Error submitting ChixTok payment proof:", err);
+      setIsSubmittingJoin(false);
+      alert("An error occurred while submitting payment proof. Please try again.");
+    }
   };
 
   // Post a new comment
@@ -578,22 +598,41 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
             {/* Comment Submission / Membership Requirement Footer */}
             <div className="p-3 bg-zinc-950 border-t border-zinc-800">
               {!user.hasJoinedChixTok ? (
-                <div className="bg-gradient-to-r from-rose-950/60 via-zinc-900 to-amber-950/60 border border-rose-500/40 rounded-xl p-3 space-y-2 text-center shadow-lg">
-                  <div className="flex items-center justify-center space-x-2 text-rose-400">
-                    <Icons.Lock size={16} />
-                    <span className="text-xs font-black uppercase tracking-wider">Comment Privileges Locked</span>
+                user.pendingActivation === 'chixtok' ? (
+                  <div className="bg-gradient-to-r from-amber-950/80 via-zinc-900 to-amber-950/80 border border-amber-500/50 rounded-xl p-3 space-y-2 text-center shadow-lg">
+                    <div className="flex items-center justify-center space-x-2 text-amber-400">
+                      <Icons.Clock size={16} className="animate-spin" />
+                      <span className="text-xs font-black uppercase tracking-wider">Payment Under Verification</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-medium leading-relaxed">
+                      Your <strong className="text-yellow-300">₦37,000</strong> transfer receipt to our company account was received and is awaiting admin approval.
+                    </p>
+                    <button 
+                      onClick={() => setShowJoinModal(true)}
+                      className="w-full py-2.5 rounded-lg bg-zinc-800 border border-amber-500/30 text-amber-300 font-bold text-xs hover:bg-zinc-700 transition flex items-center justify-center space-x-2"
+                    >
+                      <Icons.Eye size={14} />
+                      <span>View Transfer Receipt Status</span>
+                    </button>
                   </div>
-                  <p className="text-[11px] text-zinc-300 font-medium">
-                    You must join <strong className="text-yellow-300">ChixTok (₦37,000)</strong> to drop comments and unlock VIP video secrets.
-                  </p>
-                  <button 
-                    onClick={() => setShowJoinModal(true)}
-                    className="w-full py-2.5 rounded-lg bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600 text-white font-black text-xs shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-2"
-                  >
-                    <Icons.Sparkles size={14} />
-                    <span>Join ChixTok Now for ₦37,000</span>
-                  </button>
-                </div>
+                ) : (
+                  <div className="bg-gradient-to-r from-rose-950/60 via-zinc-900 to-amber-950/60 border border-rose-500/40 rounded-xl p-3 space-y-2 text-center shadow-lg">
+                    <div className="flex items-center justify-center space-x-2 text-rose-400">
+                      <Icons.Lock size={16} />
+                      <span className="text-xs font-black uppercase tracking-wider">Comment Privileges Locked</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 font-medium">
+                      Pay <strong className="text-yellow-300">₦37,000</strong> to company account to join ChixTok & drop comments.
+                    </p>
+                    <button 
+                      onClick={() => setShowJoinModal(true)}
+                      className="w-full py-2.5 rounded-lg bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600 text-white font-black text-xs shadow-md hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-2"
+                    >
+                      <Icons.Sparkles size={14} />
+                      <span>Pay ₦37,000 to Company Account</span>
+                    </button>
+                  </div>
+                )
               ) : (
                 <form onSubmit={handleAddComment} className="flex items-center space-x-2">
                   <input 
@@ -620,48 +659,173 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
 
       {/* JOIN CHIXTOK PAYMENT MODAL */}
       {showJoinModal && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-rose-500/50 rounded-2xl p-6 max-w-sm w-full space-y-5 text-center shadow-2xl relative overflow-hidden">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-500 to-amber-400 p-0.5 mx-auto flex items-center justify-center shadow-[0_0_25px_rgba(244,63,94,0.5)] animate-pulse">
-              <div className="w-full h-full bg-black rounded-full flex items-center justify-center text-rose-400">
-                <Icons.Video size={30} />
-              </div>
-            </div>
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-zinc-900 border border-rose-500/50 rounded-2xl p-6 max-w-md w-full space-y-5 text-center shadow-2xl relative overflow-hidden my-auto">
+            
+            {user.pendingActivation === 'chixtok' ? (
+              <div className="space-y-4">
+                <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/50 p-0.5 mx-auto flex items-center justify-center text-amber-400">
+                  <Icons.Clock size={32} className="animate-spin" />
+                </div>
 
-            <div className="space-y-1">
-              <h3 className="text-lg font-black text-white tracking-wide">Join ChixTok Tutorials</h3>
-              <p className="text-xs text-zinc-400 font-medium">
-                Unlock full video commenting, direct creator strategy guides, and VIP cashout secrets.
-              </p>
-            </div>
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-white tracking-wide">Payment Proof Submitted</h3>
+                  <p className="text-xs text-amber-300 font-semibold">
+                    Awaiting Administrator Approval
+                  </p>
+                </div>
 
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-center space-y-1">
-              <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest block">One-time Joining Fee</span>
-              <span className="text-2xl font-black text-yellow-400 font-mono">₦37,000</span>
-              <div className="text-[10px] text-emerald-400 font-semibold pt-1">
-                Your Balance: ₦{user.balance.toLocaleString()}
-              </div>
-            </div>
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-left space-y-2 text-xs">
+                  <div className="flex justify-between border-b border-zinc-800 pb-2">
+                    <span className="text-zinc-400">Package:</span>
+                    <span className="font-bold text-white">ChixTok VIP Joining Fee</span>
+                  </div>
+                  <div className="flex justify-between border-b border-zinc-800 pb-2">
+                    <span className="text-zinc-400">Amount Paid:</span>
+                    <span className="font-bold text-yellow-400 font-mono">₦37,000</span>
+                  </div>
+                  <div className="flex justify-between pb-1">
+                    <span className="text-zinc-400">Submitted On:</span>
+                    <span className="font-mono text-zinc-300">
+                      {user.pendingPaymentDate ? new Date(user.pendingPaymentDate).toLocaleString() : 'Recently'}
+                    </span>
+                  </div>
+                </div>
 
-            <div className="flex space-x-3 pt-2">
-              <button 
-                onClick={() => setShowJoinModal(false)}
-                className="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-xs hover:bg-zinc-700 transition"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleJoinChixTok}
-                disabled={isSubmittingJoin}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600 text-white font-black text-xs shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1"
-              >
-                {isSubmittingJoin ? (
-                  <span className="animate-spin text-white">⏳</span>
-                ) : (
-                  <span>Pay ₦37,000 to Join</span>
+                {user.pendingPaymentProof && (
+                  <div className="space-y-1 text-left">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block">Uploaded Transfer Receipt</span>
+                    <div className="p-2 bg-zinc-950 border border-zinc-800 rounded-xl max-h-48 overflow-hidden flex items-center justify-center">
+                      <img src={user.pendingPaymentProof} alt="Payment Receipt" className="max-h-40 object-contain rounded-lg" />
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
+
+                <div className="p-3 bg-amber-950/30 border border-amber-500/30 rounded-xl text-left text-[11px] text-amber-200/90 leading-relaxed">
+                  <strong>Notice:</strong> Your payment receipt has been submitted directly to the Chix9ja admin queue. Admin will verify the transfer to the company account and approve your VIP membership shortly.
+                </div>
+
+                <button 
+                  onClick={() => setShowJoinModal(false)}
+                  className="w-full py-3 rounded-xl bg-zinc-800 text-white font-bold text-xs hover:bg-zinc-700 transition"
+                >
+                  Close & Wait for Approval
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-rose-500 to-amber-400 p-0.5 mx-auto flex items-center justify-center shadow-[0_0_25px_rgba(244,63,94,0.5)]">
+                  <div className="w-full h-full bg-black rounded-full flex items-center justify-center text-rose-400">
+                    <Icons.Video size={26} />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black text-white tracking-wide">Join ChixTok VIP</h3>
+                  <p className="text-xs text-zinc-400 font-medium">
+                    Pay ₦37,000 to the official company account below and upload your transfer receipt for admin approval.
+                  </p>
+                </div>
+
+                {/* Company Bank Details Card */}
+                <div className="bg-zinc-950 border border-rose-500/30 rounded-xl p-4 text-left space-y-2.5 relative">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1">
+                      <Icons.Building size={12} />
+                      Company Account Details
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-yellow-400 bg-yellow-950/40 px-2 py-0.5 rounded border border-yellow-500/30">
+                      ₦37,000
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-[11px]">Bank Name:</span>
+                      <span className="font-bold text-white">{bankDetails.bankName || 'Paga'}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-[11px]">Account Number:</span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-mono font-bold text-yellow-300 text-sm tracking-wider">{bankDetails.accountNumber || '0435119272'}</span>
+                        <button 
+                          onClick={handleCopyAccount}
+                          className="px-2 py-1 rounded bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 text-[10px] font-bold flex items-center gap-1 transition"
+                        >
+                          {copiedAccount ? <Icons.Check size={12} /> : <Icons.Copy size={12} />}
+                          <span>{copiedAccount ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-zinc-400 text-[11px]">Account Name:</span>
+                      <span className="font-bold text-zinc-200 text-right text-[11px] truncate max-w-[180px]">{bankDetails.accountName || 'Marvelous Michael O'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* File Upload Section */}
+                <div className="space-y-2 text-left">
+                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider block">
+                    Upload Payment Receipt / Proof of Transfer:
+                  </label>
+                  
+                  <div className="relative border-2 border-dashed border-zinc-700 hover:border-rose-500/60 rounded-xl p-3 text-center bg-zinc-950/60 transition cursor-pointer">
+                    <input 
+                      type="file" 
+                      accept="image/*,.pdf" 
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    {proofFile ? (
+                      <div className="space-y-1">
+                        <div className="text-xs font-bold text-emerald-400 flex items-center justify-center gap-1">
+                          <Icons.CheckCircle size={14} />
+                          <span className="truncate max-w-[200px]">{proofFile.name}</span>
+                        </div>
+                        {proofBase64 && (
+                          <img src={proofBase64} alt="Receipt preview" className="max-h-24 mx-auto rounded border border-zinc-800 object-contain mt-1" />
+                        )}
+                        <span className="text-[10px] text-zinc-400 block">Click to change file</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-1 py-1">
+                        <Icons.Upload size={20} className="mx-auto text-zinc-400" />
+                        <span className="text-xs text-zinc-300 font-bold block">Select Payment Receipt</span>
+                        <span className="text-[10px] text-zinc-500 block">PNG, JPG, JPEG or PDF format</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-zinc-950/80 border border-zinc-800 rounded-xl text-left text-[10px] text-zinc-400 leading-relaxed">
+                  💡 Transfers must be sent to the company bank account listed above. Once uploaded, admin will verify and approve your membership.
+                </div>
+
+                <div className="flex space-x-3 pt-1">
+                  <button 
+                    onClick={() => setShowJoinModal(false)}
+                    className="flex-1 py-3 rounded-xl bg-zinc-800 text-zinc-400 font-bold text-xs hover:bg-zinc-700 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleJoinChixTok}
+                    disabled={isSubmittingJoin || !proofBase64}
+                    className="flex-1 py-3 rounded-xl bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600 text-white font-black text-xs shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingJoin ? (
+                      <span className="animate-spin text-white">⏳</span>
+                    ) : (
+                      <span>Submit for Admin Approval</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}

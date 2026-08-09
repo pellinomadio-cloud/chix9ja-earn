@@ -94,7 +94,7 @@ export interface User {
   referralCount?: number;
   vipTier?: 'vip1' | 'vip2' | 'vip3' | null;
   vipActivationTimestamp?: number;
-  pendingActivation?: 'subscription_weekly' | 'subscription_monthly' | 'subscription_quarterly' | 'subscription_yearly' | 'subscription_promo' | 'vip' | 'vip1' | 'vip2' | 'vip3' | 'link_account' | 'investment' | 'imminent_payment' | 'deposit' | null;
+  pendingActivation?: 'subscription_weekly' | 'subscription_monthly' | 'subscription_quarterly' | 'subscription_yearly' | 'subscription_promo' | 'vip' | 'vip1' | 'vip2' | 'vip3' | 'link_account' | 'investment' | 'imminent_payment' | 'deposit' | 'chixtok' | null;
   pendingDeposit?: { id?: string; userEmail?: string; userName?: string; amount: number; paymentProof: string; status: 'pending' | 'approved' | 'declined'; date: string; timestamp?: number } | null;
   pendingPaymentProof?: string; // Base64 string representing the uploaded image
   pendingPaymentDate?: string; // ISO String of when proof was uploaded
