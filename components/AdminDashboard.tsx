@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Icons } from './Icons';
-import { User, Transaction } from '../types';
+import { User, Transaction, ChixTokVideo } from '../types';
+import { getStoredChixTokVideos, saveChixTokVideos } from './ChixTok';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
 import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle } from 'lucide-react';
@@ -126,7 +127,115 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [searchEmail, setSearchEmail] = useState('');
   const [showPendingSubPage, setShowPendingSubPage] = useState(false);
   const [showAdvertsSubPage, setShowAdvertsSubPage] = useState(false);
+  const [showChixTokSubPage, setShowChixTokSubPage] = useState(false);
+  const [chixTokVideos, setChixTokVideos] = useState<ChixTokVideo[]>([]);
+  const [newVidTitle, setNewVidTitle] = useState('');
+  const [newVidDesc, setNewVidDesc] = useState('');
+  const [newVidCreator, setNewVidCreator] = useState('Chix9ja Official Tutorials');
+  const [newVidUrl, setNewVidUrl] = useState('');
+  const [newVidBase64, setNewVidBase64] = useState('');
   const [pendingAdverts, setPendingAdverts] = useState<any[]>([]);
+
+  useEffect(() => {
+    setChixTokVideos(getStoredChixTokVideos());
+  }, []);
+
+  const handleChixTokFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('video/')) {
+      alert("Please select a valid video file!");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewVidBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleUploadChixTokVideo = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalUrl = newVidBase64 || newVidUrl || 'https://assets.mixkit.co/videos/preview/mixkit-hands-counting-money-41221-large.mp4';
+    if (!newVidTitle.trim()) {
+      alert("Please enter a video title!");
+      return;
+    }
+
+    const newVid: ChixTokVideo = {
+      id: `vid-admin-${Date.now()}`,
+      title: newVidTitle.trim(),
+      description: newVidDesc.trim() || '#Chix9ja #ChixTok #FinancialFreedom #CashoutProof',
+      creatorName: newVidCreator.trim() || 'Chix9ja Admin Tutorials',
+      creatorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+      videoUrl: finalUrl,
+      likesCount: Math.floor(Math.random() * 40000) + 115000, // over 100k
+      commentsCount: Math.floor(Math.random() * 2000) + 6200, // over 6k
+      sharesCount: Math.floor(Math.random() * 8000) + 12000,
+      comments: [
+        {
+          id: `c-preset-${Date.now()}-1`,
+          userName: 'Chioma Okereke',
+          comment: 'I followed step 2 and cashed out ₦350,000 straight to my Access Bank account! This works 100%! 🔥🔥',
+          timeAgo: '1h ago',
+          likesCount: 1420,
+          isVerified: true
+        },
+        {
+          id: `c-preset-${Date.now()}-2`,
+          userName: 'Babajide Adebayo',
+          comment: 'ChixTok tutorials are pure gold. Made ₦180k in my first week! Thank you admin 🙏',
+          timeAgo: '2h ago',
+          likesCount: 980,
+          isVerified: false
+        },
+        {
+          id: `c-preset-${Date.now()}-3`,
+          userName: 'Zainab Ibrahim',
+          comment: 'The ₦37,000 ChixTok access fee is the best investment I ever made. Already up ₦800,000!',
+          timeAgo: '3h ago',
+          likesCount: 2310,
+          isVerified: true
+        },
+        {
+          id: `c-preset-${Date.now()}-4`,
+          userName: 'Emeka Nwosu',
+          comment: 'Received my ₦500k bank alert 5 minutes ago! Followed the video instructions step by step 🚀',
+          timeAgo: '4h ago',
+          likesCount: 1850,
+          isVerified: true
+        },
+        {
+          id: `c-preset-${Date.now()}-5`,
+          userName: 'Blessing Egwu',
+          comment: 'God bless Chix9ja! Instant withdrawal cleared to GTBank without stress 💯',
+          timeAgo: '5h ago',
+          likesCount: 1120,
+          isVerified: false
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      soundName: '♫ Chix9ja Official Success Audio - Original Sound'
+    };
+
+    const updated = [newVid, ...chixTokVideos];
+    setChixTokVideos(updated);
+    saveChixTokVideos(updated);
+
+    setNewVidTitle('');
+    setNewVidDesc('');
+    setNewVidUrl('');
+    setNewVidBase64('');
+    alert("🎉 ChixTok Video Tutorial uploaded successfully with preset 100k+ likes & 6k+ user testimony comments!");
+  };
+
+  const handleDeleteChixTokVideo = (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this ChixTok video?")) return;
+    const updated = chixTokVideos.filter(v => v.id !== id);
+    setChixTokVideos(updated);
+    saveChixTokVideos(updated);
+    alert("Video deleted successfully.");
+  };
   const [visibleUsersCount, setVisibleUsersCount] = useState(30);
   const [inviteUserEmail, setInviteUserEmail] = useState<string | null>(null);
   const [customInviteMsg, setCustomInviteMsg] = useState('');
@@ -1406,6 +1515,164 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
     );
   }
 
+  if (showChixTokSubPage) {
+    return (
+      <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans relative overflow-hidden animate-in fade-in duration-200">
+          <div className="absolute top-0 right-1/4 w-96 h-96 bg-rose-500/5 rounded-full blur-[140px] pointer-events-none" />
+          <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 relative z-10">
+              
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-800/80 pb-6">
+                  <div className="space-y-1 text-left">
+                      <div className="flex items-center space-x-2.5">
+                          <span className="h-2 w-2 bg-rose-500 rounded-full animate-pulse" />
+                          <span className="text-[9px] font-mono font-black uppercase text-rose-400 tracking-widest block bg-rose-950/40 border border-rose-500/20 px-2 py-0.5 rounded-md">
+                              ChixTok Video Tutorial Manager
+                          </span>
+                      </div>
+                      <h2 className="text-3xl font-black text-white tracking-wider uppercase font-mono">
+                          ChixTok <span className="text-rose-500">Video Tutorials</span>
+                      </h2>
+                      <p className="text-xs text-zinc-400 font-medium">Upload any amount of video tutorials. Every uploaded video automatically features 100k+ likes & 6k+ user testimony comments!</p>
+                  </div>
+
+                  <button 
+                      onClick={() => setShowChixTokSubPage(false)}
+                      className="py-2.5 px-4 bg-zinc-900 hover:bg-zinc-800 text-white border border-zinc-800 text-xs font-bold uppercase tracking-wider rounded-xl transition-all active:scale-95 flex items-center space-x-1.5 self-start sm:self-auto"
+                  >
+                      <span>← Back to Command Center</span>
+                  </button>
+              </div>
+
+              {/* Upload Form */}
+              <form onSubmit={handleUploadChixTokVideo} className="bg-zinc-900/60 border border-rose-500/30 rounded-2xl p-6 space-y-4 shadow-xl relative overflow-hidden">
+                <div className="flex items-center space-x-2 border-b border-zinc-800 pb-3">
+                  <Icons.Video size={20} className="text-rose-500" />
+                  <h3 className="font-black text-white text-sm uppercase tracking-wide">Upload New ChixTok Tutorial Video</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Tutorial Title</label>
+                    <input 
+                      type="text" 
+                      value={newVidTitle}
+                      onChange={(e) => setNewVidTitle(e.target.value)}
+                      placeholder="e.g. Secret ₦500k Daily Cashout Strategy"
+                      className="w-full bg-zinc-950 border border-zinc-800 text-white text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500 font-medium"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Creator / Author Name</label>
+                    <input 
+                      type="text" 
+                      value={newVidCreator}
+                      onChange={(e) => setNewVidCreator(e.target.value)}
+                      placeholder="Chix9ja Official Tutorials"
+                      className="w-full bg-zinc-950 border border-zinc-800 text-white text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Video Caption & Hashtags</label>
+                  <textarea 
+                    value={newVidDesc}
+                    onChange={(e) => setNewVidDesc(e.target.value)}
+                    placeholder="e.g. Step by step guide to instant withdrawals! #Chix9ja #ChixTok #CashoutProof"
+                    rows={2}
+                    className="w-full bg-zinc-950 border border-zinc-800 text-white text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500 font-medium"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Option A: Upload Local Video File</label>
+                    <input 
+                      type="file" 
+                      accept="video/*"
+                      onChange={handleChixTokFileSelect}
+                      className="w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-rose-500/20 file:text-rose-400 hover:file:bg-rose-500/30 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Option B: Direct Video URL (.mp4)</label>
+                    <input 
+                      type="url" 
+                      value={newVidUrl}
+                      onChange={(e) => setNewVidUrl(e.target.value)}
+                      placeholder="https://example.com/tutorial.mp4"
+                      className="w-full bg-zinc-950 border border-zinc-800 text-white text-xs rounded-xl p-3 focus:outline-none focus:border-rose-500 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-rose-500 via-amber-500 to-rose-600 text-white font-black text-xs uppercase tracking-wider shadow-lg hover:brightness-110 active:scale-95 transition flex items-center justify-center space-x-2"
+                >
+                  <Icons.Upload size={16} />
+                  <span>Publish Tutorial Video to ChixTok (Auto Preset 100k+ Likes & 6k+ Comments)</span>
+                </button>
+              </form>
+
+              {/* Uploaded Videos List */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-black text-white uppercase tracking-wider flex items-center space-x-2">
+                  <span>Uploaded ChixTok Videos ({chixTokVideos.length})</span>
+                </h3>
+
+                {chixTokVideos.length === 0 ? (
+                  <div className="p-8 text-center bg-zinc-950/60 border border-zinc-800 rounded-2xl text-zinc-500 text-xs font-mono">
+                    No videos uploaded yet. Use the form above to add your first ChixTok tutorial video!
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {chixTokVideos.map((vid) => (
+                      <div key={vid.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-3 relative flex flex-col justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-mono text-rose-400 font-bold bg-rose-950/60 border border-rose-500/30 px-2 py-0.5 rounded-md uppercase">
+                              @{vid.creatorName}
+                            </span>
+                            <span className="text-[10px] font-mono text-zinc-500">
+                              {new Date(vid.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          <h4 className="font-bold text-white text-sm leading-snug">{vid.title}</h4>
+                          <p className="text-xs text-zinc-400 line-clamp-2">{vid.description}</p>
+
+                          <div className="flex items-center space-x-4 text-[11px] font-mono text-zinc-400 pt-1">
+                            <span className="text-rose-400 font-bold">❤️ {(vid.likesCount / 1000).toFixed(1)}K Likes</span>
+                            <span className="text-amber-400 font-bold">💬 {(vid.commentsCount / 1000).toFixed(1)}K Comments</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-zinc-800/80 flex justify-between items-center">
+                          <span className="text-[10px] text-zinc-500 font-mono truncate max-w-[200px]">{vid.videoUrl}</span>
+                          <button 
+                            onClick={() => handleDeleteChixTokVideo(vid.id)}
+                            className="px-3 py-1.5 bg-rose-950 hover:bg-rose-900 text-rose-400 border border-rose-500/30 rounded-lg text-xs font-bold uppercase transition active:scale-95 flex items-center space-x-1"
+                          >
+                            <Trash size={12} />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+          </div>
+      </div>
+    );
+  }
+
   if (showAdvertsSubPage) {
     return (
       <div className="min-h-screen bg-black text-zinc-200 pb-24 font-sans relative overflow-hidden animate-in fade-in duration-200">
@@ -1707,6 +1974,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     <div className="absolute right-3.5 bottom-3 text-fuchsia-500/5 group-hover:text-fuchsia-500/20 transition-all">
                         <span className="text-fuchsia-500 opacity-20 group-hover:opacity-100 transition-opacity">
                             <Icons.Megaphone size={28} />
+                        </span>
+                    </div>
+                </button>
+
+                <button 
+                    onClick={() => setShowChixTokSubPage(true)}
+                    className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(244,63,94,0.02)] relative overflow-hidden hover:border-rose-500/50 hover:bg-zinc-900 transition-all text-left w-full cursor-pointer group"
+                >
+                    <span className="text-[9px] font-bold text-zinc-400 group-hover:text-rose-400 uppercase tracking-widest block font-mono font-bold">ChixTok Videos</span>
+                    <span className="text-2xl font-black text-rose-400 font-mono block mt-1 flex items-center gap-1.5">
+                        {chixTokVideos.length}
+                    </span>
+                    <span className="text-[9.5px] text-zinc-500 font-mono mt-1 block group-hover:text-rose-400">Upload & Manage →</span>
+                    <div className="absolute right-3.5 bottom-3 text-rose-500/5 group-hover:text-rose-500/20 transition-all">
+                        <span className="text-rose-500 opacity-20 group-hover:opacity-100 transition-opacity">
+                            <Icons.Video size={28} />
                         </span>
                     </div>
                 </button>

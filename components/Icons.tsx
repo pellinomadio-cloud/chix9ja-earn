@@ -64,7 +64,17 @@ import {
   Hash,
   Users,
   Megaphone,
-  Sparkles
+  Sparkles,
+  Video,
+  Play,
+  Pause,
+  Heart,
+  MessageSquare,
+  Volume2,
+  VolumeX,
+  Plus,
+  Bookmark,
+  Music
 } from 'lucide-react';
 
 // Exporting icons for easy import elsewhere
@@ -139,5 +149,15 @@ export const Icons = {
   Hash,
   Users,
   Megaphone,
-  Sparkles
+  Sparkles,
+  Video,
+  Play,
+  Pause,
+  Heart,
+  MessageSquare,
+  Volume2,
+  VolumeX,
+  Plus,
+  Bookmark,
+  Music
 };

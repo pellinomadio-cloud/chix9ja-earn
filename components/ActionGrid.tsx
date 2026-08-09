@@ -15,7 +15,7 @@ const bottomGridItems: MenuItem[] = [
   { id: 'invest', label: 'Invest', icon: Icons.Invest, color: 'text-amber-400' },
   { id: 'support', label: 'Support', icon: Icons.Support, color: 'text-blue-500' },
   { id: 'free_withdraw', label: 'Task', icon: Icons.Gift, color: 'text-orange-500 dark:text-orange-400', badge: 'Unlock' },
-  { id: 'business', label: 'My Business Hub', icon: Icons.Business, color: 'text-blue-600 dark:text-blue-400' },
+  { id: 'business', label: 'ChixTok Tutorials', icon: Icons.Video, color: 'text-rose-500 dark:text-rose-400 font-bold', badge: 'HOT' },
   { id: 'advertise', label: 'Advertise', icon: Icons.Megaphone, color: 'text-fuchsia-500' },
   { id: 'upgrade', label: 'VIP', icon: Icons.Upgrade, color: 'text-amber-500 dark:text-amber-400' },
   { id: 'ux-trade', label: 'UX-Trade', icon: Icons.Invest, color: 'text-green-glow font-bold' },

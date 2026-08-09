@@ -29,6 +29,7 @@ import TaskPage from "./components/TaskPage";
 import UpgradeProposal from "./components/UpgradeProposal";
 import UpgradePayment from "./components/UpgradePayment";
 import BusinessHub from "./components/BusinessHub";
+import ChixTok from "./components/ChixTok";
 import LinkWithdrawAccount from "./components/LinkWithdrawAccount";
 import HowItWorks from "./components/HowItWorks";
 import NotificationFeed from "./components/NotificationFeed";
@@ -1547,7 +1548,7 @@ const App: React.FC = () => {
     advertise: "Advertise Campaign",
     loan: "UX-Trade Desk",
     "ux-trade": "UX-Trade Desk",
-    finance: "Business Hub",
+    finance: "ChixTok Tutorials",
     reward: "Rewards",
     me: "My Profile",
     referrals: "Referrals Control",
@@ -1568,7 +1569,8 @@ const App: React.FC = () => {
           : "Tasks",
     upgrade_proposal: "VIP Membership",
     upgrade_payment: "Confirm VIP Status",
-    business_hub: "Business Hub",
+    business_hub: "ChixTok Tutorials",
+    chixtok: "ChixTok Tutorials",
     notifications: "Feed",
     receipt: "Receipt",
     link_withdraw_account: "Account Hosting",
@@ -1890,12 +1892,15 @@ const App: React.FC = () => {
                 onPaymentComplete={handlePaymentComplete}
                 onBack={() => setActiveTab("upgrade_proposal")}
               />
-            ) : (activeTab === "business_hub" || activeTab === "finance") &&
+            ) : (activeTab === "business_hub" || activeTab === "finance" || activeTab === "chixtok") &&
               user ? (
-              <BusinessHub
+              <ChixTok
                 user={user}
-                onVipWithdraw={handleVipWithdraw}
-                onLinkAccountClick={() => setActiveTab("link_withdraw_account")}
+                onUpdateUser={(updated) => {
+                  setUser(updated);
+                  saveUserToStorage(updated);
+                }}
+                onNavigateToDeposit={() => setActiveTab("deposit")}
                 onBack={handleBack}
               />
             ) : activeTab === "link_withdraw_account" && user ? (

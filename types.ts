@@ -108,7 +108,33 @@ export interface User {
   tradeProfitUsd?: number;
   deviceId?: string;
   hasJoinedTelegram?: boolean;
+  hasJoinedChixTok?: boolean;
   supportTickets?: { id: string; subject: string; message: string; date: string; status: string; reply?: string }[];
+}
+
+export interface ChixTokComment {
+  id: string;
+  userName: string;
+  userAvatar?: string;
+  comment: string;
+  timeAgo: string;
+  likesCount: number;
+  isVerified?: boolean;
+}
+
+export interface ChixTokVideo {
+  id: string;
+  title: string;
+  description: string;
+  creatorName: string;
+  creatorAvatar?: string;
+  videoUrl: string;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  comments: ChixTokComment[];
+  createdAt: string;
+  soundName?: string;
 }
 
 export interface Plan {
