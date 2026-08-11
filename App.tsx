@@ -588,17 +588,6 @@ const App: React.FC = () => {
         };
         setUser(updatedUser);
         saveUserToStorage(updatedUser);
-      } else {
-        const updatedUser = {
-          ...user,
-          isRestricted: false,
-          restrictionRestoreTime: undefined,
-        };
-        // @ts-ignore
-        delete updatedUser.restrictionType;
-
-        setUser(updatedUser);
-        saveUserToStorage(updatedUser);
       }
     }
   }, [now, user]);
@@ -1789,6 +1778,7 @@ const App: React.FC = () => {
         restoreTime={user.restrictionRestoreTime}
         customRecoveryCode={user.banRecoveryCode}
         onRestore={handleManualRestore}
+        vendorTelegramLink={channels.vendorTelegram}
       />
     );
   }
