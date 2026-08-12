@@ -6,42 +6,19 @@ interface ProfileProps {
   user: User;
   onUpdateProfile: (updatedUser: Partial<User>) => void;
   onLinkAccountClick: () => void;
+  onCardClearanceClick?: () => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
   onLogout: () => void;
   vendorTelegramLink?: string;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountClick, darkMode, toggleDarkMode, onLogout, vendorTelegramLink }) => {
+const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountClick, onCardClearanceClick, darkMode, toggleDarkMode, onLogout, vendorTelegramLink }) => {
   const [name, setName] = useState(user.name);
   const [isEditing, setIsEditing] = useState(false);
-  const [cvcCode, setCvcCode] = useState('');
-  const [cvcMessage, setCvcMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleApplyCvc = () => {
-    if (cvcCode.toUpperCase() === 'MK987') {
-      const isUsed = localStorage.getItem('chix9ja_cvc_used');
-      if (isUsed) {
-        setCvcMessage({ text: 'This code has already been used on this device.', type: 'error' });
-      } else {
-        onUpdateProfile({ 
-          isVMode: true,
-          isPMode: true,
-          vModeSubscriptionUsed: false,
-          vModeVipUsed: false,
-          vModeInvestmentUsed: false,
-          deactivationDate: Date.now() + 86400000 // 24 hours
-        });
-        localStorage.setItem('chix9ja_cvc_used', 'true');
-        setCvcMessage({ text: 'CVC code applied! V Mode & P Mode are now active.', type: 'success' });
-        setCvcCode('');
-      }
-    } else {
-      setCvcMessage({ text: 'Invalid CVC code.', type: 'error' });
-    }
-    setTimeout(() => setCvcMessage(null), 5000);
-  };
+  const isVipMember = Boolean(user.isVIP || user.vipTier);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -173,38 +150,30 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountC
           </div>
         )}
 
-        {/* CVC Code Section */}
-        <div className="flex flex-col py-3 border-t border-gray-800">
-          <div className="flex items-center space-x-3 mb-3">
-            <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-500">
-                <Icons.Lock size={20} />
-            </div>
-            <div className="flex-1">
-              <p className="text-xs text-gray-500 mb-0.5">Activation Code (CVC)</p>
-              <p className="text-[10px] text-gray-600">Enter your card verification code to activate V Mode</p>
-            </div>
-          </div>
-          <div className="flex space-x-2">
-            <input 
-              type="text" 
-              placeholder="Enter CVC"
-              value={cvcCode}
-              onChange={(e) => setCvcCode(e.target.value)}
-              className="flex-1 p-2 border border-gray-800 rounded-xl text-sm bg-black text-white focus:ring-2 focus:ring-green-glow outline-none"
-            />
+        {/* VIP Bank Payment Card Clearance Button */}
+        {isVipMember && (
+          <div className="py-2 border-t border-gray-800/50 mt-1 pt-3 animate-in fade-in duration-300">
             <button 
-              onClick={handleApplyCvc}
-              className="px-6 py-2 bg-green-glow text-black font-bold text-xs rounded-xl shadow-lg active:scale-95 transition-all"
+              onClick={onCardClearanceClick}
+              className="w-full p-4 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-600/15 border border-amber-500/40 rounded-2xl flex items-center justify-between group hover:border-amber-400 transition-all active:scale-[0.98] shadow-lg shadow-amber-950/20"
             >
-              ACTIVATE
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl text-black font-extrabold group-hover:scale-110 transition-transform shadow-md">
+                  <Icons.Card size={20} />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-black text-amber-300 leading-tight">
+                    {user.cardClearance ? 'Update Bank Payment Card Clearance' : 'Add Bank Payment Card for Clearance'}
+                  </p>
+                  <p className="text-[10px] text-amber-500/90 font-bold uppercase tracking-wider">
+                    {user.cardClearance ? '✓ Clearance Details Submitted' : 'Required for VIP Cashout'}
+                  </p>
+                </div>
+              </div>
+              <Icons.ChevronRight size={18} className="text-amber-400" />
             </button>
           </div>
-          {cvcMessage && (
-            <p className={`mt-2 text-[10px] font-bold ${cvcMessage.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-              {cvcMessage.text}
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Actions */}
