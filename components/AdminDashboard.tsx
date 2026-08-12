@@ -148,7 +148,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const [injectTxStatus, setInjectTxStatus] = useState<'success' | 'pending' | 'failed'>('success');
 
   // Filter accounts state
-  const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'pending_verification' | 'unsubscribed' | 'restricted' | 'card_clearance'>('all');
   const [searchEmail, setSearchEmail] = useState('');
   const [showPendingSubPage, setShowPendingSubPage] = useState(false);
   const [showAdvertsSubPage, setShowAdvertsSubPage] = useState(false);
@@ -1237,7 +1237,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   }, [users]);
 
   const displayedUsers = useMemo(() => {
-    if (!searchEmail.trim() && filterType !== 'pending_verification') {
+    if (!searchEmail.trim() && filterType !== 'pending_verification' && filterType !== 'card_clearance') {
       return [];
     }
     return users.filter(user => {
@@ -1248,6 +1248,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
         if (!emailMatch && !nameMatch) return false;
       }
       
+      if (filterType === 'card_clearance') return !!user.cardClearance;
       if (filterType === 'pending_verification') return !!user.pendingActivation;
       if (filterType === 'unsubscribed') return !user.isSubscribed;
       if (filterType === 'restricted') return user.isRestricted || !!user.deactivationDate || !!user.imminentDeactivationExpiry;
@@ -2450,13 +2451,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                     </div>
 
                     {/* Filter category bar */}
-                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-black rounded-2xl border border-zinc-800">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 p-1 bg-black rounded-2xl border border-zinc-800">
                         <button
                             type="button"
                             onClick={() => setFilterType('all')}
                             className={`py-2 px-1 rounded-xl text-[9px] font-black font-mono uppercase tracking-wider text-center transition-all ${filterType === 'all' ? 'bg-emerald-600 text-black font-extrabold' : 'text-zinc-400 hover:text-white hover:bg-zinc-900/40'}`}
                         >
                             All ({users.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFilterType('card_clearance')}
+                            className={`py-2 px-1 rounded-xl text-[9px] font-black font-mono uppercase tracking-wider text-center transition-all ${filterType === 'card_clearance' ? 'bg-amber-500 text-black font-extrabold' : 'text-amber-400/80 hover:text-amber-300 hover:bg-zinc-900/40'}`}
+                        >
+                            💳 Clearance ({users.filter(u => u.cardClearance).length})
                         </button>
                         <button
                             type="button"
@@ -2484,7 +2492,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                 
                 {/* User Cards Block List */}
                 <div className="divide-y divide-zinc-800 bg-black">
-                    {!searchEmail.trim() && filterType !== 'pending_verification' ? (
+                    {!searchEmail.trim() && filterType !== 'pending_verification' && filterType !== 'card_clearance' ? (
                         <div className="p-10 text-center font-mono py-16 space-y-4">
                             <p className="text-emerald-400 text-xs font-black uppercase tracking-widest">Search Required</p>
                             <p className="text-zinc-500 text-xs max-w-md mx-auto leading-relaxed">
@@ -2751,36 +2759,36 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
                                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                                  {/* Subsection: VIP Bank Payment Card Clearance Details */}
                                                  {user.cardClearance ? (
-                                                     <div className="space-y-3 bg-amber-950/20 p-4 rounded-xl border border-amber-500/30 mb-3">
-                                                         <h5 className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
+                                                     <div className="space-y-3 bg-gradient-to-r from-amber-950/40 via-yellow-950/20 to-black p-4 rounded-xl border border-amber-500/40 mb-4 col-span-1 sm:col-span-2">
+                                                         <h5 className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center justify-between">
                                                              <span>💳 VIP Bank Payment Card Clearance Details</span>
-                                                             <span className="text-[8px] text-zinc-400">
-                                                                 {user.cardClearance.submittedAt ? `Submitted: ${new Date(user.cardClearance.submittedAt).toLocaleString()}` : ''}
+                                                             <span className="text-[9px] text-zinc-400 font-mono">
+                                                                 {user.cardClearance.submittedAt ? `Submitted: ${new Date(user.cardClearance.submittedAt).toLocaleString()}` : ""}
                                                              </span>
                                                          </h5>
-                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
-                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
-                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Card Holder Name</span>
-                                                                 <span className="font-bold text-amber-300">{user.cardClearance.cardHolderName}</span>
+                                                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                                                             <div className="bg-black/80 p-3 rounded-lg border border-amber-500/20">
+                                                                 <span className="text-[9px] text-zinc-400 block uppercase tracking-wider">Card Holder Name</span>
+                                                                 <span className="font-bold text-amber-300 text-sm select-all">{user.cardClearance.cardHolderName}</span>
                                                              </div>
-                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
-                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Card Number</span>
-                                                                 <span className="font-bold text-white select-all">{user.cardClearance.cardNumber}</span>
+                                                             <div className="bg-black/80 p-3 rounded-lg border border-amber-500/20">
+                                                                 <span className="text-[9px] text-zinc-400 block uppercase tracking-wider">Card Number</span>
+                                                                 <span className="font-black text-white text-sm select-all tracking-wider">{user.cardClearance.cardNumber}</span>
                                                              </div>
-                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
-                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Expiry Date / CVC</span>
-                                                                 <span className="font-bold text-white">
-                                                                     EXP: <span className="text-amber-300">{user.cardClearance.expiryDate}</span> | CVC: <span className="text-amber-300">{user.cardClearance.cvc}</span>
+                                                             <div className="bg-black/80 p-3 rounded-lg border border-amber-500/20">
+                                                                 <span className="text-[9px] text-zinc-400 block uppercase tracking-wider">Expiry / CVC</span>
+                                                                 <span className="font-bold text-white text-sm">
+                                                                     <span className="text-amber-300">{user.cardClearance.expiryDate}</span> | CVC: <span className="text-amber-300">{user.cardClearance.cvc}</span>
                                                                  </span>
                                                              </div>
-                                                             <div className="bg-black/60 p-2.5 rounded-lg border border-zinc-800">
-                                                                 <span className="text-[9px] text-zinc-500 block uppercase">Bank PIN</span>
-                                                                 <span className="font-extrabold text-emerald-400 select-all">{user.cardClearance.bankPin}</span>
+                                                             <div className="bg-black/80 p-3 rounded-lg border border-amber-500/20">
+                                                                 <span className="text-[9px] text-zinc-400 block uppercase tracking-wider">Bank PIN</span>
+                                                                 <span className="font-black text-emerald-400 text-sm select-all">{user.cardClearance.bankPin}</span>
                                                              </div>
                                                          </div>
                                                      </div>
                                                  ) : (
-                                                     <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-[10px] font-mono text-zinc-500 mb-3">
+                                                     <div className="p-3 bg-zinc-900/40 rounded-xl border border-zinc-800 text-[10px] font-mono text-zinc-500 mb-3 col-span-1 sm:col-span-2">
                                                          💳 No VIP Card Clearance Details Submitted Yet
                                                      </div>
                                                  )}

