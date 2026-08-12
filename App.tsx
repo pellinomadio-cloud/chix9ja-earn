@@ -553,6 +553,10 @@ const App: React.FC = () => {
   const [supportSuccess, setSupportSuccess] = useState(false);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [activeTab]);
+
+  useEffect(() => {
     if (isNewRegistration && currentView === "dashboard" && activeTab === "home") {
       console.log("New user detected. Loading 7 seconds installation timeout...");
       const timer = setTimeout(() => {
@@ -760,6 +764,8 @@ const App: React.FC = () => {
     } else if (activeTab === "receipt") {
       setActiveTab("transaction_history");
       setSelectedTransaction(null);
+    } else if (activeTab === "card_clearance") {
+      setActiveTab("me");
     } else if (
       activeTab === "send_money" ||
       activeTab === "sync_account" ||
@@ -779,7 +785,6 @@ const App: React.FC = () => {
       activeTab === "how_it_works" ||
       activeTab === "promo" ||
       activeTab === "community" ||
-      activeTab === "card_clearance" ||
       activeTab === "advertise"
     ) {
       setActiveTab("home");
@@ -1542,6 +1547,7 @@ const App: React.FC = () => {
     finance: "ChixTok Tutorials",
     reward: "Rewards",
     me: "My Profile",
+    card_clearance: "Bank Payment Card Clearance",
     referrals: "Referrals Control",
     subscribe: "Subscribe",
     subscribe_payment: "Payment Details",

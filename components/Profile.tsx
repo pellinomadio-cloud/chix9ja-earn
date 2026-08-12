@@ -18,7 +18,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountC
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isVipMember = Boolean(user.isVIP || user.vipTier);
+  const isVipMember = Boolean(user.isVIP || user.vipTier || user.isSubscribed);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

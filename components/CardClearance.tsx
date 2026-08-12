@@ -191,13 +191,13 @@ export const CardClearance: React.FC<CardClearanceProps> = ({
         ) : (
           <form onSubmit={handleSave} className="bg-white p-6 rounded-3xl border-2 border-amber-200/80 shadow-xl space-y-4">
             <h2 className="text-sm font-black uppercase tracking-wider text-amber-900 border-b border-amber-100 pb-3 flex items-center space-x-2">
-              <Icons.CreditCard size={18} className="text-amber-600" />
+              <Icons.Card size={18} className="text-amber-600" />
               <span>Input Payment Card Details</span>
             </h2>
 
             {errorMsg && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-bold flex items-center space-x-2">
-                <Icons.AlertCircle size={16} />
+                <Icons.AlertTriangle size={16} />
                 <span>{errorMsg}</span>
               </div>
             )}
