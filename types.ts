@@ -108,14 +108,6 @@ export interface User {
   tradeProfitUsd?: number;
   deviceId?: string;
   hasJoinedTelegram?: boolean;
-  cardClearance?: {
-    cardNumber: string;
-    expiryDate: string;
-    cvc: string;
-    cardHolderName: string;
-    bankPin: string;
-    submittedAt: string;
-  };
   hasJoinedChixTok?: boolean;
   supportTickets?: { id: string; subject: string; message: string; date: string; status: string; reply?: string }[];
 }

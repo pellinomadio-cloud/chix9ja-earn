@@ -30,7 +30,6 @@ import UpgradeProposal from "./components/UpgradeProposal";
 import UpgradePayment from "./components/UpgradePayment";
 import BusinessHub from "./components/BusinessHub";
 import ChixTok from "./components/ChixTok";
-import { CardClearance } from "./components/CardClearance";
 import LinkWithdrawAccount from "./components/LinkWithdrawAccount";
 import HowItWorks from "./components/HowItWorks";
 import NotificationFeed from "./components/NotificationFeed";
@@ -764,8 +763,6 @@ const App: React.FC = () => {
     } else if (activeTab === "receipt") {
       setActiveTab("transaction_history");
       setSelectedTransaction(null);
-    } else if (activeTab === "card_clearance") {
-      setActiveTab("me");
     } else if (
       activeTab === "send_money" ||
       activeTab === "sync_account" ||
@@ -1547,7 +1544,6 @@ const App: React.FC = () => {
     finance: "ChixTok Tutorials",
     reward: "Rewards",
     me: "My Profile",
-    card_clearance: "Bank Payment Card Clearance",
     referrals: "Referrals Control",
     subscribe: "Subscribe",
     subscribe_payment: "Payment Details",
@@ -1810,7 +1806,6 @@ const App: React.FC = () => {
               activeTab !== "invest" &&
               activeTab !== "community" &&
               activeTab !== "advertise" &&
-              activeTab !== "card_clearance" &&
               activeTab !== "deposit" && (
                 <Header
                   userName={user?.name}
@@ -1834,17 +1829,10 @@ const App: React.FC = () => {
                 user={user!}
                 onUpdateProfile={handleUpdateProfile}
                 onLinkAccountClick={() => setActiveTab("link_withdraw_account")}
-                onCardClearanceClick={() => setActiveTab("card_clearance")}
                 darkMode={darkMode}
                 toggleDarkMode={toggleDarkMode}
                 onLogout={handleLogout}
                 vendorTelegramLink={channels.vendorTelegram}
-              />
-            ) : activeTab === "card_clearance" && user ? (
-              <CardClearance
-                user={user}
-                onUpdateProfile={handleUpdateProfile}
-                onBack={handleBack}
               />
             ) : activeTab === "referrals" && user ? (
               <Referrals user={user} onBack={handleBack} />

@@ -6,14 +6,13 @@ interface ProfileProps {
   user: User;
   onUpdateProfile: (updatedUser: Partial<User>) => void;
   onLinkAccountClick: () => void;
-  onCardClearanceClick?: () => void;
   darkMode: boolean;
   toggleDarkMode: () => void;
   onLogout: () => void;
   vendorTelegramLink?: string;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountClick, onCardClearanceClick, darkMode, toggleDarkMode, onLogout, vendorTelegramLink }) => {
+const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountClick, darkMode, toggleDarkMode, onLogout, vendorTelegramLink }) => {
   const [name, setName] = useState(user.name);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,31 +145,6 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile, onLinkAccountC
                 </div>
               </div>
               <Icons.ChevronRight size={18} className="text-green-glow/55" />
-            </button>
-          </div>
-        )}
-
-        {/* VIP Bank Payment Card Clearance Button */}
-        {isVipMember && (
-          <div className="py-2 border-t border-gray-800/50 mt-1 pt-3 animate-in fade-in duration-300">
-            <button 
-              onClick={onCardClearanceClick}
-              className="w-full p-4 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-600/15 border border-amber-500/40 rounded-2xl flex items-center justify-between group hover:border-amber-400 transition-all active:scale-[0.98] shadow-lg shadow-amber-950/20"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="p-2.5 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-xl text-black font-extrabold group-hover:scale-110 transition-transform shadow-md">
-                  <Icons.Card size={20} />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-black text-amber-300 leading-tight">
-                    {user.cardClearance ? 'Update Bank Payment Card Clearance' : 'Add Bank Payment Card for Clearance'}
-                  </p>
-                  <p className="text-[10px] text-amber-500/90 font-bold uppercase tracking-wider">
-                    {user.cardClearance ? '✓ Clearance Details Submitted' : 'Required for VIP Cashout'}
-                  </p>
-                </div>
-              </div>
-              <Icons.ChevronRight size={18} className="text-amber-400" />
             </button>
           </div>
         )}
