@@ -307,7 +307,7 @@ const App: React.FC = () => {
 
     // Async write to Firestore so database is always fully synced across devices
     const sanitizedUser = sanitizeForFirestore(u);
-    setDoc(doc(db, "users", emailKey), sanitizedUser).catch((error) => {
+    setDoc(doc(db, "users", emailKey), sanitizedUser, { merge: true }).catch((error) => {
       console.error("Error syncing to Firestore:", error);
     });
   };

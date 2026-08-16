@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
 import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
+import { compressReceiptImage } from '../imageCompressor';
 import { motion, AnimatePresence } from 'motion/react';
 import { Vip2CountdownTimer } from './UpgradeProposal';
 import { ArrowLeft, ShieldCheck, Copy, Check, AlertTriangle, Upload, CheckCircle, RefreshCw, Star, Ban } from 'lucide-react';
@@ -112,12 +113,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({
     setStatus('loading');
 
     try {
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(proofFile);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (e) => reject(e);
-      });
+      const base64Data = await compressReceiptImage(proofFile);
 
       setTimeout(() => {
         const freshUsersStr = localStorage.getItem('chix9ja_users');
@@ -155,7 +151,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({
           freshUsers[userEmail.toLowerCase()] = freshUser;
           localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
           
-          syncUserFromLocalToFirestore(userEmail).then(() => {
+          syncUserFromLocalToFirestore(userEmail, freshUser).then(() => {
             setStatus('success');
             setShowSuccessModal(true);
           }).catch((e) => {
@@ -176,7 +172,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({
             freshUsers[userEmail.toLowerCase()] = freshUser;
             localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
 
-            syncUserFromLocalToFirestore(userEmail).then(() => {
+            syncUserFromLocalToFirestore(userEmail, freshUser).then(() => {
               setStatus('success');
               setShowSuccessModal(true);
             }).catch((e) => {
@@ -188,7 +184,7 @@ const UpgradePayment: React.FC<UpgradePaymentProps> = ({
             setStatus('failed');
           }
         }
-      }, 2500);
+      }, 1500);
     } catch (e) {
       console.error("Error reading proof file", e);
       setStatus('failed');

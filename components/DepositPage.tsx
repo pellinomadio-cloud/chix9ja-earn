@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { Wallet, Coins, Trash2, AlertCircle, RefreshCw, AlertTriangle, ShieldAlert, X } from 'lucide-react';
 import { User, Transaction } from '../types';
-import { useBankDetails, db, sanitizeForFirestore } from '../firebase';
+import { useBankDetails, db, sanitizeForFirestore, syncUserFromLocalToFirestore } from '../firebase';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { compressReceiptImage } from '../imageCompressor';
 
 interface DepositPageProps {
   user: User;
@@ -44,20 +45,22 @@ export const DepositPage: React.FC<DepositPageProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 8 * 1024 * 1024) {
-        setErrorMessage('File size exceeds 8MB limit. Please upload a smaller receipt image.');
-        return;
-      }
       setFileName(file.name);
       setErrorMessage('');
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProofImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressReceiptImage(file);
+        setProofImage(compressed);
+      } catch (err) {
+        console.error("Error compressing deposit receipt:", err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProofImage(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -80,12 +83,18 @@ export const DepositPage: React.FC<DepositPageProps> = ({
       const timestamp = Date.now();
       const isoDate = new Date().toISOString();
 
+      // Guarantee the image is compressed before pushing to Firestore
+      let finalProof = proofImage;
+      try {
+        finalProof = await compressReceiptImage(proofImage);
+      } catch {}
+
       const newDepositPayload = {
         id: depositId,
         userEmail: user.email.toLowerCase().trim(),
         userName: user.name || 'Chix9ja User',
         amount: numAmount,
-        paymentProof: proofImage,
+        paymentProof: finalProof,
         status: 'pending' as const,
         date: isoDate,
         timestamp
@@ -110,15 +119,20 @@ export const DepositPage: React.FC<DepositPageProps> = ({
 
       const updatedTransactions = [newTransaction, ...(user.transactions || [])];
 
-      // 3. Update local user state & localStorage
+      // 3. Update local user state & localStorage with both pendingDeposit and pendingActivation
       const updatedUser: User = {
         ...user,
+        pendingActivation: 'deposit',
+        pendingPaymentAmount: numAmount,
+        pendingPaymentProof: finalProof,
+        pendingPaymentDate: isoDate,
+        lastUploadTimestamp: timestamp,
         pendingDeposit: {
           id: depositId,
           userEmail: user.email,
           userName: user.name,
           amount: numAmount,
-          paymentProof: proofImage,
+          paymentProof: finalProof,
           status: 'pending',
           date: isoDate,
           timestamp
@@ -128,10 +142,9 @@ export const DepositPage: React.FC<DepositPageProps> = ({
 
       onUpdateUser(updatedUser);
 
-      // Save user record to Firestore
+      // Save user record to Firestore directly
       try {
-        const lowerEmail = user.email.toLowerCase().trim();
-        await setDoc(doc(db, 'users', lowerEmail), sanitizeForFirestore(updatedUser), { merge: true });
+        await syncUserFromLocalToFirestore(user.email, updatedUser);
       } catch (fErr) {
         console.error("Error updating user document on Firestore:", fErr);
       }

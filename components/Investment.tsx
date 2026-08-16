@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User, Transaction } from '../types';
-import { useBankDetails, useAppChannels } from '../firebase';
+import { useBankDetails, useAppChannels, syncUserFromLocalToFirestore } from '../firebase';
+import { compressReceiptImage } from '../imageCompressor';
 import { motion, AnimatePresence } from 'motion/react';
 
 const banksList = [
@@ -247,14 +248,20 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
             <input 
               type="file" 
               accept="image/*" 
-              onChange={(e) => {
+              onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setInvestProof(reader.result as string);
-                  };
-                  reader.readAsDataURL(file);
+                  try {
+                    const compressed = await compressReceiptImage(file);
+                    setInvestProof(compressed);
+                  } catch (err) {
+                    console.error("Error compressing investment receipt:", err);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setInvestProof(reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
                 }
               }}
               className="sr-only" 
@@ -283,7 +290,7 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
 
         <div className="space-y-3">
           <button 
-            onClick={() => {
+            onClick={async () => {
               if (user && user.pendingPaymentProof) {
                 alert("You already have a pending payment proof awaiting administrator verification. You cannot upload another receipt until it is approved or declined.");
                 return;
@@ -298,18 +305,31 @@ const Investment: React.FC<InvestmentProps> = ({ user, onBack, onUpdateUser }) =
                 alert("Please upload a receipt photo of your payment first.");
                 return;
               }
+
+              let finalProof = investProof;
+              try {
+                finalProof = await compressReceiptImage(investProof);
+              } catch {}
+
               const restoreTime = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
-              onUpdateUser({ 
+              const updatedPayload = { 
                 pendingInvestmentStep: null,
                 isRestricted: true,
-                restrictionType: 'verification',
+                restrictionType: 'verification' as const,
                 restrictionRestoreTime: restoreTime,
-                pendingActivation: 'investment',
-                pendingPaymentProof: investProof,
+                pendingActivation: 'investment' as const,
+                pendingPaymentProof: finalProof,
                 pendingPaymentAmount: 25600,
                 pendingPaymentDate: new Date().toISOString(),
                 lastUploadTimestamp: Date.now()
-              });
+              };
+
+              onUpdateUser(updatedPayload);
+              try {
+                await syncUserFromLocalToFirestore(user.email, { ...user, ...updatedPayload });
+              } catch (e) {
+                console.error("Firestore sync error in Investment:", e);
+              }
               setShowSuccessModal(true);
             }}
             className="w-full py-4 bg-amber-500 text-black font-black rounded-xl uppercase tracking-widest shadow-xl active:scale-95 transition-all text-center"

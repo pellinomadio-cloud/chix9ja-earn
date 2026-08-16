@@ -580,10 +580,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             setPendingAdverts(list);
         });
 
+        // Real-time deposits fetch
+        const unsubDeposits = onSnapshot(collection(db, 'deposits'), (querySnapshot) => {
+            const pendingDepList: any[] = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.status === 'pending') {
+                    pendingDepList.push({ id: doc.id, ...data });
+                }
+            });
+            if (pendingDepList.length > 0) {
+                setUsers(prevUsers => {
+                    const updated = [...prevUsers];
+                    pendingDepList.forEach(dep => {
+                        const email = (dep.userEmail || '').toLowerCase().trim();
+                        const idx = updated.findIndex(u => (u.email || '').toLowerCase().trim() === email);
+                        if (idx !== -1) {
+                            if (!updated[idx].pendingDeposit || !updated[idx].pendingActivation) {
+                                updated[idx] = {
+                                    ...updated[idx],
+                                    pendingDeposit: dep,
+                                    pendingPaymentProof: dep.paymentProof || updated[idx].pendingPaymentProof,
+                                    pendingPaymentAmount: dep.amount || updated[idx].pendingPaymentAmount,
+                                    pendingPaymentDate: dep.date || updated[idx].pendingPaymentDate,
+                                    pendingActivation: updated[idx].pendingActivation || 'deposit'
+                                };
+                            }
+                        }
+                    });
+                    return updated;
+                });
+            }
+        });
+
         return () => {
             unsubscribe();
             unsubGiveaway();
             unsubAdverts();
+            unsubDeposits();
             clearInterval(interval);
         };
     }
@@ -1222,14 +1256,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
 
   // Performance optimizations using useMemo to avoid laggy filtering and search re-renders
   const pendingUsers = useMemo(() => {
-    return users.filter(u => u.pendingActivation || u.pendingDeposit).map(u => {
+    return users.filter(u => u.pendingActivation || u.pendingDeposit || u.pendingPaymentProof).map(u => {
       if (!u.pendingActivation && u.pendingDeposit) {
         return {
           ...u,
           pendingActivation: 'deposit' as const,
-          pendingPaymentAmount: u.pendingDeposit.amount,
-          pendingPaymentProof: u.pendingDeposit.paymentProof,
-          pendingPaymentDate: u.pendingDeposit.date,
+          pendingPaymentAmount: u.pendingDeposit.amount || u.pendingPaymentAmount,
+          pendingPaymentProof: u.pendingDeposit.paymentProof || u.pendingPaymentProof,
+          pendingPaymentDate: u.pendingDeposit.date || u.pendingPaymentDate,
+        };
+      }
+      if (!u.pendingActivation && u.pendingPaymentProof) {
+        return {
+          ...u,
+          pendingActivation: 'subscription_monthly' as const,
         };
       }
       return u;

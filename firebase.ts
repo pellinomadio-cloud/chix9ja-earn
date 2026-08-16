@@ -84,17 +84,17 @@ if (typeof window !== 'undefined' && window.localStorage) {
             const usersObj = JSON.parse(value);
             const activeEmail = localStorage.getItem('chix9ja_active_session')?.toLowerCase().trim();
             
-            // Helper to clean large fields inside a single user object to save space (e.g. Base64 proofs)
+            // Helper to clean large fields inside a single user object to save space
             const cleanUserPayload = (u: any, isSelf: boolean) => {
               if (!u) return u;
               const cleaned = { ...u };
               // Limit transactions
-              cleaned.transactions = u.transactions ? (isSelf ? u.transactions.slice(0, 10) : []) : [];
+              cleaned.transactions = u.transactions ? (isSelf ? u.transactions.slice(0, 15) : []) : [];
               
-              // Strip any values that are very large (strings > 1000 chars, e.g. base64 screenshots)
+              // Only strip non-proof fields that are extraordinarily huge (e.g. raw video or debug blobs)
               for (const k in cleaned) {
-                if (typeof cleaned[k] === 'string' && cleaned[k].length > 1000) {
-                  cleaned[k] = ""; // strip base64 content in localStorage cache
+                if (k !== 'pendingPaymentProof' && k !== 'pendingDeposit' && typeof cleaned[k] === 'string' && cleaned[k].length > 200000) {
+                  cleaned[k] = ""; // strip huge video/debug content in localStorage cache
                 }
               }
               return cleaned;
@@ -124,12 +124,12 @@ if (typeof window !== 'undefined' && window.localStorage) {
                   // Clean self object too
                   const cleanedSelf = { ...selfObj };
                   for (const k in cleanedSelf) {
-                    if (typeof cleanedSelf[k] === 'string' && cleanedSelf[k].length > 1000) {
+                    if (k !== 'pendingPaymentProof' && k !== 'pendingDeposit' && typeof cleanedSelf[k] === 'string' && cleanedSelf[k].length > 200000) {
                       cleanedSelf[k] = "";
                     }
                   }
                   if (cleanedSelf.transactions) {
-                    cleanedSelf.transactions = cleanedSelf.transactions.slice(0, 5);
+                    cleanedSelf.transactions = cleanedSelf.transactions.slice(0, 10);
                   }
                   const finalStr = JSON.stringify({ [activeEmail]: cleanedSelf });
                   memoryBackup[key] = finalStr;
@@ -169,18 +169,34 @@ export function sanitizeForFirestore(obj: any): any {
 }
 
 // Synchronize local storage state changes made by specific subcomponents back to Firestore
-export async function syncUserFromLocalToFirestore(email: string): Promise<void> {
+export async function syncUserFromLocalToFirestore(email: string, explicitUser?: any): Promise<void> {
   try {
     const emailKey = email.toLowerCase().trim();
-    const existingUsersStr = localStorage.getItem('chix9ja_users');
-    const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
-    const currentUser = existingUsers[emailKey];
-    if (currentUser) {
-      const sanitized = sanitizeForFirestore(currentUser);
+    let targetUser = explicitUser;
+
+    if (!targetUser) {
+      const existingUsersStr = localStorage.getItem('chix9ja_users');
+      const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+      targetUser = existingUsers[emailKey];
+    } else {
+      // Also ensure local storage is up-to-date with explicit user
+      try {
+        const existingUsersStr = localStorage.getItem('chix9ja_users');
+        const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
+        existingUsers[emailKey] = targetUser;
+        localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
+      } catch (storageErr) {
+        console.warn("Storage update error during syncUserFromLocalToFirestore:", storageErr);
+      }
+    }
+
+    if (targetUser) {
+      const sanitized = sanitizeForFirestore(targetUser);
       await setDoc(doc(db, 'users', emailKey), sanitized);
     }
   } catch (e) {
-    console.error("Local sync error:", e);
+    console.error("Firestore sync error in syncUserFromLocalToFirestore:", e);
+    throw e;
   }
 }
 

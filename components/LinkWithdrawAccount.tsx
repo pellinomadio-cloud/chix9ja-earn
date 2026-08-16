@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
 import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
+import { compressReceiptImage } from '../imageCompressor';
 import { motion, AnimatePresence } from 'motion/react';
 
 const BANKS_DATA = [
@@ -163,12 +164,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
     setLoading(true);
 
     try {
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(proofFile);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (e) => reject(e);
-      });
+      const base64Data = await compressReceiptImage(proofFile);
 
       setTimeout(() => {
         const freshUsersStr = localStorage.getItem('chix9ja_users');
@@ -188,7 +184,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
           freshUsers[user.email.toLowerCase()] = freshUser;
           localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
 
-          syncUserFromLocalToFirestore(user.email).then(() => {
+          syncUserFromLocalToFirestore(user.email, freshUser).then(() => {
             setLoading(false);
             setShowSuccessModal(true);
           }).catch((e) => {
@@ -200,7 +196,7 @@ const LinkWithdrawAccount: React.FC<LinkWithdrawAccountProps> = ({ user, onBack 
           setLoading(false);
           setStep('status');
         }
-      }, 2000);
+      }, 1500);
     } catch (e) {
       console.error("Error converting receipt file:", e);
       setLoading(false);

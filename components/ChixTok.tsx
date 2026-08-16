@@ -3,6 +3,7 @@ import { Icons } from './Icons';
 import { User, ChixTokVideo, ChixTokComment, Transaction } from '../types';
 import { collection, doc, setDoc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { db, useBankDetails, syncUserFromLocalToFirestore, sanitizeForFirestore } from '../firebase';
+import { compressReceiptImage } from '../imageCompressor';
 
 interface ChixTokProps {
   user: User;
@@ -349,15 +350,21 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setProofFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProofBase64(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressReceiptImage(file);
+        setProofBase64(compressed);
+      } catch (err) {
+        console.error("Error compressing receipt in ChixTok:", err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setProofBase64(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
@@ -372,17 +379,22 @@ const ChixTok: React.FC<ChixTokProps> = ({ user, onUpdateUser, onNavigateToDepos
     setIsSubmittingJoin(true);
 
     try {
+      let finalProof = proofBase64;
+      try {
+        finalProof = await compressReceiptImage(proofBase64);
+      } catch {}
+
       const updatedUser: User = {
         ...user,
         pendingActivation: 'chixtok',
-        pendingPaymentProof: proofBase64,
+        pendingPaymentProof: finalProof,
         pendingPaymentAmount: COST,
         pendingPaymentDate: new Date().toISOString(),
         lastUploadTimestamp: Date.now()
       };
 
       onUpdateUser(updatedUser);
-      await syncUserFromLocalToFirestore(user.email);
+      await syncUserFromLocalToFirestore(user.email, updatedUser);
 
       setIsSubmittingJoin(false);
       setShowJoinModal(false);

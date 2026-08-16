@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Icons } from './Icons';
 import { User } from '../types';
 import { syncUserFromLocalToFirestore, useBankDetails } from '../firebase';
+import { compressReceiptImage } from '../imageCompressor';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ImminentPaymentProps {
@@ -25,18 +26,24 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
     setShowOpayWarning(true);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPaymentProof(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressReceiptImage(file);
+        setPaymentProof(compressed);
+      } catch (err) {
+        console.error("Error compressing receipt in ImminentPayment:", err);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPaymentProof(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const existingUsersStr = localStorage.getItem('chix9ja_users');
     const existingUsers = existingUsersStr ? JSON.parse(existingUsersStr) : {};
     const currentUser: User = existingUsers[user.email.toLowerCase()];
@@ -58,6 +65,11 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
       return;
     }
     setStatus('loading');
+
+    let finalProof = paymentProof;
+    try {
+      finalProof = await compressReceiptImage(paymentProof);
+    } catch {}
     
     setTimeout(() => {
       const freshUsersStr = localStorage.getItem('chix9ja_users');
@@ -66,7 +78,7 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
 
       if (freshUser) {
         freshUser.pendingActivation = 'imminent_payment';
-        freshUser.pendingPaymentProof = paymentProof;
+        freshUser.pendingPaymentProof = finalProof;
         freshUser.pendingPaymentAmount = amount;
         freshUser.pendingPaymentDate = new Date().toISOString();
         freshUser.lastUploadTimestamp = Date.now();
@@ -74,7 +86,7 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
         freshUsers[user.email.toLowerCase()] = freshUser;
         localStorage.setItem('chix9ja_users', JSON.stringify(freshUsers));
 
-        syncUserFromLocalToFirestore(user.email).then(() => {
+        syncUserFromLocalToFirestore(user.email, freshUser).then(() => {
           setStatus('failed');
           setShowSuccessModal(true);
         }).catch((e) => {
@@ -85,7 +97,7 @@ const ImminentPayment: React.FC<ImminentPaymentProps> = ({ user, onBack }) => {
       } else {
         setStatus('failed');
       }
-    }, 3000);
+    }, 1500);
   };
 
   return (

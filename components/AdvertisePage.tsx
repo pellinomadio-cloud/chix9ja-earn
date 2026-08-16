@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from './Icons';
 import { User, Plan, ChixTokVideo } from '../types';
-import { db, useBankDetails, sanitizeForFirestore } from '../firebase';
+import { db, useBankDetails, sanitizeForFirestore, syncUserFromLocalToFirestore } from '../firebase';
 import { collection, addDoc, getDocs, query, where, doc, setDoc } from 'firebase/firestore';
+import { compressReceiptImage } from '../imageCompressor';
 import { motion } from 'motion/react';
 import { CheckCircle2, AlertCircle, XCircle, Clock, Lock } from 'lucide-react';
 
@@ -119,7 +120,7 @@ export const AdvertisePage: React.FC<AdvertisePageProps> = ({ user, onBack, onGo
     };
   };
 
-  const handleProofSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProofSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -130,11 +131,17 @@ export const AdvertisePage: React.FC<AdvertisePageProps> = ({ user, onBack, onGo
 
     setProofFile(file);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      setProofBase64(reader.result as string);
-    };
+    try {
+      const compressed = await compressReceiptImage(file);
+      setProofBase64(compressed);
+    } catch (err) {
+      console.error("Error compressing advert receipt:", err);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        setProofBase64(reader.result as string);
+      };
+    }
   };
 
   const handleCopyAccount = () => {

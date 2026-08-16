@@ -4,6 +4,7 @@ import { Icons } from './Icons';
 import { Plan, User } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { syncUserFromLocalToFirestore, useBankDetails, useAppChannels } from '../firebase';
+import { compressReceiptImage } from '../imageCompressor';
 
 
 interface SubscribePaymentProps {
@@ -70,12 +71,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
     setStatus('loading');
 
     try {
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(proofFile);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (e) => reject(e);
-      });
+      const base64Data = await compressReceiptImage(proofFile);
 
       setTimeout(() => {
           const existingUsersStr = localStorage.getItem('chix9ja_users');
@@ -143,7 +139,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
               existingUsers[userEmail.toLowerCase()] = currentUser;
               localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
               
-              syncUserFromLocalToFirestore(userEmail).then(() => {
+              syncUserFromLocalToFirestore(userEmail, currentUser).then(() => {
                   setStatus('success');
                   setTimeout(() => {
                       alert(`Activation Successful! Your ${plan.name} is now active.`);
@@ -177,7 +173,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
                   existingUsers[userEmail.toLowerCase()] = currentUser;
                   localStorage.setItem('chix9ja_users', JSON.stringify(existingUsers));
                   
-                  syncUserFromLocalToFirestore(userEmail).then(() => {
+                  syncUserFromLocalToFirestore(userEmail, currentUser).then(() => {
                       setStatus('failed');
                       setTimeout(() => {
                           setShowSuccessModal(true);
@@ -193,7 +189,7 @@ const SubscribePayment: React.FC<SubscribePaymentProps> = ({ plan, userEmail, on
                   setStatus('failed');
               }
           }
-      }, 3500);
+      }, 1500);
     } catch (e) {
       console.error("Error reading file", e);
       setStatus('failed');
