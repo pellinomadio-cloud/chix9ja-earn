@@ -62,12 +62,15 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ user, onTransac
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                                 trx.status === 'pending'
                                 ? 'bg-orange-900/30 text-orange-400'
+                                : trx.description.includes('Charity')
+                                ? 'bg-emerald-900/40 text-emerald-400'
                                 : trx.type === 'credit' 
                                 ? 'bg-green-900/30 text-green-400' 
                                 : 'bg-red-900/30 text-red-400'
                             }`}>
                                 {
                                     trx.status === 'pending' ? <Icons.Clock size={20} /> :
+                                    trx.description.includes('Charity') ? <Icons.Heart size={20} className="fill-emerald-400/20" /> :
                                     trx.description.includes('Welcome') ? <Icons.Gift size={20} /> : 
                                     trx.description.includes('Reward') ? <Icons.Reward size={20} /> :
                                     trx.description.includes('Airtime') ? <Icons.Airtime size={20} /> :
@@ -82,7 +85,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ user, onTransac
                                 </h4>
                                 <div className="flex items-center space-x-2">
                                     <p className="text-xs text-gray-500">
-                                        {trx.type === 'credit' ? 'Received' : 'Sent'}
+                                        {trx.description.includes('Charity') ? 'Welfare Donation' : (trx.type === 'credit' ? 'Received' : 'Sent')}
                                     </p>
                                     {trx.status === 'pending' && (
                                         <span className="text-[8px] font-black bg-orange-500 text-white px-1.5 py-0.5 rounded uppercase">Pending</span>

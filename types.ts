@@ -110,6 +110,21 @@ export interface User {
   hasJoinedTelegram?: boolean;
   hasJoinedChixTok?: boolean;
   supportTickets?: { id: string; subject: string; message: string; date: string; status: string; reply?: string }[];
+  lastCharityDeductionTimestamp?: number;
+  lastCharityDeductionDate?: string;
+  charityDonations?: CharityDonation[];
+  totalCharityDonated?: number;
+}
+
+export interface CharityDonation {
+  id: string;
+  amount: number;
+  percentage: number;
+  previousBalance: number;
+  newBalance: number;
+  date: string;
+  timestamp: number;
+  cause?: string;
 }
 
 export interface ChixTokComment {

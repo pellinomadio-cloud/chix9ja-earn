@@ -42,8 +42,10 @@ import PromoPage from "./components/PromoPage";
 import DepositPage from "./components/DepositPage";
 import { CommunityPage } from "./components/CommunityPage";
 import { AdvertisePage } from "./components/AdvertisePage";
+import { CharityPopup } from "./components/CharityPopup";
 import { Icons } from "./components/Icons";
-import { User, Plan, Transaction, RewardStatus } from "./types";
+import { Heart } from "lucide-react";
+import { User, Plan, Transaction, RewardStatus, CharityDonation } from "./types";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { doc, onSnapshot, setDoc, getDoc } from "firebase/firestore";
 import { db, auth, useAppChannels } from "./firebase";
@@ -550,6 +552,98 @@ const App: React.FC = () => {
   const [supportMsg, setSupportMsg] = useState("");
   const [isSendingSupport, setIsSendingSupport] = useState(false);
   const [supportSuccess, setSupportSuccess] = useState(false);
+  const [showCharityPopup, setShowCharityPopup] = useState(false);
+
+  // Daily 15% Charity & Welfare Contribution Check from Dashboard Balance
+  useEffect(() => {
+    if (!user || !user.email || currentView !== "dashboard") return;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const nowTs = Date.now();
+    const lastDeductionTs = user.lastCharityDeductionTimestamp || 0;
+    const lastDeductionDate = user.lastCharityDeductionDate;
+
+    // Check if deduction has already occurred today (either same calendar date or within last 20 hours)
+    const isAlreadyDeductedToday =
+      lastDeductionDate === todayStr ||
+      (lastDeductionTs > 0 && nowTs - lastDeductionTs < 20 * 60 * 60 * 1000);
+
+    if (!isAlreadyDeductedToday) {
+      if (user.balance > 0) {
+        const deductionAmount = Math.max(1, Math.round(user.balance * 0.15));
+        const newBalance = Math.max(0, user.balance - deductionAmount);
+
+        const charityCauses = [
+          "Orphanage Food Security & Nutrition Relief",
+          "Indigent Patient Hospital Bill & Medical Subsidy",
+          "Underprivileged Primary School Scholarship Fund",
+          "Displaced Families Welfare & Shelter Assistance",
+          "Clean Water & Community Health Outreach",
+        ];
+        const randomCause =
+          charityCauses[Math.floor(Math.random() * charityCauses.length)];
+
+        const donationRecord: CharityDonation = {
+          id: `charity-${nowTs}`,
+          amount: deductionAmount,
+          percentage: 15,
+          previousBalance: user.balance,
+          newBalance: newBalance,
+          date: new Date().toISOString(),
+          timestamp: nowTs,
+          cause: randomCause,
+        };
+
+        const newTransaction: Transaction = {
+          id: `trx-charity-${nowTs}`,
+          type: "debit",
+          amount: deductionAmount,
+          description: `Daily 15% Charity Contribution (${randomCause})`,
+          date: new Date().toISOString(),
+          status: "success",
+        };
+
+        const updatedDonations = [donationRecord, ...(user.charityDonations || [])];
+        const updatedUser: User = {
+          ...user,
+          balance: newBalance,
+          lastCharityDeductionTimestamp: nowTs,
+          lastCharityDeductionDate: todayStr,
+          charityDonations: updatedDonations,
+          totalCharityDonated: (user.totalCharityDonated || 0) + deductionAmount,
+          transactions: [newTransaction, ...(user.transactions || [])],
+        };
+
+        setUser(updatedUser);
+        saveUserToStorage(updatedUser);
+        setShowCharityPopup(true);
+      } else {
+        // If balance is 0 or less, record today as checked so it doesn't loop
+        const updatedUser: User = {
+          ...user,
+          lastCharityDeductionTimestamp: nowTs,
+          lastCharityDeductionDate: todayStr,
+        };
+        setUser(updatedUser);
+        saveUserToStorage(updatedUser);
+      }
+    }
+  }, [user?.email, currentView]);
+
+  // When user enters dashboard, display charity statistics popup if not viewed in current session
+  useEffect(() => {
+    if (currentView === "dashboard" && activeTab === "home" && user && user.email) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const sessionKey = `chix9ja_charity_session_seen_${todayStr}_${user.email.toLowerCase()}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, "true");
+        const timer = setTimeout(() => {
+          setShowCharityPopup(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [currentView, activeTab, user?.email]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -2230,6 +2324,34 @@ const App: React.FC = () => {
                   onHistoryClick={() => setActiveTab("transaction_history")}
                   onDepositClick={() => setActiveTab("deposit")}
                 />
+
+                {/* Daily Charity & Welfare (15% Deduction) Statistics Quick Card */}
+                <div
+                  onClick={() => setShowCharityPopup(true)}
+                  className="bg-gradient-to-r from-emerald-950/90 via-zinc-950 to-zinc-950 border border-emerald-500/40 hover:border-emerald-400 p-3.5 rounded-2xl flex items-center justify-between cursor-pointer transition-all shadow-[0_0_20px_rgba(16,185,129,0.15)] group relative overflow-hidden my-1"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/20 transition-all" />
+                  <div className="flex items-center space-x-3 z-10">
+                    <div className="w-10 h-10 bg-emerald-500/15 border border-emerald-500/30 rounded-xl flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                      <Heart size={20} className="fill-emerald-400/20 stroke-[2.2]" />
+                    </div>
+                    <div className="text-left">
+                      <div className="flex items-center space-x-1.5">
+                        <h4 className="font-extrabold text-white text-xs uppercase tracking-wider flex items-center gap-1.5">
+                          <span>Daily Charity & Welfare</span>
+                          <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono font-bold">15% Daily</span>
+                        </h4>
+                      </div>
+                      <p className="text-[10px] text-zinc-400 mt-0.5 font-bold tracking-tight leading-none font-mono">
+                        Recent: <span className="text-emerald-400 font-bold">₦{(user?.charityDonations?.[0]?.amount || (user?.balance ? Math.round(user.balance * 0.15) : 0)).toLocaleString()}</span> • 7-Day Stats & Impact
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-1 text-emerald-400 text-xs font-mono font-bold z-10">
+                    <span className="text-[10px] uppercase tracking-wider bg-emerald-950/80 px-2.5 py-1 rounded-lg border border-emerald-500/40 group-hover:bg-emerald-500 group-hover:text-black transition-all">Stats</span>
+                  </div>
+                </div>
+
                 <ActionGrid
                   onActionClick={handleGridAction}
                   balance={user?.balance || 0}
@@ -2610,6 +2732,18 @@ const App: React.FC = () => {
                 onClose={() => setShowQuizAd(false)}
               />
             )}
+
+          {/* Daily Charity & Welfare Statistics Modal */}
+          {showCharityPopup && user && (
+            <CharityPopup
+              user={user}
+              onClose={() => setShowCharityPopup(false)}
+              onViewTransactions={() => {
+                setShowCharityPopup(false);
+                setActiveTab("transaction_history");
+              }}
+            />
+          )}
 
           {/* Interactive Floating Support Toggle Widget */}
           {currentView === "dashboard" && activeTab !== "admin" && (
